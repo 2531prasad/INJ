@@ -57,11 +57,14 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
       const canvas = document.querySelector('#game');
       const wrongRatio = !near(arena.width/arena.height,16/9)||canvas.width/canvas.height!==16/9;
       const undersized = controls.some(el=>rect(el).width<44||rect(el).height<44);
-      const landscapeGap = innerWidth>innerHeight && arena.height<innerHeight-2;
+      const tools=rect(document.querySelector('.phone-tools'));
+      const fullscreen=rect(document.querySelector('#btnPhoneFullscreen'));
+      const landscapeGap=innerWidth>innerHeight&&Math.abs(arena.height-(innerHeight-56))>2;
+      const fullscreenMissing=fullscreen.height<44||fullscreen.top<arena.bottom-1||fullscreen.bottom>innerHeight||tools.width===0;
       const menuOverlap = controls.some(el=>rect(el).top<arena.top+arena.height*.18);
-      return { overflow: document.documentElement.scrollWidth > innerWidth, offscreen, outsideArena, wrongRatio, undersized, landscapeGap, menuOverlap };
+      return { overflow: document.documentElement.scrollWidth > innerWidth, offscreen, outsideArena, wrongRatio, undersized, landscapeGap, menuOverlap, fullscreenMissing };
     });
-    check(!Object.values(layout).some(Boolean), `Phone ${width}×${height}: native 16:9, on-screen targets ≥44px, landscape fills height (${JSON.stringify(layout)})`);
+    check(!Object.values(layout).some(Boolean), `Phone ${width}×${height}: native 16:9, on-screen targets ≥44px, landscape reserves fullscreen bar (${JSON.stringify(layout)})`);
     if (width === 844) {
       await page.locator('#btnArenaPause').click();
       check(await page.locator('#pauseOverlay').isVisible() && await page.locator('#pauseOverlay [data-audio="music"]').isVisible(), 'Landscape on-screen pause opens the game and audio menu');
@@ -110,6 +113,38 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point(3,punch.x+punch.width/2,punch.y+punch.height/2)]});
   check(await page.evaluate(()=>pressSnapshot.key==='jab'&&pressSnapshot.time===0&&pressSnapshot.pose!==0),'Touch-down begins and paints attack anticipation before release or the next frame');
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  for(const [width,height] of [[390,844],[844,390]]){
+    await page.setViewportSize({width,height});
+    await page.evaluate(()=>{__test.settle();__test.game.paused=false;});
+    const arrows=await page.locator('.stick-directions').boundingBox();
+    const up=point(8,arrows.x+arrows.width/2,arrows.y+9);
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[up]});
+    check(await page.evaluate(()=>!__test.player.grounded&&__test.player.vy<0&&__test.input.up===1),`Phone ${width}×${height}: pressing joystick up jumps immediately`);
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    check(await page.evaluate(()=>__test.input.up===0),`Phone ${width}×${height}: releasing joystick clears jump`);
+    await page.evaluate(()=>{__test.settle();__test.game.paused=false;});
+    const center=point(9,arrows.x+arrows.width/2,arrows.y+arrows.height/2);
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[center]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...center,x:center.x+26,y:center.y-28}]});
+    check(await page.evaluate(()=>!__test.player.grounded&&__test.player.vy<0&&__test.input.right===1&&__test.player.vx>0),`Phone ${width}×${height}: joystick diagonal-up launches a forward jump`);
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  }
+  await page.locator('#btnPhoneFullscreen').click();
+  await page.waitForFunction(()=>!!document.fullscreenElement);
+  check(await page.evaluate(()=>document.fullscreenElement===document.documentElement&&document.body.classList.contains('native-fullscreen')),'Phone fullscreen button below arena enters native fullscreen');
+  await page.locator('#btnArenaPause').click();
+  await page.locator('#pauseOverlay [data-fullscreen]').click();
+  await page.waitForFunction(()=>!document.fullscreenElement);
+  check(await page.locator('#btnPhoneFullscreen').isVisible(),'Fullscreen can be exited from the phone pause menu');
+  await page.locator('#btnResume').click();
+  await page.evaluate(()=>{document.documentElement.requestFullscreen=undefined;document.documentElement.webkitRequestFullscreen=undefined;});
+  await page.locator('#btnPhoneFullscreen').click();
+  check(await page.evaluate(()=>document.body.classList.contains('expanded-view')&&document.querySelector('#fullscreenStatus').textContent.includes('Add to Home Screen')),'Unsupported phone fullscreen shows an expanded view with an honest Home Screen hint');
+  await page.locator('#btnPhoneFullscreen').click();
+  check(await page.evaluate(()=>!document.body.classList.contains('expanded-view')),'Expanded-view fallback can be exited');
+  await page.evaluate(()=>{delete document.documentElement.requestFullscreen;delete document.documentElement.webkitRequestFullscreen;__test.settle();});
+  await page.setViewportSize({width:390,height:844});
+
   const animationChecks=await page.evaluate(()=>{
     const t=__test,out={};t.settle();
     out.atlases=Object.values(t.spriteSheets).every(s=>s.ready&&s.meta.frames.length===12&&s.meta.frames.every(f=>f.x>=0&&f.y>=0&&f.x+f.w<=s.image.naturalWidth&&f.y+f.h<=s.image.naturalHeight));
@@ -149,6 +184,11 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     t.settle();t.dummy.state='walk';const dummyFrom=t.dummy.x;
     t.controlDummy(t.dummy,t.player,.3);
     out.dummyWalk=t.dummy.x<dummyFrom&&t.dummy.walkPhase>0&&t.sampleFighterAnimation(t.dummy).atlas==='walk';
+    t.settle();t.game.paused=false;t.queueAction('jump');
+    out.zeroDeltaJump=!t.player.grounded&&t.player.vy<0;
+    t.physics(t.player,1/60);out.jumpRises=t.player.y<198;
+    t.settle();t.input.up=1;t.player.hitstun=.1;t.controlPlayer(t.player,t.dummy,.11);t.controlPlayer(t.player,t.dummy,.01);
+    out.heldUpAfterStun=!t.player.grounded&&t.player.vy<0;
     t.settle();return out;
   });
   for(const [name,passed] of Object.entries(animationChecks))check(passed,`Fighter animation: ${name}`);
@@ -220,53 +260,48 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   });
   for (const [name, passed] of Object.entries(mechanics)) check(passed, `Combat: ${name}`);
 
-  const nightmare=await page.evaluate(()=>{
+  const sparring=await page.evaluate(()=>{
     const t=__test,out={};
-    function awaken(){t.settle();t.resetRound();t.game.state='fight';t.game.paused=true;t.game.msg=null;t.dummy.aiT=0;}
-    t.settle();t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
-    out.warmup=t.game.round===1&&t.dummy.hp===125&&t.dummy.state==='hurt';
-    awaken();out.transition=t.game.round===2&&t.dummy.hp===130&&t.player.hp===120;
-    t.dummy.x=t.player.x+40;
-    const initial=t.dummy.x;t.startAttack(t.player,'jab');t.controlDummy(t.dummy,t.player,.016);
-    out.meleeDodge=t.dummy.state==='dodge'&&t.dummy.x!==initial&&t.dummy.invuln>0;
-    awaken();t.dummy.x=t.player.x+120;
-    t.projectiles.push({x:t.dummy.x-65,y:t.dummy.y-46,vx:235,life:1,owner:t.player,charged:true});
-    t.controlDummy(t.dummy,t.player,.016);
-    out.projectileDodge=t.dummy.state==='dodge'&&!t.dummy.grounded&&t.dummy.vy<0;
-    awaken();t.dummy.dodgeCooldown=1;t.dummy.state='block';
-    for(const move of Object.values(t.MOVES))t.applyHit(t.dummy,t.player,move,200,140);
-    t.applyHit(t.dummy,t.player,{...t.MOVES.toss,key:'shadow',dmg:999,knockdown:true},200,140);
-    out.immune=t.dummy.hp===130&&t.dummy.state==='block'&&t.game.state==='fight';
-    awaken();t.dummy.x=t.player.x+200;const before=t.dummy.x;
-    t.controlDummy(t.dummy,t.player,.1);out.pursuit=before-t.dummy.x>=28;
-    awaken();t.dummy.x=t.player.x+42;t.controlDummy(t.dummy,t.player,.016);
-    out.fastAttack=!!t.dummy.atk&&t.dummy.atk.def.startup<=.055&&t.dummy.atk.def.recovery<=.09&&t.dummy.atk.def.dmg>t.MOVES[t.dummy.atk.key].dmg;
-    awaken();t.game.roundTime=.001;t.player.hp=120;t.dummy.hp=1;t.updateFlow(.01);
-    out.timeout=t.game.state==='ko'&&t.game.msg.text==='DUMMY WINS';
-    awaken();t.dummy.x=t.player.x+45;
-    for(let i=0;i<2400&&t.game.state==='fight';i++){
+    function roundTwo(){t.settle();t.resetRound();t.game.state='fight';t.game.paused=true;t.game.msg=null;t.dummy.aiT=0;}
+    roundTwo();t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
+    const damaged=t.dummy.hp;t.controlDummy(t.dummy,t.player,.016);
+    out.takesDamage=damaged===125&&t.dummy.hp===damaged&&t.dummy.state==='hurt';
+    roundTwo();t.dummy.state='block';t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
+    out.chipDamage=t.dummy.hp===129;
+    roundTwo();t.dummy.x=t.player.x+40;
+    t.projectiles.push({x:t.dummy.x,y:t.dummy.y-46,vx:0,life:1,owner:t.player,charged:true});t.updateProjectiles(.01);
+    out.chargedHit=t.dummy.hp===112&&t.dummy.state==='knockdown';
+    roundTwo();t.startAttack(t.dummy,'roundhouse');
+    out.readableAttack=t.dummy.atk.def.startup>=.24&&t.dummy.atk.def.recovery>=.34&&t.dummy.atk.def.dmg<t.MOVES.roundhouse.dmg;
+    roundTwo();t.dummy.x=t.player.x+200;const before=t.dummy.x;t.controlDummy(t.dummy,t.player,.1);
+    out.pursuit=before-t.dummy.x<=7.21&&before>t.dummy.x;
+    roundTwo();t.dummy.x=t.player.x+45;t.dodgeDummy(t.dummy,t.player);
+    out.vulnerableDodge=t.dummy.dodgeCooldown>=1.8&&t.dummy.invuln===0;
+    t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);out.dodgeCanBeHit=t.dummy.hp===125&&t.dummy.dodgeT===0;
+    roundTwo();t.dummy.hp=1;t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
+    out.beatable=t.game.state==='ko'&&t.game.msg.text==='INJ WINS'&&!t.game.lost;
+    roundTwo();t.game.roundTime=.001;t.player.hp=120;t.dummy.hp=1;t.updateFlow(.01);
+    out.fairTimeout=t.game.state==='ko'&&t.game.msg.text==='INJ WINS';
+    roundTwo();t.dummy.x=t.player.x+55;
+    for(let i=0;i<480&&t.game.state==='fight';i++){t.controlPlayer(t.player,t.dummy,1/120);t.controlDummy(t.dummy,t.player,1/120);}
+    out.breathingRoom=t.player.hp>80&&t.game.state==='fight';
+    roundTwo();t.game.round=20;t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
+    out.laterRoundsBeatable=t.dummy.hp===125;
+    roundTwo();t.player.x=170;t.dummy.x=225;
+    for(let i=0;i<7200&&t.game.state==='fight';i++){
+      if(!t.player.atk&&t.player.hitstun<=0)t.pressBuf.punch=performance.now()+220;
+      t.input.right=+(t.dummy.x-t.player.x>55);t.input.left=+(t.player.x-t.dummy.x>55);
       t.controlPlayer(t.player,t.dummy,1/120);t.controlDummy(t.dummy,t.player,1/120);
     }
-    out.relentless=t.player.hp===0&&t.dummy.hp===130&&t.game.state==='ko';
-    out.bounded=t.dummy.x>=26&&t.dummy.x<=374&&Number.isFinite(t.dummy.x)&&Number.isFinite(t.dummy.y);
-    awaken();t.game.round=9;t.dummy.dodgeCooldown=1;t.applyHit(t.dummy,t.player,t.MOVES.uppercut,200,140);
-    out.laterRounds=t.dummy.hp===130;
+    out.simpleComboWins=t.game.state==='ko'&&!t.game.lost&&t.game.msg.text==='INJ WINS';
     t.settle();return out;
   });
-  for(const [name,passed] of Object.entries(nightmare))check(passed,`Round 2+: ${name}`);
+  for(const [name,passed] of Object.entries(sparring))check(passed,`Manageable opponent: ${name}`);
   await page.setViewportSize({width:844,height:390});
-  await page.evaluate(()=>{__test.settle();__test.resetRound();__test.game.t=.5;__test.game.paused=false;});
-  await page.waitForTimeout(100);
-  await page.screenshot({path:path.join(root,'artifacts/round-two-awakened.png')});
-  await page.waitForFunction(()=>__test.player.hp<120,null,{timeout:6000});
-  check(await page.evaluate(()=>__test.game.round===2&&__test.dummy.hp===130), 'Live round two pursues and damages INJ while remaining unharmed');
-  await page.evaluate(()=>{
-    const t=__test;t.player.atk=null;t.player.hitstun=0;t.player.state='idle';
-    t.dummy.x=t.player.x+40;t.dummy.dodgeCooldown=0;t.dummy.dodgeT=0;
-    t.startAttack(t.player,'jab');
-  });
-  await page.waitForFunction(()=>__test.dummy.state==='dodge',null,{timeout:3000});
-  check(true,'Live awakened dummy renders its reactive dodge');
+  await page.evaluate(()=>{__test.settle();__test.resetRound();__test.game.state='fight';__test.game.msg=null;__test.game.paused=false;__test.dummy.x=__test.player.x+55;__test.dummy.aiT=0;});
+  await page.waitForFunction(()=>__test.player.hp<120,null,{timeout:10000});
+  check(await page.evaluate(()=>__test.game.round===2&&__test.player.hp>80),'Live round two attacks at a manageable pace');
+  await page.screenshot({path:path.join(root,'artifacts/round-two-sparring.png')});
   await page.evaluate(()=>{__test.settle();});
   await page.setViewportSize({width:390,height:844});
 

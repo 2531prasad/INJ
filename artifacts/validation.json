@@ -1,10 +1,10 @@
 {
-  "checks": 97,
+  "checks": 110,
   "engine": "Chrome / Chromium",
   "viewports": 7,
   "audio": {
     "peak": 0.5534541010856628,
-    "rms": 0.03012639848586099,
+    "rms": 0.0301263985172513,
     "clippedSamples": 0
   },
   "limitations": [
