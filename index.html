@@ -217,7 +217,7 @@
   .pause-grid button{min-width:0;min-height:44px;padding:6px;border:0;border-radius:6px;background:#ffffff0a;color:#d9d2c7;font:600 12px/15px 'Chakra Petch',sans-serif;cursor:pointer;touch-action:manipulation;}
   .pause-grid button:hover,.pause-grid button:focus-visible{background:#ffffff14;}
   .pause-grid button:active{background:#ffffff20;}
-  .pause-grid .menu-resume{grid-column:span 2;background:#d9c397;color:#211d1a;}
+  .pause-grid .menu-resume{background:#d9c397;color:#211d1a;}
   .pause-grid .menu-resume:hover,.pause-grid .menu-resume:focus-visible{background:#e9d5ad;}
   .pause-grid .menu-resume:active{background:#f2ddb4;}
   .pause-grid [data-audio][aria-pressed="false"]{color:#8a8786;}
@@ -458,6 +458,7 @@
         <div class="pause-grid">
           <button class="menu-resume" id="btnResume">Resume fight</button>
           <button data-fullscreen aria-pressed="false">Full screen</button>
+          <button id="btnRestart">Restart game</button>
           <button data-profile>INJ profile</button>
           <button data-audio="sound" aria-pressed="true">Sound on</button>
           <button data-audio="music" aria-pressed="true">Music on</button>
@@ -1544,6 +1545,10 @@ function resumeGame(){
   Sfx.setMode(game.state==='fight'?'fight':'menu');
   btnPause.textContent='PAUSE';btnPause.setAttribute('aria-label','Pause game');btnArenaMenu.focus({preventScroll:true});
 }
+function restartGame(){
+  game.round=0;game.elapsed=0;game.koTimer=0;game.roastCount=0;game.roastSet=0;
+  resetRound();resumeGame();render(0);
+}
 btnStartFight.addEventListener('click',closeIntro);
 btnShowIntro.addEventListener('click',openIntro);
 btnCloseIntro.addEventListener('click',closeIntro);
@@ -1551,6 +1556,7 @@ btnPause.addEventListener('click',()=>game.paused?resumeGame():pauseGame());
 btnArenaMenu.addEventListener('click',pauseGame);
 document.querySelector('[data-profile]').addEventListener('click',openIntro);
 btnResume.addEventListener('click',resumeGame);
+document.getElementById('btnRestart').addEventListener('click',restartGame);
 window.addEventListener('blur',()=>{resetInput();if(game.started)pauseGame();});
 window.addEventListener('resize',()=>{resetInput();fitArena();});
 window.visualViewport?.addEventListener('resize',fitArena);

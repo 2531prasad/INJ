@@ -9,7 +9,7 @@ try { pw = require(process.env.INJ_PLAYWRIGHT || 'playwright'); }
 catch (_) { pw = require(path.join(process.env.HOME, '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright-core')); }
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const hook = `window.__test={game,player,dummy,input,pressBuf,projectiles,afterimages,MOVES,
+const hook = `window.__test={game,player,dummy,input,pressBuf,projectiles,particles,afterimages,MOVES,
   resetRound,resetInput,queueAction,startAttack,stepAttack,applyHit,tryHit,updateProjectiles,controlPlayer,controlDummy,physics,update,updateFlow,endRound,dodgeDummy,FIGHTER_SCALE,hurtbox,arenaImg,startRoast,advanceRoast,finishRoast,ROASTS,stageDuelAt,drawStageDuel,drawFighter,render,ctx,spriteSheets,walkSheets,WALK_FRAME_DISTANCE,sampleAttackAnimation,sampleFighterAnimation,RENDER_SCALE,get W(){return W;},fitArena,
   settle(){game.round=0;resetRound();game.state='fight';game.paused=true;game.msg=null;dummy.aiT=999;}};`;
 const instrumented = source.replace('\n})();\n</script>', `\n${hook}\n})();\n</script>`);
@@ -217,6 +217,19 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await page.locator('#pauseOverlay [data-profile]').tap();
   check(await page.locator('#introModal').isVisible(),'Profile remains visible in the native fullscreen top layer');
   await page.locator('#btnStartFight').tap();
+  await page.locator('#btnArenaMenu').tap();
+  await page.evaluate(()=>{
+    const t=__test;t.game.round=7;t.game.roundTime=12;t.game.elapsed=99;t.game.hits=8;t.game.roastCount=4;
+    t.player.hp=9;t.dummy.hp=17;t.player.charge=3;t.startAttack(t.player,'jab');
+    t.input.right=1;t.pressBuf.kick=performance.now()+220;
+  });
+  const restartPrefs=await page.evaluate(()=>({muted:InjAudio.muted,music:InjAudio.musicEnabled}));
+  await page.locator('#btnRestart').tap();
+  check(await page.evaluate(()=>{
+    const t=__test;
+    return t.game.round===1&&t.game.state==='intro'&&!t.game.paused&&t.game.roundTime===99&&t.game.elapsed<.5&&t.game.hits===0&&t.game.roastCount===0&&t.player.hp===t.player.maxHp&&t.dummy.hp===t.dummy.maxHp&&t.player.charge===0&&!t.player.atk&&!t.dummy.atk&&!Object.values(t.input).some(Boolean)&&!Object.values(t.pressBuf).some(Boolean)&&t.projectiles.length===0&&t.particles.length===0&&t.afterimages.length===0;
+  }),'Restart game returns a damaged later-round fight to a clean, active round-one introduction');
+  check(await page.evaluate(prefs=>!!document.fullscreenElement&&document.querySelector('#pauseOverlay').hidden&&document.activeElement.id==='btnArenaMenu'&&InjAudio.muted===prefs.muted&&InjAudio.musicEnabled===prefs.music,restartPrefs),'Restart closes the menu, restores focus and preserves fullscreen and audio preferences');
   await page.locator('#btnArenaMenu').tap();
   await page.locator('#pauseOverlay [data-fullscreen]').click();
   await page.waitForFunction(()=>!document.fullscreenElement);

@@ -1,5 +1,9 @@
 # Game utility UI review
 
+## v0.14 restart action
+
+Added Restart game using the existing button styles. The six actions occupy two rows of three, with Resume retaining its primary accent. Existing six-size geometry checks verify all actions remain visible, unclipped and at least 44 px high. The 161-check Chrome suite additionally verifies a damaged later-round restart returns to round one, clears combat state and preserves fullscreen/audio preferences. Updated portrait and landscape menu screenshots were visually reviewed; no new motion, icon or surface styling was introduced. Physical Safari remains unverified.
+
 ## v0.13 follow-up: immersive mobile play
 
 Mode: full, scoped to fullscreen/Home Screen setup and the existing pause menu. Vanilla HTML/CSS and Canvas conventions remain in use. This is a Chrome review with emulated iPhone user agents and app launch signals; physical Safari chrome was not inspected.
