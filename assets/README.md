@@ -8,7 +8,7 @@ Created for this project with the built-in ImageGen tool on 18 October 2026. No 
 - `dummy-sprites-v2.png`: original training guardian atlas, twelve poses in carved wood and cream linen with a compact, tapered mask.
 - `fighter-frames.js`: alpha-component bounds and foot anchors for both atlases. `tools/inspect-sprites.py` inspects source alpha and emits metadata; it never edits image pixels. Runtime code crops and anchors frames at a consistent body scale.
 
-The two fighter atlases were generated with **built-in ImageGen**, new-image mode with genuine alpha transparency. Both saved PNGs are 1448×1086, with twelve isolated poses in four columns and three rows. The stage image and original portraits are unchanged. Inspiration came from the user's requested Kitana-like elegance; neither atlas uses extracted game artwork. Gameplay uses sharp pose changes, direct, fully opaque sprite changes and eased root recovery, fixed body proportions, and an 800×450 backing canvas over the unchanged 400×225 world.
+The two fighter atlases were generated with **built-in ImageGen**, new-image mode with genuine alpha transparency. Both saved PNGs are 1448×1086, with twelve isolated poses in four columns and three rows. The stage image and original portraits are unchanged. Inspiration came from the user's requested Kitana-like elegance; neither atlas uses extracted game artwork. Gameplay uses sharp pose changes, direct, fully opaque sprite changes and eased root recovery, fixed body proportions, and a 2× backing canvas over a dynamic-width, 225-unit-high world (450×225 at the 18:9 default).
 
 ## INJ fighter atlas prompt
 

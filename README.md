@@ -2,6 +2,8 @@
 
 A phone-first arcade fighting game made for a friend, with desktop keyboard controls, original procedural arcade music, a detailed temple arena, and MiMi's post-loss commentary.
 
+The arena defaults to 18:9 and dynamically adapts to landscape, fullscreen, and available window height while preserving fighter proportions.
+
 ## Play locally
 
 Open `index.html` in a browser, or serve this directory:
@@ -26,6 +28,6 @@ Round 1 is a warmup. Later rounds use a manageable sparring opponent with slower
 
 Run `node tests/browser.cjs` with Playwright and Chrome/Chromium installed. Set `INJ_PLAYWRIGHT` and `INJ_CHROME` if needed. The test suite starts its own local server and injects inspection hooks only into the served test copy.
 
-The latest run passed 110 checks in headless Chrome across phone and desktop viewports. Physical-phone ergonomics, mobile Safari, and subjective speaker/headphone listening still need testing.
+The latest run passed 116 checks in headless Chrome across phone and desktop viewports. Physical-phone ergonomics, mobile Safari, and subjective speaker/headphone listening still need testing.
 
 The optional Python atlas inspection tools require Pillow. They regenerate source bounds and animation anchors without modifying image pixels.

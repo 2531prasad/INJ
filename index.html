@@ -46,7 +46,7 @@
   .key b{color:var(--gold);font-weight:400;}
 
   /* ---------- screen / cabinet ---------- */
-  .screen{position:relative;width:100%;aspect-ratio:16/9;background:#000;
+  .screen{position:relative;width:100%;aspect-ratio:18/9;background:#000;
     border:3px solid var(--steel-2);border-radius:10px;overflow:hidden;
     box-shadow:0 0 0 2px #0c0c10, 0 26px 60px rgba(0,0,0,.65), 0 0 90px rgba(179,35,44,.16);
     touch-action:none;}
@@ -244,11 +244,11 @@
     .intro-header{padding:6px 12px;}
     .intro-tip{font-size:11px;}
   }
-  /* A landscape phone gets the full 16:9 arena, with no side columns. */
+  /* Landscape adapts to the available space, with no side columns. */
   @media (pointer:coarse) and (orientation:landscape), (max-height:550px) and (orientation:landscape){
     .wrap{max-width:none;min-height:100dvh;padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left);gap:0;align-items:center;justify-content:center;}
     .plaque{display:none;}
-    .screen{width:min(100%,calc((100dvh - 56px) * 16 / 9));flex-shrink:0;border:0;border-radius:0;box-shadow:none;}
+    .screen{width:100%;flex-shrink:0;border:0;border-radius:0;box-shadow:none;}
     .pause-overlay{border-radius:0;}
     .intro-card{max-width:600px;}
     .intro-body{grid-template-columns:120px 1fr;padding:12px;gap:14px;}
@@ -302,7 +302,6 @@
     #fullscreenStatus{max-width:340px;text-align:center;font-size:12px;color:var(--bone);}
     #fullscreenStatus:empty{display:none;}
     .native-fullscreen .phone-tools{display:none;}
-    .native-fullscreen .screen{width:min(100%,calc(100dvh * 16 / 9));}
   }
   @media (max-width:680px) and (orientation:portrait){
     .stick-directions{left:10px;bottom:22px;width:76px;height:76px;font-size:16px;}
@@ -435,7 +434,7 @@
   </div>
 
   <div class="screen" id="screen">
-    <canvas id="game" width="800" height="450" aria-label="INJ arcade fighting arena"></canvas>
+    <canvas id="game" width="900" height="450" aria-label="INJ arcade fighting arena"></canvas>
     <button id="btnArenaPause" class="arena-pause" aria-label="Pause game">Ⅱ</button>
     <div id="pauseOverlay" class="pause-overlay" hidden><p>TAKE A BREATH</p><button class="fight-cta" id="btnResume">RESUME FIGHT</button><div class="pause-actions"><button class="pbtn alt" data-profile>PROFILE</button><button class="pbtn alt" data-fullscreen aria-pressed="false">FULLSCREEN</button><button class="pbtn alt" data-audio="sound" aria-pressed="true">SOUND ON</button><button class="pbtn alt" data-audio="music" aria-pressed="true">MUSIC ON</button></div><small>Your fight is right where you left it.</small></div>
     <div class="crt"></div>
@@ -479,7 +478,8 @@
 /* ============================== setup ============================== */
 const cv=document.getElementById('game');
 const ctx=cv.getContext('2d');
-const W=400,H=225,GROUND=198,FIGHTER_SCALE=1.5,RENDER_SCALE=2,FIGHTER_HEIGHT=112;
+const H=225,GROUND=198,FIGHTER_SCALE=1.5,RENDER_SCALE=2,FIGHTER_HEIGHT=112,DEFAULT_ASPECT=18/9;
+let W=H*DEFAULT_ASPECT;
 ctx.setTransform(RENDER_SCALE,0,0,RENDER_SCALE,0,0);
 ctx.imageSmoothingEnabled=true;
 
@@ -507,7 +507,8 @@ const bgx=bg.getContext('2d');bgx.scale(RENDER_SCALE,RENDER_SCALE);
 function paintArena(){
   const g=bgx;
   if(arenaImg.complete&&arenaImg.naturalWidth){
-    g.drawImage(arenaImg,0,0,W,H);
+    const scale=W/400;
+    g.drawImage(arenaImg,0,GROUND*(1-scale),W,H*scale);
     // A little depth behind the fighters keeps their silhouettes legible.
     const shade=g.createLinearGradient(0,80,0,H);
     shade.addColorStop(0,'#05091400');shade.addColorStop(.55,'#05091420');shade.addColorStop(1,'#05091445');
@@ -1170,7 +1171,7 @@ function drawArenaAtmosphere(now){
     }
     for(let i=0;i<18;i++){
       const phase=(time*.025+i*.137)%1;
-      const x=(i*53+phase*68+Math.sin(phase*7+i)*11)%W,y=25+phase*175;
+      const x=(i*53+phase*68+Math.sin(phase*7+i)*11)%400,y=25+phase*175;
       ctx.globalAlpha=Math.sin(phase*Math.PI)*.6;ctx.fillStyle=i%3?'#bf596e':'#e6a1a4';
       ctx.save();ctx.translate(x,y);ctx.rotate(phase*5+i);ctx.fillRect(-1,-.5,2,1);ctx.restore();
     }
@@ -1199,8 +1200,10 @@ function render(now){
   ctx.save();
   ctx.translate(game.shakeX,game.shakeY);
   ctx.drawImage(bg,0,0,W,H);
-  drawStageDuel(now);
-  drawArenaAtmosphere(now);
+  // Keep the painted stage, terrace duel and atmosphere in the same camera.
+  ctx.save();const arenaScale=W/400;
+  ctx.translate(0,GROUND*(1-arenaScale));ctx.scale(arenaScale,arenaScale);
+  drawStageDuel(now);drawArenaAtmosphere(now);ctx.restore();
   ctx.drawImage(bloodCv,0,0,W,H);
 
   for(const ghost of afterimages){
@@ -1464,7 +1467,49 @@ function openIntro(){
   game.paused=true;resetInput();Sfx.setMode('menu');
   pauseOverlay.hidden=true;introModal.classList.remove('hidden');
   btnStartFight.textContent=game.started?'RETURN TO FIGHT':'▶ ENTER THE ARENA';
-  btnStartFight.focus({preventScroll:true});
+  // An 18:9 default on desktop/portrait; landscape fills the usable phone shape.
+// Only world width changes. Vertical scale, fighter proportions and move timing stay fixed.
+function fitArena(){
+  const wrap=document.querySelector('.wrap'),arena=document.getElementById('screen');
+  const style=getComputedStyle(wrap),box=getComputedStyle(arena);
+  const number=value=>parseFloat(value)||0;
+  const availableWidth=wrap.clientWidth-number(style.paddingLeft)-number(style.paddingRight);
+  const visible=[...wrap.children].filter(el=>el!==arena&&getComputedStyle(el).display!=='none');
+  const otherHeight=visible.reduce((sum,el)=>sum+el.getBoundingClientRect().height,0);
+  const viewportHeight=window.visualViewport?.height||innerHeight;
+  const availableHeight=Math.max(100,viewportHeight-number(style.paddingTop)-number(style.paddingBottom)-otherHeight-number(style.rowGap)*visible.length);
+  const borderX=number(box.borderLeftWidth)+number(box.borderRightWidth),borderY=number(box.borderTopWidth)+number(box.borderBottomWidth);
+  const contentWidth=Math.max(1,availableWidth-borderX);
+  const landscape=matchMedia('(pointer:coarse) and (orientation:landscape), (max-height:550px) and (orientation:landscape)').matches;
+  const aspect=Math.max(landscape?1.5:DEFAULT_ASPECT,contentWidth/Math.max(1,availableHeight-borderY));
+  const nextWidth=Math.round(H*aspect*RENDER_SCALE)/RENDER_SCALE;
+  arena.style.width=availableWidth+'px';arena.style.height=(contentWidth/(nextWidth/H)+borderY)+'px';
+  if(nextWidth===W)return;
+  const previousWidth=W,shift=(nextWidth-W)/2;
+  const marks=document.createElement('canvas');marks.width=bloodCv.width;marks.height=bloodCv.height;
+  marks.getContext('2d').drawImage(bloodCv,0,0);
+  W=nextWidth;
+  for(const canvas of [cv,bg,bloodCv]){canvas.width=W*RENDER_SCALE;canvas.height=H*RENDER_SCALE;}
+  for(const context of [ctx,bgx,bctx])context.setTransform(RENDER_SCALE,0,0,RENDER_SCALE,0,0);
+  ctx.imageSmoothingEnabled=true;
+  bctx.drawImage(marks,shift,0,previousWidth,H);
+  for(const fighter of [player,dummy]){
+    fighter.x=clamp(fighter.x+shift,26,W-26);
+    fighter.dodgeFrom=clamp(fighter.dodgeFrom+shift,26,W-26);
+    fighter.dodgeTo=clamp(fighter.dodgeTo+shift,26,W-26);
+  }
+  for(const object of [...projectiles,...particles])object.x+=shift;
+  for(const ghost of afterimages)ghost.f.x+=shift;
+  paintArena();render(game.elapsed*1000);
+}
+let fitPending=false;
+const arenaObserver=new ResizeObserver(()=>{
+  if(fitPending)return;fitPending=true;
+  requestAnimationFrame(()=>{fitPending=false;fitArena();});
+});
+for(const el of document.querySelectorAll('.wrap,.plaque,.phone-tools'))arenaObserver.observe(el);
+fitArena();
+btnStartFight.focus({preventScroll:true});
 }
 function pauseGame(){
   if(!game.started||game.state==='roast'||!introModal.classList.contains('hidden'))return;
@@ -1486,7 +1531,8 @@ document.getElementById('btnArenaPause').addEventListener('click',pauseGame);
 document.querySelector('[data-profile]').addEventListener('click',openIntro);
 btnResume.addEventListener('click',resumeGame);
 window.addEventListener('blur',()=>{resetInput();if(game.started)pauseGame();});
-window.addEventListener('resize',resetInput);
+window.addEventListener('resize',()=>{resetInput();fitArena();});
+window.visualViewport?.addEventListener('resize',fitArena);
 window.addEventListener('pagehide',()=>{if(game.started)pauseGame();Sfx.suspend();});
 if(screen.orientation)screen.orientation.addEventListener('change',resetInput);
 const fullscreenStatus=document.getElementById('fullscreenStatus');
@@ -1517,12 +1563,12 @@ async function toggleFullscreen(){
       fullscreenStatus.textContent='Expanded view. This browser may require Add to Home Screen for native fullscreen.';
     }
   }
-  resetInput();syncFullscreenUI();
+  resetInput();syncFullscreenUI();fitArena();
 }
 for(const btn of document.querySelectorAll('[data-fullscreen]'))btn.addEventListener('click',()=>toggleFullscreen().catch(()=>{
   fullscreenStatus.textContent='Fullscreen could not change. Try your browser’s fullscreen control.';
 }));
-for(const event of ['fullscreenchange','webkitfullscreenchange'])document.addEventListener(event,()=>{resetInput();syncFullscreenUI();});
+for(const event of ['fullscreenchange','webkitfullscreenchange'])document.addEventListener(event,()=>{resetInput();syncFullscreenUI();fitArena();});
 
 /* ============================== keyboard ============================== */
 window.addEventListener('keydown',e=>{
@@ -1561,6 +1607,48 @@ document.getElementById('screen').addEventListener('pointerdown',e=>{
   if(game.state==='ko'&&game.koTimer>0.6)game.koTimer=.6;
   if(game.state==='intro'&&game.t>.4)game.t=1.8;
 });
+// An 18:9 default on desktop/portrait; landscape fills the usable phone shape.
+// Only world width changes. Vertical scale, fighter proportions and move timing stay fixed.
+function fitArena(){
+  const wrap=document.querySelector('.wrap'),arena=document.getElementById('screen');
+  const style=getComputedStyle(wrap),box=getComputedStyle(arena);
+  const number=value=>parseFloat(value)||0;
+  const availableWidth=wrap.clientWidth-number(style.paddingLeft)-number(style.paddingRight);
+  const visible=[...wrap.children].filter(el=>el!==arena&&getComputedStyle(el).display!=='none');
+  const otherHeight=visible.reduce((sum,el)=>sum+el.getBoundingClientRect().height,0);
+  const viewportHeight=window.visualViewport?.height||innerHeight;
+  const availableHeight=Math.max(100,viewportHeight-number(style.paddingTop)-number(style.paddingBottom)-otherHeight-number(style.rowGap)*visible.length);
+  const borderX=number(box.borderLeftWidth)+number(box.borderRightWidth),borderY=number(box.borderTopWidth)+number(box.borderBottomWidth);
+  const contentWidth=Math.max(1,availableWidth-borderX);
+  const landscape=matchMedia('(pointer:coarse) and (orientation:landscape), (max-height:550px) and (orientation:landscape)').matches;
+  const aspect=Math.max(landscape?1.5:DEFAULT_ASPECT,contentWidth/Math.max(1,availableHeight-borderY));
+  const nextWidth=Math.round(H*aspect*RENDER_SCALE)/RENDER_SCALE;
+  arena.style.width=availableWidth+'px';arena.style.height=(contentWidth/(nextWidth/H)+borderY)+'px';
+  if(nextWidth===W)return;
+  const previousWidth=W,shift=(nextWidth-W)/2;
+  const marks=document.createElement('canvas');marks.width=bloodCv.width;marks.height=bloodCv.height;
+  marks.getContext('2d').drawImage(bloodCv,0,0);
+  W=nextWidth;
+  for(const canvas of [cv,bg,bloodCv]){canvas.width=W*RENDER_SCALE;canvas.height=H*RENDER_SCALE;}
+  for(const context of [ctx,bgx,bctx])context.setTransform(RENDER_SCALE,0,0,RENDER_SCALE,0,0);
+  ctx.imageSmoothingEnabled=true;
+  bctx.drawImage(marks,shift,0,previousWidth,H);
+  for(const fighter of [player,dummy]){
+    fighter.x=clamp(fighter.x+shift,26,W-26);
+    fighter.dodgeFrom=clamp(fighter.dodgeFrom+shift,26,W-26);
+    fighter.dodgeTo=clamp(fighter.dodgeTo+shift,26,W-26);
+  }
+  for(const object of [...projectiles,...particles])object.x+=shift;
+  for(const ghost of afterimages)ghost.f.x+=shift;
+  paintArena();render(game.elapsed*1000);
+}
+let fitPending=false;
+const arenaObserver=new ResizeObserver(()=>{
+  if(fitPending)return;fitPending=true;
+  requestAnimationFrame(()=>{fitPending=false;fitArena();});
+});
+for(const el of document.querySelectorAll('.wrap,.plaque,.phone-tools'))arenaObserver.observe(el);
+fitArena();
 btnStartFight.focus({preventScroll:true});
 
 })();

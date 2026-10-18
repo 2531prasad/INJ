@@ -10,7 +10,7 @@ catch (_) { pw = require(path.join(process.env.HOME, '.cache/codex-runtimes/code
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const hook = `window.__test={game,player,dummy,input,pressBuf,projectiles,afterimages,MOVES,
-  resetRound,resetInput,queueAction,startAttack,stepAttack,applyHit,tryHit,updateProjectiles,controlPlayer,controlDummy,physics,update,updateFlow,endRound,dodgeDummy,FIGHTER_SCALE,hurtbox,arenaImg,startRoast,advanceRoast,finishRoast,ROASTS,stageDuelAt,drawStageDuel,render,ctx,spriteSheets,walkSheets,WALK_FRAME_DISTANCE,sampleAttackAnimation,sampleFighterAnimation,RENDER_SCALE,
+  resetRound,resetInput,queueAction,startAttack,stepAttack,applyHit,tryHit,updateProjectiles,controlPlayer,controlDummy,physics,update,updateFlow,endRound,dodgeDummy,FIGHTER_SCALE,hurtbox,arenaImg,startRoast,advanceRoast,finishRoast,ROASTS,stageDuelAt,drawStageDuel,render,ctx,spriteSheets,walkSheets,WALK_FRAME_DISTANCE,sampleAttackAnimation,sampleFighterAnimation,RENDER_SCALE,get W(){return W;},fitArena,
   settle(){game.round=0;resetRound();game.state='fight';game.paused=true;game.msg=null;dummy.aiT=999;}};`;
 const instrumented = source.replace('\n})();\n</script>', `\n${hook}\n})();\n</script>`);
 assert.notEqual(instrumented, source, 'Test hook was injected only into the served test copy');
@@ -28,6 +28,13 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   const page = await mobile.newPage(), errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.route('**/index.html', route => route.fulfill({ contentType: 'text/html', body: instrumented }));
+  async function viewport(size){
+    await page.setViewportSize(size);
+    await page.waitForFunction(()=>{
+      const wrap=document.querySelector('.wrap'),style=getComputedStyle(wrap);
+      return Math.abs(document.querySelector('#screen').getBoundingClientRect().width-(wrap.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)))<.5;
+    });
+  }
   await page.goto('http://127.0.0.1:8879/index.html');
   await page.waitForTimeout(500);
   await page.waitForFunction(()=>__test.arenaImg.complete&&__test.arenaImg.naturalWidth>0&&[...Object.values(__test.spriteSheets),...Object.values(__test.walkSheets)].every(s=>s.ready));
@@ -45,7 +52,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
 
   // Verify native widescreen geometry and in-arena touch controls in both orientations.
   for (const [width, height] of [[320,568],[360,640],[390,844],[430,932],[667,375],[844,390]]) {
-    await page.setViewportSize({ width, height });
+    await viewport({ width, height });
     const layout = await page.evaluate(() => {
       const visible = el => el.getClientRects().length > 0;
       const rect = el => el.getBoundingClientRect();
@@ -55,7 +62,9 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
       const outsideArena = controls.some(el => {const r=rect(el);return r.left<arena.left||r.right>arena.right||r.top<arena.top||r.bottom>arena.bottom;});
       const near = (a,b) => Math.abs(a-b)<.01;
       const canvas = document.querySelector('#game');
-      const wrongRatio = !near(arena.width/arena.height,16/9)||canvas.width/canvas.height!==16/9;
+      const content=canvas.getBoundingClientRect();
+      const expected=innerWidth>innerHeight?innerWidth/(innerHeight-56):2;
+      const wrongRatio=!near(content.width/content.height,canvas.width/canvas.height)||Math.abs(canvas.width/canvas.height-expected)>.01;
       const undersized = controls.some(el=>rect(el).width<44||rect(el).height<44);
       const tools=rect(document.querySelector('.phone-tools'));
       const fullscreen=rect(document.querySelector('#btnPhoneFullscreen'));
@@ -64,7 +73,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
       const menuOverlap = controls.some(el=>rect(el).top<arena.top+arena.height*.18);
       return { overflow: document.documentElement.scrollWidth > innerWidth, offscreen, outsideArena, wrongRatio, undersized, landscapeGap, menuOverlap, fullscreenMissing };
     });
-    check(!Object.values(layout).some(Boolean), `Phone ${width}×${height}: native 16:9, on-screen targets ≥44px, landscape reserves fullscreen bar (${JSON.stringify(layout)})`);
+    check(!Object.values(layout).some(Boolean), `Phone ${width}×${height}: dynamic aspect, on-screen targets ≥44px, landscape reserves fullscreen bar (${JSON.stringify(layout)})`);
     if (width === 844) {
       await page.locator('#btnArenaPause').click();
       check(await page.locator('#pauseOverlay').isVisible() && await page.locator('#pauseOverlay [data-audio="music"]').isVisible(), 'Landscape on-screen pause opens the game and audio menu');
@@ -72,7 +81,22 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
       await page.screenshot({ path: path.join(root, 'artifacts/phone-landscape.png') });
     }
   }
-  await page.setViewportSize({ width: 390, height: 844 });
+  // A changing aspect changes world width without stretching or resetting combat.
+  await page.evaluate(()=>{__test.settle();__test.player.hp=93;__test.dummy.hp=107;__test.startAttack(__test.player,'jab');__test.player.atk.t=.04;});
+  const resizeBefore=await page.evaluate(()=>({width:__test.W,gap:__test.dummy.x-__test.player.x}));
+  for(const [width,height] of [[956,440],[1024,500],[667,375]]){
+    await viewport({width,height});
+    await page.waitForFunction(()=>Math.abs(__test.W/225-innerWidth/(innerHeight-56))<.01);
+    const sizing=await page.evaluate(()=>{
+      const t=__test,r=document.querySelector('#game').getBoundingClientRect();
+      return {ratio:r.width/r.height,backing:document.querySelector('#game').width/450,width:t.W,hp:[t.player.hp,t.dummy.hp],attack:t.player.atk?.t,gap:t.dummy.x-t.player.x,bounded:[t.player,t.dummy].every(f=>f.x>=26&&f.x<=t.W-26)};
+    });
+    check(Math.abs(sizing.ratio-width/(height-56))<.01&&Math.abs(sizing.backing-sizing.ratio)<.01&&sizing.width!==resizeBefore.width,`Dynamic ${width}×${height}: canvas fills available space with uniform scaling`);
+    check(sizing.hp[0]===93&&sizing.hp[1]===107&&sizing.attack===.04&&Math.abs(sizing.gap-resizeBefore.gap)<.001&&sizing.bounded,`Dynamic ${width}×${height}: resize preserves health, attack progress and fighter spacing`);
+  }
+  await viewport({width:390,height:844});
+  await page.waitForFunction(()=>__test.W===450);
+  await page.evaluate(()=>{__test.settle();__test.game.paused=false;});
   await page.locator('#btnPause').click();
   const stopped = await page.evaluate(() => __test.game.roundTime);
   await page.waitForTimeout(150);
@@ -114,7 +138,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   check(await page.evaluate(()=>pressSnapshot.key==='jab'&&pressSnapshot.time===0&&pressSnapshot.pose!==0),'Touch-down begins and paints attack anticipation before release or the next frame');
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   for(const [width,height] of [[390,844],[844,390]]){
-    await page.setViewportSize({width,height});
+    await viewport({width,height});
     await page.evaluate(()=>{__test.settle();__test.game.paused=false;});
     const arrows=await page.locator('.stick-directions').boundingBox();
     const up=point(8,arrows.x+arrows.width/2,arrows.y+9);
@@ -131,7 +155,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   }
   await page.locator('#btnPhoneFullscreen').click();
   await page.waitForFunction(()=>!!document.fullscreenElement);
-  check(await page.evaluate(()=>document.fullscreenElement===document.documentElement&&document.body.classList.contains('native-fullscreen')),'Phone fullscreen button below arena enters native fullscreen');
+  check(await page.evaluate(()=>document.fullscreenElement===document.documentElement&&document.body.classList.contains('native-fullscreen')&&Math.abs(__test.W/225-innerWidth/innerHeight)<.01),'Phone fullscreen button below arena enters native fullscreen');
   await page.locator('#btnArenaPause').click();
   await page.locator('#pauseOverlay [data-fullscreen]').click();
   await page.waitForFunction(()=>!document.fullscreenElement);
@@ -143,12 +167,12 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await page.locator('#btnPhoneFullscreen').click();
   check(await page.evaluate(()=>!document.body.classList.contains('expanded-view')),'Expanded-view fallback can be exited');
   await page.evaluate(()=>{delete document.documentElement.requestFullscreen;delete document.documentElement.webkitRequestFullscreen;__test.settle();});
-  await page.setViewportSize({width:390,height:844});
+  await viewport({width:390,height:844});
 
   const animationChecks=await page.evaluate(()=>{
     const t=__test,out={};t.settle();
     out.atlases=Object.values(t.spriteSheets).every(s=>s.ready&&s.meta.frames.length===12&&s.meta.frames.every(f=>f.x>=0&&f.y>=0&&f.x+f.w<=s.image.naturalWidth&&f.y+f.h<=s.image.naturalHeight));
-    out.detail=document.querySelector('#game').width===800&&document.querySelector('#game').height===450;
+    out.detail=document.querySelector('#game').width===t.W*t.RENDER_SCALE&&document.querySelector('#game').height===450;
     t.dummy.x=t.player.x+60;t.startAttack(t.player,'jab');const a=t.player.atk,d=a.def,hp=t.dummy.hp;
     const start=t.sampleAttackAnimation(t.player);a.t=d.startup*.5;const early=t.sampleAttackAnimation(t.player);
     a.t=d.startup+d.active*.5;const strike=t.sampleAttackAnimation(t.player);
@@ -178,9 +202,9 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     out.stopPreservesPhase=t.player.state==='idle'&&t.player.walkPhase===phase;
     t.input.left=1;t.controlPlayer(t.player,t.dummy,.15);
     out.reverseWalk=Math.abs(t.player.walkPhase)<.00001&&t.player.facing===1;
-    t.settle();t.player.x=374;t.input.right=1;const wallPhase=t.player.walkPhase;
+    t.settle();t.player.x=t.W-26;t.input.right=1;const wallPhase=t.player.walkPhase;
     t.controlPlayer(t.player,t.dummy,.5);
-    out.wallStopsFeet=t.player.x===374&&t.player.state==='idle'&&t.player.walkPhase===wallPhase;
+    out.wallStopsFeet=t.player.x===t.W-26&&t.player.state==='idle'&&t.player.walkPhase===wallPhase;
     t.settle();t.dummy.state='walk';const dummyFrom=t.dummy.x;
     t.controlDummy(t.dummy,t.player,.3);
     out.dummyWalk=t.dummy.x<dummyFrom&&t.dummy.walkPhase>0&&t.sampleFighterAnimation(t.dummy).atlas==='walk';
@@ -209,8 +233,8 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     for(let i=0;i<180;i++)t.drawStageDuel(i*100);
     out.isolated=before===JSON.stringify({player:t.player,dummy:t.dummy,game:t.game,projectiles:t.projectiles,afterimages:t.afterimages});
     out.finite=Array.from({length:180},(_,i)=>t.stageDuelAt(i/10,false)).every(s=>[s.inj,s.dummy].every(f=>Number.isFinite(f.x)&&Number.isFinite(f.y)&&f.backstage&&f.awakenedLook));
-    t.render(6000);const first=t.ctx.getImageData(138*t.RENDER_SCALE,98*t.RENDER_SCALE,126*t.RENDER_SCALE,68*t.RENDER_SCALE).data;
-    t.render(15200);const second=t.ctx.getImageData(138*t.RENDER_SCALE,98*t.RENDER_SCALE,126*t.RENDER_SCALE,68*t.RENDER_SCALE).data;
+    t.render(6000);const first=t.ctx.getImageData(138*t.W/400*t.RENDER_SCALE,(198+(98-198)*t.W/400)*t.RENDER_SCALE,126*t.W/400*t.RENDER_SCALE,68*t.W/400*t.RENDER_SCALE).data;
+    t.render(15200);const second=t.ctx.getImageData(138*t.W/400*t.RENDER_SCALE,(198+(98-198)*t.W/400)*t.RENDER_SCALE,126*t.W/400*t.RENDER_SCALE,68*t.W/400*t.RENDER_SCALE).data;
     out.renderedMotion=first.some((value,i)=>value!==second[i]);
     return out;
   });
@@ -297,13 +321,13 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     t.settle();return out;
   });
   for(const [name,passed] of Object.entries(sparring))check(passed,`Manageable opponent: ${name}`);
-  await page.setViewportSize({width:844,height:390});
+  await viewport({width:844,height:390});
   await page.evaluate(()=>{__test.settle();__test.resetRound();__test.game.state='fight';__test.game.msg=null;__test.game.paused=false;__test.dummy.x=__test.player.x+55;__test.dummy.aiT=0;});
   await page.waitForFunction(()=>__test.player.hp<120,null,{timeout:10000});
   check(await page.evaluate(()=>__test.game.round===2&&__test.player.hp>80),'Live round two attacks at a manageable pace');
   await page.screenshot({path:path.join(root,'artifacts/round-two-sparring.png')});
   await page.evaluate(()=>{__test.settle();});
-  await page.setViewportSize({width:390,height:844});
+  await viewport({width:390,height:844});
 
   // Loss-only, player-paced cat exchange; the game waits for reading and input.
   await page.evaluate(()=>{const t=__test;t.settle();t.endRound(t.dummy);t.updateFlow(3.1);});
@@ -316,7 +340,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   check(await page.locator('#roastConversation .speech').last().locator('.speaker').innerText()==='THE CAT'&&await page.locator('#btnNextRoast').innerText()==='FIGHT AGAIN', 'Cat and INJ trade five lines, with the cat delivering the final roast');
   check(await page.evaluate(()=>document.querySelector('.cat-portrait').getBoundingClientRect().right+10<=document.querySelector('.roast-conversation').getBoundingClientRect().left), 'Phone speech bubbles remain separate from the cat portrait');
   await page.screenshot({path:path.join(root,'artifacts/cat-roast-phone.png'),animations:'disabled'});
-  await page.setViewportSize({width:844,height:390});
+  await viewport({width:844,height:390});
   await page.waitForTimeout(250);
   check(await page.locator('.roast-card').evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}), 'Cat dialogue fits a landscape phone without clipping');
   await page.screenshot({path:path.join(root,'artifacts/cat-roast-landscape.png'),animations:'disabled'});
@@ -333,7 +357,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   check(await page.evaluate(()=>__test.game.roastStep===1), 'Keyboard Enter advances the dialogue');
   await page.keyboard.press('Escape');
   check(await page.locator('#roastModal').isHidden(), 'Keyboard Escape skips the dialogue');
-  await page.setViewportSize({width:390,height:844});
+  await viewport({width:390,height:844});
   await page.evaluate(()=>__test.settle());
 
   await page.evaluate(()=>{__test.settle();__test.game.roastCount=2;__test.startRoast();});
@@ -399,7 +423,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await pc.route('**/index.html',route=>route.fulfill({contentType:'text/html',body:instrumented}));
   await pc.goto('http://127.0.0.1:8879/index.html');await pc.locator('#btnStartFight').click();
   check(await pc.locator('#pad').isHidden()&&await pc.locator('#stickZone').isHidden(), 'Desktop uses the keyboard layout');
-  check(await pc.evaluate(()=>{const r=document.querySelector('#screen').getBoundingClientRect();return Math.abs(r.width/r.height-16/9)<.01;}), 'Desktop defaults to the widescreen 16:9 arena');
+  check(await pc.evaluate(()=>{const r=document.querySelector('#game').getBoundingClientRect();return Math.abs(r.width/r.height-2)<.01;}), 'Desktop defaults to the widescreen 18:9 arena');
   await pc.keyboard.press('Escape');check(await pc.locator('#pauseOverlay').isVisible(),'Escape pauses on desktop');
   await pc.keyboard.press('Escape');check(await pc.locator('#pauseOverlay').isHidden(),'Escape resumes on desktop');
   await pc.screenshot({path:path.join(root,'artifacts/desktop.png')});
@@ -410,7 +434,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await pc.waitForTimeout(100);
   await pc.screenshot({path:path.join(root,'artifacts/background-duel-victory.png')});
   check(errors.length===0, `No browser runtime errors (${errors.join('; ')})`);
-  const report={checks,engine:'Chrome / Chromium',viewports:7,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review']};
+  const report={checks,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review']};
   fs.writeFileSync(path.join(root,'artifacts/validation.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify(report,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();server.kill();});
