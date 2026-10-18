@@ -1467,49 +1467,7 @@ function openIntro(){
   game.paused=true;resetInput();Sfx.setMode('menu');
   pauseOverlay.hidden=true;introModal.classList.remove('hidden');
   btnStartFight.textContent=game.started?'RETURN TO FIGHT':'▶ ENTER THE ARENA';
-  // An 18:9 default on desktop/portrait; landscape fills the usable phone shape.
-// Only world width changes. Vertical scale, fighter proportions and move timing stay fixed.
-function fitArena(){
-  const wrap=document.querySelector('.wrap'),arena=document.getElementById('screen');
-  const style=getComputedStyle(wrap),box=getComputedStyle(arena);
-  const number=value=>parseFloat(value)||0;
-  const availableWidth=wrap.clientWidth-number(style.paddingLeft)-number(style.paddingRight);
-  const visible=[...wrap.children].filter(el=>el!==arena&&getComputedStyle(el).display!=='none');
-  const otherHeight=visible.reduce((sum,el)=>sum+el.getBoundingClientRect().height,0);
-  const viewportHeight=window.visualViewport?.height||innerHeight;
-  const availableHeight=Math.max(100,viewportHeight-number(style.paddingTop)-number(style.paddingBottom)-otherHeight-number(style.rowGap)*visible.length);
-  const borderX=number(box.borderLeftWidth)+number(box.borderRightWidth),borderY=number(box.borderTopWidth)+number(box.borderBottomWidth);
-  const contentWidth=Math.max(1,availableWidth-borderX);
-  const landscape=matchMedia('(pointer:coarse) and (orientation:landscape), (max-height:550px) and (orientation:landscape)').matches;
-  const aspect=Math.max(landscape?1.5:DEFAULT_ASPECT,contentWidth/Math.max(1,availableHeight-borderY));
-  const nextWidth=Math.round(H*aspect*RENDER_SCALE)/RENDER_SCALE;
-  arena.style.width=availableWidth+'px';arena.style.height=(contentWidth/(nextWidth/H)+borderY)+'px';
-  if(nextWidth===W)return;
-  const previousWidth=W,shift=(nextWidth-W)/2;
-  const marks=document.createElement('canvas');marks.width=bloodCv.width;marks.height=bloodCv.height;
-  marks.getContext('2d').drawImage(bloodCv,0,0);
-  W=nextWidth;
-  for(const canvas of [cv,bg,bloodCv]){canvas.width=W*RENDER_SCALE;canvas.height=H*RENDER_SCALE;}
-  for(const context of [ctx,bgx,bctx])context.setTransform(RENDER_SCALE,0,0,RENDER_SCALE,0,0);
-  ctx.imageSmoothingEnabled=true;
-  bctx.drawImage(marks,shift,0,previousWidth,H);
-  for(const fighter of [player,dummy]){
-    fighter.x=clamp(fighter.x+shift,26,W-26);
-    fighter.dodgeFrom=clamp(fighter.dodgeFrom+shift,26,W-26);
-    fighter.dodgeTo=clamp(fighter.dodgeTo+shift,26,W-26);
-  }
-  for(const object of [...projectiles,...particles])object.x+=shift;
-  for(const ghost of afterimages)ghost.f.x+=shift;
-  paintArena();render(game.elapsed*1000);
-}
-let fitPending=false;
-const arenaObserver=new ResizeObserver(()=>{
-  if(fitPending)return;fitPending=true;
-  requestAnimationFrame(()=>{fitPending=false;fitArena();});
-});
-for(const el of document.querySelectorAll('.wrap,.plaque,.phone-tools'))arenaObserver.observe(el);
-fitArena();
-btnStartFight.focus({preventScroll:true});
+  btnStartFight.focus({preventScroll:true});
 }
 function pauseGame(){
   if(!game.started||game.state==='roast'||!introModal.classList.contains('hidden'))return;
