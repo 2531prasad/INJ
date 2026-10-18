@@ -4,16 +4,19 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
+const { pathToFileURL } = require('node:url');
 let pw;
 try { pw = require(process.env.INJ_PLAYWRIGHT || 'playwright'); }
 catch (_) { pw = require(path.join(process.env.HOME, '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright-core')); }
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const hook = `window.__test={game,player,dummy,input,pressBuf,projectiles,particles,afterimages,MOVES,
-  resetRound,resetInput,queueAction,startAttack,stepAttack,applyHit,tryHit,updateProjectiles,controlPlayer,controlDummy,physics,update,updateFlow,endRound,dodgeDummy,FIGHTER_SCALE,hurtbox,arenaImg,startRoast,advanceRoast,finishRoast,ROASTS,stageDuelAt,drawStageDuel,drawFighter,render,ctx,spriteSheets,walkSheets,WALK_FRAME_DISTANCE,sampleAttackAnimation,sampleFighterAnimation,RENDER_SCALE,get W(){return W;},fitArena,
-  settle(){game.round=0;resetRound();game.state='fight';game.paused=true;game.msg=null;dummy.aiT=999;}};`;
-const instrumented = source.replace('\n})();\n</script>', `\n${hook}\n})();\n</script>`);
-assert.notEqual(instrumented, source, 'Test hook was injected only into the served test copy');
+const mainSource = fs.readFileSync(path.join(root, 'js/main.js'), 'utf8');
+const hook = `window.__test={...window.INJ,get W(){return window.INJ.world.width;},
+  settle(){const {game,resetRound,dummy}=window.INJ;game.round=0;resetRound();game.state='fight';game.paused=true;game.msg=null;dummy.aiT=999;}};`;
+const instrumented = mainSource+'\n'+hook;
+async function instrumentPage(page){
+  await page.route('**/js/main.js',route=>route.fulfill({contentType:'text/javascript',body:instrumented}));
+}
 const server = spawn('python3', ['-m', 'http.server', '8879', '--bind', '127.0.0.1'], { cwd: root, stdio: 'ignore' });
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 let browser;
@@ -24,10 +27,26 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   for (let i = 0; i < 30; i++) { try { await fetch('http://127.0.0.1:8879'); break; } catch (_) { await delay(100); } }
   const chrome = process.env.INJ_CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
   browser = await pw.chromium.launch({ headless: true, ...(fs.existsSync(chrome) ? { executablePath: chrome } : {}) });
+  check(!/<style\b|<script(?![^>]*\bsrc=)[^>]*>/i.test(source),'HTML contains markup and external source links, without an inline game or stylesheet');
+  const production=await browser.newContext({viewport:{width:844,height:390},isMobile:true,hasTouch:true});
+  const actual=await production.newPage(),productionErrors=[];
+  actual.on('pageerror',e=>productionErrors.push(e.message));
+  actual.on('requestfailed',request=>{if(/(?:127\.0\.0\.1|^file:)/.test(request.url())&&/\.(?:js|css)(?:$|\?)/.test(request.url()))productionErrors.push(request.url()+': '+request.failure()?.errorText);});
+  for(const url of ['http://127.0.0.1:8879/index.html',pathToFileURL(path.join(root,'index.html')).href]){
+    await actual.goto(url);
+    await actual.waitForFunction(()=>window.InjAudio&&window.INJ&&Object.values(INJ.spriteSheets).every(s=>s.ready)&&Object.values(INJ.walkSheets).every(s=>s.ready)&&INJ.arenaImg.naturalWidth>0);
+    check(await actual.evaluate(()=>!window.__test&&INJ.game.paused&&InjAudio.ctx===null&&document.styleSheets.length>=7&&document.querySelector('#screen').clientHeight>100),`Uninstrumented ${url.startsWith('file:')?'direct file':'HTTP'} launch loads modules, art and styles without test hooks`);
+    await actual.locator('#btnStartFight').tap();await actual.locator('#btnArenaMenu').tap();
+    await actual.evaluate(()=>{INJ.game.round=4;INJ.player.hp=1;});
+    await actual.locator('#btnRestart').tap();
+    check(await actual.evaluate(()=>INJ.game.round===1&&INJ.player.hp===INJ.player.maxHp&&!INJ.game.paused),`Uninstrumented ${url.startsWith('file:')?'direct file':'HTTP'} controls and restart work through the module bootstrap`);
+  }
+  check(productionErrors.length===0,`Production module startup has no runtime errors (${productionErrors.join('; ')})`);
+  await production.close();
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await mobile.newPage(), errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  await page.route('**/index.html', route => route.fulfill({ contentType: 'text/html', body: instrumented }));
+  await instrumentPage(page);
   async function viewport(size){
     await page.setViewportSize(size);
     await page.waitForFunction(()=>{
@@ -36,6 +55,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     });
   }
   await page.goto('http://127.0.0.1:8879/index.html');
+  await page.bringToFront();
   await page.waitForTimeout(500);
   await page.waitForFunction(()=>__test.arenaImg.complete&&__test.arenaImg.naturalWidth>0&&[...Object.values(__test.spriteSheets),...Object.values(__test.walkSheets)].every(s=>s.ready));
   check(await page.evaluate(()=>!document.querySelector('.notes')&&!document.body.textContent.includes('/html/body/')), 'Bottom prose panels and selector-like text are absent');
@@ -47,7 +67,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await page.waitForTimeout(300);
   check(await page.evaluate(() => InjAudio.ctx.state === 'running' && InjAudio.step > 0), 'First tap unlocks audio and advances the music clock');
   await page.evaluate(() => { __test.game.t = 1.79; });
-  await page.waitForTimeout(150);
+  await page.waitForFunction(()=>__test.game.state==='fight');
   check(await page.evaluate(() => __test.game.state === 'fight'), 'Entering starts a fresh round');
 
   // Verify native widescreen geometry and in-arena touch controls in both orientations.
@@ -265,7 +285,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
       else {const original=window.matchMedia.bind(window);window.matchMedia=query=>query.includes('display-mode:')?{matches:true,addEventListener(){}}:original(query);}
     },mode);
     const app=await installed.newPage();app.on('pageerror',e=>errors.push(e.message));
-    await app.route('**/index.html',route=>route.fulfill({contentType:'text/html',body:instrumented}));
+    await instrumentPage(app);
     await app.goto('http://127.0.0.1:8879/index.html');await app.locator('#btnStartFight').tap();
     check(await app.evaluate(()=>document.body.classList.contains('standalone-view')&&document.documentElement.classList.contains('immersive-view')&&getComputedStyle(document.querySelector('.plaque')).display==='none'&&Math.abs(document.querySelector('#screen').getBoundingClientRect().height-innerHeight)<2),`Home Screen ${mode}: immersive layout and gesture lock activate on launch`);
     const appLock=await gestureDefaults(app);
@@ -278,7 +298,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   }
   const safari=await browser.newContext({viewport:{width:320,height:568},isMobile:true,hasTouch:true,userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'});
   const iphone=await safari.newPage();iphone.on('pageerror',e=>errors.push(e.message));
-  await iphone.route('**/index.html',route=>route.fulfill({contentType:'text/html',body:instrumented}));
+  await instrumentPage(iphone);
   await iphone.goto('http://127.0.0.1:8879/index.html');await iphone.locator('#btnStartFight').tap();
   await iphone.evaluate(()=>{document.documentElement.requestFullscreen=undefined;document.documentElement.webkitRequestFullscreen=undefined;});
   await iphone.locator('#btnArenaMenu').tap();await iphone.locator('[data-fullscreen]').tap();
@@ -586,7 +606,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
 
   const desktop=await browser.newContext({viewport:{width:1366,height:900}});
   const pc=await desktop.newPage();pc.on('pageerror',e=>errors.push(e.message));
-  await pc.route('**/index.html',route=>route.fulfill({contentType:'text/html',body:instrumented}));
+  await instrumentPage(pc);
   await pc.goto('http://127.0.0.1:8879/index.html');await pc.locator('#btnStartFight').click();
   check(await pc.locator('#pad').isHidden()&&await pc.locator('#stickZone').isHidden(), 'Desktop uses the keyboard layout');
   check(await pc.evaluate(()=>{const r=document.querySelector('#game').getBoundingClientRect();return Math.abs(r.width/r.height-2)<.01;}), 'Desktop defaults to the widescreen 18:9 arena');

@@ -20,18 +20,24 @@ Phones use the on-screen joystick and action buttons. The upward 90° wedge—fr
 
 Desktop controls: A/D to move, W to jump, S to crouch, J to punch, K to kick, U to uppercut, L for Shadow, Shift to guard, and Escape to pause.
 
-Round 1 is a warmup. From round two, the awakened dummy favours evasive footwork and one- or two-hit bursts instead of constant combos. Bursts end in 0.65–1.05 seconds of breathing room, with a guaranteed opening before it can evade another threat. Dodges also leave an opening, active strikes commit, and its damage, armor and pursuit speed are reduced from the previous version. The tuning target is roughly **85% dummy victories**, rather than 99%; this is not a measured human win rate. The latest 100-fight regression benchmark uses full 99-second rounds and seven scripted play styles. The latest run produced 88 dummy wins and 12 INJ wins. [Balance notes](artifacts/opponent-balance.md) explain the changes and test limits; raw metrics are in [validation.json](artifacts/validation.json).
+Round 1 is a warmup. From round two, the awakened dummy favours evasive footwork and one- or two-hit bursts instead of constant combos. Bursts end in 0.65–1.05 seconds of breathing room, with a guaranteed opening before it can evade another threat. Dodges also leave an opening, active strikes commit, and its damage, armor and pursuit speed are reduced from the previous version. The tuning target is roughly **85% dummy victories**, rather than 99%; this is not a measured human win rate. The latest 100-fight regression benchmark uses full 99-second rounds and seven scripted play styles. [Balance notes](artifacts/opponent-balance.md) explain the changes and test limits; raw metrics are in [validation.json](artifacts/validation.json).
+
+## Source organization
+
+`index.html` contains the interface markup. Focused systems live in `js/` (combat, opponent AI, controls, movement, rendering, menus and display), with ordered stylesheets in `styles/`. `js/main.js` initializes the systems after registration. The shared `window.INJ` namespace keeps cross-file dependencies explicit. Direct file opening and static hosting still work without a build step. See the [source map](docs/architecture.md) before editing. Older design notes are preserved under `docs/archive/`.
 
 ## Project reference
 
 - [Game design and current implementation](inj.md)
+- [Agent working guide](AGENTS.md)
+- [Source ownership and architecture](docs/architecture.md)
 - [Artwork sources and generation prompts](assets/README.md)
 - [Latest browser validation](artifacts/validation.json)
 
 ## Verification
 
-Run `node tests/browser.cjs` with Playwright and Chrome/Chromium installed. Set `INJ_PLAYWRIGHT` and `INJ_CHROME` if needed. The test suite starts its own local server and injects inspection hooks only into the served test copy.
+Run `node tests/structure.cjs`, then `node tests/browser.cjs` with Playwright and Chrome/Chromium installed. Set `INJ_PLAYWRIGHT` and `INJ_CHROME` if needed. The test suite starts its own local server and appends inspection hooks only to an intercepted test copy of `js/main.js`. It separately checks unmodified HTTP and direct-file startup.
 
-The latest run passed 168 checks in headless Chrome across phone and desktop viewports. This includes actual double-tap/pinch input, simultaneous controls while gesture blocking is active, jump-cone boundaries, fullscreen profile visibility, and emulated Home Screen launch signals. Physical-phone ergonomics, actual Safari/Home Screen chrome, and subjective speaker/headphone listening still need testing.
+The latest run passed 174 checks in headless Chrome across phone and desktop viewports. This includes actual double-tap/pinch input, simultaneous controls while gesture blocking is active, jump-cone boundaries, fullscreen profile visibility, and emulated Home Screen launch signals. Physical-phone ergonomics, actual Safari/Home Screen chrome, and subjective speaker/headphone listening still need testing.
 
 The optional Python atlas inspection tools require Pillow. They regenerate source bounds and animation anchors without modifying image pixels.

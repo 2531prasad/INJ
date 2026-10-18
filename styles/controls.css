@@ -1,0 +1,87 @@
+/* ---------- on-screen touch controls ---------- */
+#stickZone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 46%;
+  height: 100%;
+  display: none;
+  touch-action: none;
+}
+#stickBase,
+#stickKnob {
+  position: fixed;
+  pointer-events: none;
+  display: none;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+#stickBase {
+  width: 112px;
+  height: 112px;
+  border: 2px solid rgba(232, 220, 194, 0.35);
+  background: rgba(232, 220, 194, 0.08);
+}
+#stickKnob {
+  width: 52px;
+  height: 52px;
+  background: rgba(217, 164, 65, 0.75);
+  border: 2px solid rgba(255, 230, 180, 0.7);
+}
+#pad {
+  position: absolute;
+  right: calc(10px + env(safe-area-inset-right));
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  display: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 9px;
+}
+.padrow {
+  display: flex;
+  gap: 9px;
+}
+.abtn {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  border: 2px solid rgba(232, 220, 194, 0.3);
+  background: rgba(30, 24, 26, 0.62);
+  color: var(--bone);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  touch-action: none;
+  transition:
+    transform 0.08s ease,
+    background 0.1s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.abtn.big {
+  width: 66px;
+  height: 66px;
+  font-size: 11px;
+}
+.abtn.sp {
+  width: 48px;
+  height: 48px;
+  font-size: 8px;
+  border-color: rgba(217, 164, 65, 0.5);
+}
+.abtn.down,
+.abtn:active {
+  transform: scale(0.96);
+  background: rgba(179, 35, 44, 0.6);
+  border-color: var(--gold);
+}
+
+@media (pointer: coarse), (max-width: 680px), (max-height: 550px) {
+  #stickZone,
+  #pad {
+    display: flex;
+  }
+  .legend {
+    display: none;
+  }
+}

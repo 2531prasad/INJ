@@ -1,0 +1,54 @@
+{
+  "baselineCommit": "8f6b5ff3e57c37ef3d6defceecee7e9b7a43e9f2",
+  "baselineHtmlSha256": "ac4720023cf25c36b5e0769fa16e4bcd41d2598e2e62726433afeac3ed85c358",
+  "matchedFunctionBodies": 59,
+  "matchedInitializers": 64,
+  "matchedDomStructureAttributesAndText": true,
+  "matchedCssRules": 169,
+  "stylesheets": [
+    "styles/base.css",
+    "styles/profile.css",
+    "styles/controls.css",
+    "styles/layout.css",
+    "styles/responsive.css",
+    "styles/immersive.css",
+    "styles/dialogue.css"
+  ],
+  "allowedStructuralChanges": [
+    "Cross-file references use the INJ namespace",
+    "Mutable W and last become world.width and clock.last",
+    "Event binding, viewport observation and the animation loop start explicitly in js/main.js",
+    "Classic deferred scripts preserve direct file:// loading"
+  ],
+  "limits": [
+    "AST comparisons normalize cross-file names and formatting; they do not prove all runtime ordering",
+    "Browser regression and production file/HTTP smoke tests cover startup and gameplay",
+    "Physical Safari has not been tested"
+  ],
+  "extractedSourceSha256": {
+    "index.html": "e8c9e34788b8e9f50fd8ac7c5784360da535863438e3186e0418da3ac44b0f3a",
+    "js/arena.js": "e53f354d0a63b542accafac2a80a0a874c7163e3c58c55ae88309c2588352d3f",
+    "js/combat.js": "afb69410f1146eb6b2a43aa7cf579f639ed829dce7d753acebeea20d9c082429",
+    "js/content.js": "d5c008e37261d43f4d0372260c5afd40b8626ba4c1cbaf1f80b0bc456b0d8f48",
+    "js/controls.js": "e1dfaa7863e4143410fb6fdeb43eb48b9eb5ce747866881420894d54230cdd48",
+    "js/core.js": "d617cbd83db1008449546c328fd1acad913ff1aa7327f115ad326353f152e592",
+    "js/display.js": "528f3c807df56f4aaafe468d46d87307caeb351370b73b4fa51a635e3aed4a45",
+    "js/effects.js": "0c5835042e5522d5235086c80a985c79c2d4047a3887e425ac884696106d53ac",
+    "js/engine.js": "ab3707270c1790b8c13f7ae69691f91a23dc997f581fde60c856460c4f560e73",
+    "js/fighters.js": "cb96651806fb9fc7538f91b116a86c828f546c9e52d111f92c3700a8afc77000",
+    "js/main.js": "5c6a5243fd1a67a7ad9e6e4cb58233cf9bbb4b868165bb61bb5bcb7bde4264a1",
+    "js/menus.js": "430e36c478bb398d934bbf77d00c95246caffd32633e7b24ae6a407d22de9a92",
+    "js/movement.js": "34294cf3638f0cbfb7ff9a8aae6e913bfaf73c99ee788c26c8d73e3b3a59719d",
+    "js/opponent.js": "bcf2c9a1f58999c1ccf4af49d21e76a1da118b520ebf69fcf8660ebfd837d14f",
+    "js/renderer.js": "b8894134b6286d52e99397cf08330ddb962144227c8266158769484151b939cb",
+    "js/rounds.js": "f30920188bbc47096c398cbf338b2e3da549624b37d9e62bac08c75dfba80f6b",
+    "js/state.js": "3f939f938d01454c25bd6a88359cdcd904a7c81bbef091febcc2045a17c399b8",
+    "styles/base.css": "5941024d05741b88f33143ebc6402911ac10ae2bac0a59cbdba0043a871ad879",
+    "styles/profile.css": "1ab3540ef95ed52f36877278dd715c7cdec160cb21631714aee64e45a7c9d6c0",
+    "styles/controls.css": "c63d2cda99ada16fa7b607125485b0304463f45dc30b7a06e7e02f2e225c88fb",
+    "styles/layout.css": "4cc222aade12e3333a959f4c708776ee3e37fa4153628fdc788b07b38453f91e",
+    "styles/responsive.css": "b366b7836389e04900dd03d1c473c07377d9444a8cd6859ca75716df5383e9d5",
+    "styles/immersive.css": "d13c3f9fd53b65e23f992e282a93eec485a53ad6ab32a56556f8996a8a65d215",
+    "styles/dialogue.css": "1b57b1f6e0dca542780a769c0eb4e4c049e41a92ed776bbaa257014d46d4afb6"
+  }
+}
