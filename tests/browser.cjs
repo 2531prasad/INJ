@@ -159,6 +159,14 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...center,x:center.x+26,y:center.y-28}]});
     check(await page.evaluate(()=>!__test.player.grounded&&__test.player.vy<0&&__test.input.right===1&&__test.player.vx>0),`Phone ${width}×${height}: joystick diagonal-up launches a forward jump`);
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    for(const [clock,dx,dy,jump] of [['10:00',-36,-24,false],['10:30',-26,-26,true],['12:00',0,-32,true],['1:30',26,-26,true],['2:00',36,-24,false]]){
+      await page.evaluate(()=>{__test.settle();__test.game.paused=false;});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[center]});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...center,x:center.x+dx,y:center.y+dy}]});
+      const result=await page.evaluate(()=>({up:__test.input.up,grounded:__test.player.grounded,left:__test.input.left,right:__test.input.right}));
+      check(result.up===Number(jump)&&result.grounded===!jump&&(dx===0||(dx<0?result.left:result.right)===1),`Phone ${width}×${height}: ${clock} ${jump?'jumps':'moves sideways without jumping'} within the 10:30–1:30 cone`);
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    }
   }
   await page.locator('#btnArenaMenu').click();
   await page.locator('#pauseOverlay [data-audio="music"]').focus();
@@ -172,21 +180,102 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await page.locator('#pauseOverlay [data-audio="sound"]').click();
   await page.locator('#pauseOverlay [data-fullscreen]').click();
   await page.waitForFunction(()=>!!document.fullscreenElement);
-  check(await page.evaluate(()=>document.fullscreenElement===document.querySelector('.wrap')&&document.body.classList.contains('native-fullscreen')&&Math.abs(__test.W/225-innerWidth/innerHeight)<.01),'Compact game menu enters native fullscreen and fills the display');
+  check(await page.evaluate(()=>document.fullscreenElement===document.documentElement&&document.body.classList.contains('native-fullscreen')&&Math.abs(__test.W/225-innerWidth/innerHeight)<.01),'Compact game menu enters native fullscreen with all dialogs included and fills the display');
+  async function gestureDefaults(targetPage){
+    return targetPage.evaluate(()=>{
+      const target=document.querySelector('#game'),out={};
+      for(const type of ['gesturestart','gesturechange','gestureend','dblclick','contextmenu','touchmove']){
+        const e=new Event(type,{bubbles:true,cancelable:true});
+        if(type==='touchmove')Object.defineProperty(e,'touches',{value:[{}]});
+        target.dispatchEvent(e);out[type]=e.defaultPrevented;
+      }
+      const pinch=new Event('touchstart',{bubbles:true,cancelable:true});Object.defineProperty(pinch,'touches',{value:[{},{}]});target.dispatchEvent(pinch);out.pinch=pinch.defaultPrevented;
+      const tap=new Event('touchstart',{bubbles:true,cancelable:true});Object.defineProperty(tap,'touches',{value:[{}]});document.querySelector('#btnResume').dispatchEvent(tap);out.singleTap=tap.defaultPrevented;
+      return out;
+    });
+  }
+  const locked=await gestureDefaults(page);
+  check(Object.entries(locked).every(([key,value])=>key==='singleTap'?!value:value),'Native fullscreen cancels browser zoom, gestures, long press and page movement while preserving menu taps');
+  async function zoomGestures(targetPage,session,mode){
+    const before=await targetPage.evaluate(()=>({scale:visualViewport.scale,x:scrollX,y:scrollY}));
+    const arena=await targetPage.locator('#screen').boundingBox(),x=arena.x+arena.width*.2,y=arena.y+arena.height*.18;
+    await session.send('Input.synthesizeTapGesture',{x,y,tapCount:2,gestureSourceType:'touch'});
+    check(await targetPage.evaluate(before=>visualViewport.scale===before.scale&&scrollX===before.x&&scrollY===before.y,before),`${mode}: actual double-tap leaves zoom and page position unchanged`);
+    await session.send('Input.synthesizePinchGesture',{x,y,scaleFactor:1.6,relativeSpeed:800,gestureSourceType:'touch'});
+    check(await targetPage.evaluate(before=>visualViewport.scale===before.scale&&scrollX===before.x&&scrollY===before.y,before),`${mode}: actual pinch leaves zoom and page position unchanged`);
+  }
+  await zoomGestures(page,cdp,'Native fullscreen');
+  await page.locator('#btnResume').tap();
+  await page.evaluate(()=>{__test.settle();__test.game.paused=false;});
+  const immersiveStick=await page.locator('.stick-directions').boundingBox(),immersiveGuard=await page.locator('#pad [data-act="block"]').boundingBox();
+  const finger1=point(21,immersiveStick.x+immersiveStick.width-5,immersiveStick.y+immersiveStick.height/2),finger2=point(22,immersiveGuard.x+immersiveGuard.width/2,immersiveGuard.y+immersiveGuard.height/2);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[finger1]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[finger1,finger2]});
+  check(await page.evaluate(()=>__test.input.right===1&&__test.input.block===1),'Gesture lock preserves genuine simultaneous movement and guard in fullscreen');
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
+  await page.locator('#btnArenaMenu').tap();
+  await page.locator('#pauseOverlay [data-profile]').tap();
+  check(await page.locator('#introModal').isVisible(),'Profile remains visible in the native fullscreen top layer');
+  await page.locator('#btnStartFight').tap();
+  await page.locator('#btnArenaMenu').tap();
   await page.locator('#pauseOverlay [data-fullscreen]').click();
   await page.waitForFunction(()=>!document.fullscreenElement);
   check(await page.locator('#pauseOverlay [data-fullscreen]').isVisible(),'Fullscreen can be exited from the phone pause menu');
   await page.locator('#btnResume').click();
   check(await page.evaluate(()=>document.activeElement.id==='btnArenaMenu'&&document.querySelector('#btnArenaMenu').getAttribute('aria-expanded')==='false'),'Closing game menu restores focus to the quiet trigger');
-  await page.evaluate(()=>{document.querySelector('.wrap').requestFullscreen=undefined;document.querySelector('.wrap').webkitRequestFullscreen=undefined;});
+  const unlocked=await gestureDefaults(page);
+  check(Object.values(unlocked).every(value=>!value)&&await page.evaluate(()=>!document.documentElement.classList.contains('immersive-view')),'Leaving fullscreen restores ordinary browser gesture defaults');
+  await page.evaluate(()=>{document.documentElement.requestFullscreen=undefined;document.documentElement.webkitRequestFullscreen=undefined;});
   await page.locator('#btnArenaMenu').click();
   await page.locator('#pauseOverlay [data-fullscreen]').click();
   check(await page.evaluate(()=>document.body.classList.contains('expanded-view')&&document.querySelector('#fullscreenStatus').textContent.includes('Add to Home Screen')),'Unsupported phone fullscreen shows an expanded view with an honest Home Screen hint');
+  const expandedLock=await gestureDefaults(page);
+  check(Object.entries(expandedLock).every(([key,value])=>key==='singleTap'?!value:value),'Expanded-view fallback also locks browser gestures');
+  await zoomGestures(page,cdp,'Expanded view');
   await page.locator('#pauseOverlay [data-fullscreen]').click();
   check(await page.evaluate(()=>!document.body.classList.contains('expanded-view')),'Expanded-view fallback can be exited');
   await page.locator('#btnResume').click();
-  await page.evaluate(()=>{delete document.querySelector('.wrap').requestFullscreen;delete document.querySelector('.wrap').webkitRequestFullscreen;__test.settle();});
+  await page.evaluate(()=>{delete document.documentElement.requestFullscreen;delete document.documentElement.webkitRequestFullscreen;__test.settle();});
   await viewport({width:390,height:844});
+
+  const manifest=await (await fetch('http://127.0.0.1:8879/manifest.webmanifest')).json();
+  check(manifest.display==='fullscreen'&&manifest.start_url==='./'&&manifest.scope==='./'&&await page.locator('link[rel="manifest"]').count()===1,'Home Screen manifest requests fullscreen with deployment-relative launch and scope');
+  for(const size of [180,192,512]){
+    const icon=await fetch(`http://127.0.0.1:8879/assets/app-icon-${size}.png`),bytes=Buffer.from(await icon.arrayBuffer());
+    check(icon.ok&&bytes.readUInt32BE(16)===size&&bytes.readUInt32BE(20)===size,`Home Screen icon ${size}×${size} is served at its declared size`);
+  }
+  // Emulate launch signals; this verifies our app response, not actual iPhone chrome.
+  for(const mode of ['navigator','display-mode']){
+    const installed=await browser.newContext({viewport:{width:844,height:390},isMobile:true,hasTouch:true,userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'});
+    await installed.addInitScript(mode=>{
+      if(mode==='navigator')Object.defineProperty(navigator,'standalone',{value:true});
+      else {const original=window.matchMedia.bind(window);window.matchMedia=query=>query.includes('display-mode:')?{matches:true,addEventListener(){}}:original(query);}
+    },mode);
+    const app=await installed.newPage();app.on('pageerror',e=>errors.push(e.message));
+    await app.route('**/index.html',route=>route.fulfill({contentType:'text/html',body:instrumented}));
+    await app.goto('http://127.0.0.1:8879/index.html');await app.locator('#btnStartFight').tap();
+    check(await app.evaluate(()=>document.body.classList.contains('standalone-view')&&document.documentElement.classList.contains('immersive-view')&&getComputedStyle(document.querySelector('.plaque')).display==='none'&&Math.abs(document.querySelector('#screen').getBoundingClientRect().height-innerHeight)<2),`Home Screen ${mode}: immersive layout and gesture lock activate on launch`);
+    const appLock=await gestureDefaults(app);
+    check(Object.entries(appLock).every(([key,value])=>key==='singleTap'?!value:value),`Home Screen ${mode}: browser gesture defaults are cancelled`);
+    if(mode==='navigator')await zoomGestures(app,await installed.newCDPSession(app),'Home Screen app');
+    await app.locator('#btnArenaMenu').tap();
+    check(await app.locator('[data-fullscreen]').isDisabled()&&await app.locator('[data-fullscreen]').textContent()==='App mode',`Home Screen ${mode}: menu reports app mode instead of offering a false fullscreen exit`);
+    if(mode==='navigator')await app.screenshot({path:path.join(root,'artifacts/home-screen-menu.png')});
+    await installed.close();
+  }
+  const safari=await browser.newContext({viewport:{width:320,height:568},isMobile:true,hasTouch:true,userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'});
+  const iphone=await safari.newPage();iphone.on('pageerror',e=>errors.push(e.message));
+  await iphone.route('**/index.html',route=>route.fulfill({contentType:'text/html',body:instrumented}));
+  await iphone.goto('http://127.0.0.1:8879/index.html');await iphone.locator('#btnStartFight').tap();
+  await iphone.evaluate(()=>{document.documentElement.requestFullscreen=undefined;document.documentElement.webkitRequestFullscreen=undefined;});
+  await iphone.locator('#btnArenaMenu').tap();await iphone.locator('[data-fullscreen]').tap();
+  check(await iphone.evaluate(()=>document.body.classList.contains('expanded-view')&&document.querySelector('#fullscreenStatus').textContent.includes('Safari bars stay visible')&&document.querySelector('#fullscreenStatus').textContent.includes('Open as Web App')),'iPhone fallback explains the exact Home Screen route instead of promising to hide Safari bars');
+  check(await iphone.evaluate(()=>{
+    const panel=document.querySelector('.pause-panel'),box=panel.getBoundingClientRect(),hint=document.querySelector('#fullscreenStatus').getBoundingClientRect();
+    return panel.scrollHeight===panel.clientHeight&&box.top>=0&&box.bottom<=innerHeight&&hint.bottom<=box.bottom&&scrollY===0;
+  }),'Small iPhone menu shows all fullscreen instructions and actions without clipping or page scrolling');
+  await iphone.screenshot({path:path.join(root,'artifacts/iphone-fullscreen-help.png')});
+  await safari.close();
 
   const animationChecks=await page.evaluate(()=>{
     const t=__test,out={};t.settle();

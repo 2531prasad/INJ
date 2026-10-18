@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#100e16"/>
+  <rect x="32" y="32" width="448" height="448" rx="32" fill="#1a141d" stroke="#b38b48" stroke-width="4"/>
+  <path d="M94 340h324v10H94z" fill="#b3232c"/>
+  <g fill="#71303b" transform="translate(6 8)">
+    <path id="letters" d="M94 184h72v24h-24v88h24v24H94v-24h24v-88H94zm98 0h24l48 80v-80h24v136h-24l-48-80v80h-24zm120 0h106v24h-24v88l-24 24h-58v-24h48l10-10v-78h-58z"/>
+  </g>
+  <use href="#letters" fill="#e8dcc2"/>
+</svg>

@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "INJ — Warrior of the Shadows",
+  "short_name": "INJ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#09080e",
+  "theme_color": "#09080e",
+  "icons": [
+    { "src": "assets/app-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/app-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

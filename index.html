@@ -3,10 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="INJ">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0b0b0e">
 <title>INJ — Arcade Slice</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/app-icon-180.png">
+<link rel="icon" type="image/svg+xml" href="assets/app-icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@400;600&display=swap" rel="stylesheet">
@@ -300,9 +305,23 @@
   #fullscreenStatus{display:block;margin-top:8px;color:#c0b6a8;font:400 11px/15px 'Chakra Petch',sans-serif;text-wrap:pretty;}
   #fullscreenStatus:empty{display:none;}
   .wrap:fullscreen,.wrap:-webkit-full-screen,.native-fullscreen .wrap,.expanded-view .wrap{max-width:none;width:100%;height:100dvh;min-height:100dvh;padding:0;gap:0;align-items:center;justify-content:center;background:#09080e;}
-  .native-fullscreen .plaque,.expanded-view .plaque{display:none;}
-  .native-fullscreen .screen,.expanded-view .screen{border:0;border-radius:0;box-shadow:none;}
+  .standalone-view .wrap{max-width:none;width:100%;height:100dvh;min-height:100dvh;padding:0;gap:0;align-items:center;justify-content:center;background:#09080e;}
+  .native-fullscreen .plaque,.expanded-view .plaque,.standalone-view .plaque{display:none;}
+  .native-fullscreen .screen,.expanded-view .screen,.standalone-view .screen{border:0;border-radius:0;box-shadow:none;}
   .expanded-view .wrap{position:fixed;inset:0;z-index:900;}
+  /* Lock the page, but allow vertical reading inside open dialogs. No pinch/double-tap zoom. */
+  html.immersive-view,body.immersive-view{height:100%;overflow:hidden;overscroll-behavior:none;touch-action:pan-y;}
+  .immersive-view{-webkit-touch-callout:none;}
+  .immersive-view button{touch-action:none;}
+  .immersive-view .pause-grid button,.immersive-view .modal-overlay button,.immersive-view .roast-overlay button{touch-action:pan-y;}
+  .immersive-view .pause-overlay{position:fixed;}
+  .immersive-view .modal-overlay,.immersive-view .roast-overlay,.immersive-view .pause-panel{touch-action:pan-y;overscroll-behavior:contain;}
+  .immersive-view .screen:has(.pause-overlay:not([hidden])){touch-action:pan-y;}
+  .standalone-view .arena-menu{bottom:env(safe-area-inset-bottom);}
+  .standalone-view #pad{right:max(10px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));}
+  .standalone-view #stickZone::before,.standalone-view #stickZone .stick-directions{left:max(20px,env(safe-area-inset-left));bottom:max(22px,env(safe-area-inset-bottom));}
+  .standalone-view #stickZone::after{left:max(20px,env(safe-area-inset-left));bottom:max(8px,calc(env(safe-area-inset-bottom) - 14px));}
+  .pause-grid button:disabled{color:#a79d8b;cursor:default;}
   @media (max-width:680px) and (orientation:portrait){
     .stick-directions{left:10px;bottom:22px;width:76px;height:76px;font-size:16px;}
   }
@@ -1392,9 +1411,11 @@ function setupStick(zone,knob,isFixed){
     else knob.style.transform='translate('+(dx*k)+'px,'+(dy*k)+'px)';
     const dead=Math.min(14,radius*.28),jumpAt=Math.min(18,radius*.38);
     stickInput.left=+(dx<-dead);stickInput.right=+(dx>dead);
-    stickInput.down=+(dy>dead);stickInput.up=+(dy<-jumpAt);syncInput();
+    // 10:30–1:30: only the upward 90° wedge jumps; shallow tilts stay grounded.
+    const inJumpCone=dy<0&&Math.abs(dx)<=-dy+.01;
+    stickInput.down=+(dy>dead);stickInput.up=+(dy<-jumpAt&&inJumpCone);syncInput();
     if(stickInput.up&&!wasUp){queueAction('jump');wasUp=true;}
-    if(dy>-jumpAt*.5)wasUp=false;
+    if(!inJumpCone||dy>-jumpAt*.5)wasUp=false;
   }
   function up(e){if(e.pointerId===id)reset();}
   zone.addEventListener('pointerdown',down,{passive:false});
@@ -1536,15 +1557,22 @@ window.visualViewport?.addEventListener('resize',fitArena);
 window.addEventListener('pagehide',()=>{if(game.started)pauseGame();Sfx.suspend();});
 if(screen.orientation)screen.orientation.addEventListener('change',resetInput);
 const fullscreenStatus=document.getElementById('fullscreenStatus');
+const appDisplay=matchMedia('(display-mode: standalone), (display-mode: fullscreen)');
+function isStandalone(){return navigator.standalone===true||appDisplay.matches;}
+function isImmersive(){return !!(document.fullscreenElement||document.webkitFullscreenElement)||isStandalone()||document.body.classList.contains('expanded-view');}
 function syncFullscreenUI(){
   const native=!!(document.fullscreenElement||document.webkitFullscreenElement);
   document.body.classList.toggle('native-fullscreen',native);
+  const standalone=isStandalone();
+  document.body.classList.toggle('standalone-view',standalone);
+  for(const el of [document.documentElement,document.body])el.classList.toggle('immersive-view',isImmersive());
   const expanded=document.body.classList.contains('expanded-view');
   for(const btn of document.querySelectorAll('[data-fullscreen]')){
-    const label=native?'Exit fullscreen':expanded?'Exit expanded view':'Enter fullscreen';
-    btn.textContent=native?'Exit full screen':expanded?'Exit expanded view':'Full screen';
+    const label=native?'Exit fullscreen':standalone?'Running as a Home Screen app':expanded?'Exit expanded view':'Enter fullscreen';
+    btn.textContent=native?'Exit full screen':standalone?'App mode':expanded?'Exit view':'Full screen';
+    btn.disabled=standalone&&!native;
     btn.setAttribute('aria-label',label);btn.title=label;
-    btn.setAttribute('aria-pressed',String(native||expanded));
+    btn.setAttribute('aria-pressed',String(native||expanded||standalone));
   }
 }
 async function toggleFullscreen(){
@@ -1552,18 +1580,21 @@ async function toggleFullscreen(){
   if(active){
     const exit=document.exitFullscreen||document.webkitExitFullscreen;
     if(exit)await exit.call(document);
+  }else if(isStandalone()){
+    return;
   }else if(document.body.classList.contains('expanded-view')){
     document.body.classList.remove('expanded-view');fullscreenStatus.textContent='';
   }else{
-    const target=document.querySelector('.wrap');
+    // Include the profile and defeat dialogs in the native fullscreen top layer too.
+    const target=document.documentElement;
     const request=target.requestFullscreen||target.webkitRequestFullscreen;
     try{
       if(!request)throw new Error('Fullscreen unavailable');
-      await request.call(target);
+      await request.call(target,{navigationUI:'hide'});
       fullscreenStatus.textContent='';
     }catch(_){
       document.body.classList.add('expanded-view');
-      fullscreenStatus.textContent='Expanded view. This browser may require Add to Home Screen for native fullscreen.';
+      fullscreenStatus.textContent=/iPhone|iPod|iPad/.test(navigator.userAgent)?'Safari bars stay visible in this tab. Share → Add to Home Screen → enable Open as Web App (if shown), then launch INJ from its icon.':'Expanded view. For an app window without browser bars, use your browser’s Add to Home Screen or Install app action.';
     }
   }
   resetInput();syncFullscreenUI();fitArena();
@@ -1572,6 +1603,26 @@ for(const btn of document.querySelectorAll('[data-fullscreen]'))btn.addEventList
   fullscreenStatus.textContent='Fullscreen could not change. Try your browser’s fullscreen control.';
 }));
 for(const event of ['fullscreenchange','webkitfullscreenchange'])document.addEventListener(event,()=>{resetInput();syncFullscreenUI();fitArena();});
+function displayModeChanged(){resetInput();syncFullscreenUI();fitArena();}
+if(appDisplay.addEventListener)appDisplay.addEventListener('change',displayModeChanged);
+else appDisplay.addListener(displayModeChanged);
+syncFullscreenUI();
+
+// Pointer events still reach the joystick and action pad independently. Only browser
+// defaults are cancelled; single taps keep their normal click activation in menus.
+function preventImmersiveGesture(e){if(isImmersive()&&e.cancelable)e.preventDefault();}
+for(const event of ['gesturestart','gesturechange','gestureend','dblclick','contextmenu'])document.addEventListener(event,preventImmersiveGesture,{passive:false});
+document.addEventListener('touchstart',e=>{
+  if(e.touches.length>1)preventImmersiveGesture(e);
+},{passive:false});
+document.addEventListener('touchmove',e=>{
+  if(!isImmersive())return;
+  // Keep the profile, cat exchange and long fullscreen instructions readable.
+  const scroller=e.target.closest?.('.modal-overlay,.roast-overlay,.pause-panel');
+  if(e.touches.length===1&&scroller&&scroller.scrollHeight>scroller.clientHeight)return;
+  preventImmersiveGesture(e);
+},{passive:false});
+document.addEventListener('wheel',e=>{if(e.ctrlKey)preventImmersiveGesture(e);},{passive:false});
 
 /* ============================== keyboard ============================== */
 window.addEventListener('keydown',e=>{

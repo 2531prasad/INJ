@@ -1,5 +1,32 @@
 # Game utility UI review
 
+## v0.13 follow-up: immersive mobile play
+
+Mode: full, scoped to fullscreen/Home Screen setup and the existing pause menu. Vanilla HTML/CSS and Canvas conventions remain in use. This is a Chrome review with emulated iPhone user agents and app launch signals; physical Safari chrome was not inspected.
+
+| Category | Evidence | Result |
+| --- | --- | --- |
+| Typography | `iphone-fullscreen-help.png`, `home-screen-menu.png`, fallback text and menu labels | Instructions and actions fit the 320 px phone; shorter Exit view label avoids a three-line action |
+| Surfaces | Fullscreen/expanded/Home Screen CSS, screenshots and viewport checks | Existing quiet menu retained; immersive pause overlay uses the app viewport so portrait letterboxing cannot clip its panel |
+| Animations | New gesture/layout source | No new animation or transition; 10% timeline replay is not applicable |
+| Icons | `assets/app-icon.svg`, rendered 192 px mark, manifest and Apple touch link | Original code-native INJ mark; no additional persistent game controls |
+| Performance | Event handlers and layout source | No per-frame gesture work or dependencies. Non-passive handlers are needed to cancel browser defaults; physical mobile performance was not profiled |
+
+| Severity | Location | Before | After | Why |
+| --- | --- | --- | --- | --- |
+| HIGH | `index.html`, fullscreen fallback | Expansion could suggest Safari chrome was hidden; no distinct app launch configuration | Explicit Safari instructions, fullscreen manifest, local app icons, Apple metadata and automatic Home Screen layout; App mode reflects the installed state | Honest state feedback and a complete route to the intended experience |
+| MEDIUM | `index.html`, immersive input | Zoom/gesture defaults could interrupt play outside the canvas | Page lock, zoom/callout suppression and gesture cancellation with independent gameplay pointers | Preserve immediate gameplay interaction and predictable browser behaviour on exit |
+| MEDIUM | `index.html`, fullscreen target and pause overlay | Sibling dialogs fell outside the wrapper's native top layer; long help could exceed a short arena | Document fullscreen includes profile/roast; pause panel can use the app viewport | Keep settings and instructions reachable without adding an external toolbar |
+| LOW | `assets/app-icon.svg`, manifest | Home Screen had no explicit app mark | Native vector INJ monogram plus 180/192/512 px PNG exports | A consistent launch identity using the existing palette |
+
+Considered but rejected: globally setting `user-scalable=no` would restrict ordinary page use and is unreliable on iOS; forcing Safari chrome away with scrolling tricks cannot provide true app mode; adding an install toolbar would consume the gameplay space the user explicitly wants preserved.
+
+Verification: `node tools/render-app-icons.cjs` produced the declared icon sizes. `node tests/browser.cjs` passed **159 checks**, including genuine double-tap/pinch sequences in all three immersive paths, simultaneous movement/guard, restored defaults on exit, jump-cone boundaries in portrait/landscape, visible fullscreen profile, manifest/icon delivery, both app-launch signals, and readable iPhone help at 320×568. Visually inspected the app mark, Home Screen menu and iPhone help screenshot. Existing hover/focus/press styling remains unchanged; regression checks retain no focus halo.
+
+Verdict: **Approve for the inspected Chrome scope**. Not verified: physical Safari/Home Screen chrome, iOS-owned gestures, physical notch/home-indicator ergonomics, GPU performance or subjective audio.
+
+## v0.12 utility redesign
+
 Mode: full. Scope: the in-arena menu trigger, paused settings panel, fullscreen entry/exit, keyboard focus, and UI halos. Framework: existing vanilla HTML/CSS and Canvas; no new styling system, dependencies, or image assets. Existing fighter/arena art, intro, roast dialogue, and combat-button design were outside this polish review; their regression checks still ran.
 
 ## Evidence inspected

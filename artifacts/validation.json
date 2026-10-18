@@ -1,5 +1,5 @@
 {
-  "checks": 126,
+  "checks": 159,
   "nightmareBenchmark": {
     "trials": 100,
     "policies": 7,
@@ -10,7 +10,7 @@
   "viewports": 9,
   "audio": {
     "peak": 0.5534541010856628,
-    "rms": 0.030126398513188817,
+    "rms": 0.030126398561250562,
     "clippedSamples": 0
   },
   "limitations": [
