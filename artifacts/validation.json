@@ -1,0 +1,14 @@
+{
+  "checks": 97,
+  "engine": "Chrome / Chromium",
+  "viewports": 7,
+  "audio": {
+    "peak": 0.5534541010856628,
+    "rms": 0.03012639848586099,
+    "clippedSamples": 0
+  },
+  "limitations": [
+    "No physical phone or mobile Safari test",
+    "No subjective speaker or headphone listening review"
+  ]
+}

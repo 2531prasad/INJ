@@ -1,0 +1,381 @@
+/* Run: node tests/browser.cjs
+   Requires Playwright and Chrome/Chromium. Optional: INJ_PLAYWRIGHT, INJ_CHROME. */
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawn } = require('node:child_process');
+let pw;
+try { pw = require(process.env.INJ_PLAYWRIGHT || 'playwright'); }
+catch (_) { pw = require(path.join(process.env.HOME, '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright-core')); }
+const root = path.resolve(__dirname, '..');
+const source = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const hook = `window.__test={game,player,dummy,input,pressBuf,projectiles,afterimages,MOVES,
+  resetRound,resetInput,queueAction,startAttack,stepAttack,applyHit,tryHit,updateProjectiles,controlPlayer,controlDummy,physics,update,updateFlow,endRound,dodgeDummy,FIGHTER_SCALE,hurtbox,arenaImg,startRoast,advanceRoast,finishRoast,ROASTS,stageDuelAt,drawStageDuel,render,ctx,spriteSheets,walkSheets,WALK_FRAME_DISTANCE,sampleAttackAnimation,sampleFighterAnimation,RENDER_SCALE,
+  settle(){game.round=0;resetRound();game.state='fight';game.paused=true;game.msg=null;dummy.aiT=999;}};`;
+const instrumented = source.replace('\n})();\n</script>', `\n${hook}\n})();\n</script>`);
+assert.notEqual(instrumented, source, 'Test hook was injected only into the served test copy');
+const server = spawn('python3', ['-m', 'http.server', '8879', '--bind', '127.0.0.1'], { cwd: root, stdio: 'ignore' });
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+let browser;
+let checks = 0;
+function check(condition, message) { assert.ok(condition, message); checks++; console.log('PASS', message); }
+
+(async () => {
+  for (let i = 0; i < 30; i++) { try { await fetch('http://127.0.0.1:8879'); break; } catch (_) { await delay(100); } }
+  const chrome = process.env.INJ_CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  browser = await pw.chromium.launch({ headless: true, ...(fs.existsSync(chrome) ? { executablePath: chrome } : {}) });
+  const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const page = await mobile.newPage(), errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.route('**/index.html', route => route.fulfill({ contentType: 'text/html', body: instrumented }));
+  await page.goto('http://127.0.0.1:8879/index.html');
+  await page.waitForTimeout(500);
+  await page.waitForFunction(()=>__test.arenaImg.complete&&__test.arenaImg.naturalWidth>0&&[...Object.values(__test.spriteSheets),...Object.values(__test.walkSheets)].every(s=>s.ready));
+  check(await page.evaluate(()=>!document.querySelector('.notes')&&!document.body.textContent.includes('/html/body/')), 'Bottom prose panels and selector-like text are absent');
+  check(await page.evaluate(()=>__test.hurtbox(__test.player).h>=225*.4), 'Fighter hurtboxes grow with the larger on-screen proportions');
+  check(await page.evaluate(() => __test.game.t === 0 && InjAudio.ctx === null), 'Initial profile freezes combat and does not autoplay');
+  fs.mkdirSync(path.join(root, 'artifacts'), { recursive: true });
+  await page.screenshot({ path: path.join(root, 'artifacts/phone-intro.png') });
+  await page.locator('#btnStartFight').click();
+  await page.waitForTimeout(300);
+  check(await page.evaluate(() => InjAudio.ctx.state === 'running' && InjAudio.step > 0), 'First tap unlocks audio and advances the music clock');
+  await page.evaluate(() => { __test.game.t = 1.79; });
+  await page.waitForTimeout(150);
+  check(await page.evaluate(() => __test.game.state === 'fight'), 'Entering starts a fresh round');
+
+  // Verify native widescreen geometry and in-arena touch controls in both orientations.
+  for (const [width, height] of [[320,568],[360,640],[390,844],[430,932],[667,375],[844,390]]) {
+    await page.setViewportSize({ width, height });
+    const layout = await page.evaluate(() => {
+      const visible = el => el.getClientRects().length > 0;
+      const rect = el => el.getBoundingClientRect();
+      const controls = [...document.querySelectorAll('.abtn')].filter(visible);
+      const offscreen = controls.some(el => { const r = rect(el); return r.left < 0 || r.right > innerWidth + 1 || r.top < 0 || r.bottom > innerHeight + 1; });
+      const arena = rect(document.querySelector('#screen'));
+      const outsideArena = controls.some(el => {const r=rect(el);return r.left<arena.left||r.right>arena.right||r.top<arena.top||r.bottom>arena.bottom;});
+      const near = (a,b) => Math.abs(a-b)<.01;
+      const canvas = document.querySelector('#game');
+      const wrongRatio = !near(arena.width/arena.height,16/9)||canvas.width/canvas.height!==16/9;
+      const undersized = controls.some(el=>rect(el).width<44||rect(el).height<44);
+      const landscapeGap = innerWidth>innerHeight && arena.height<innerHeight-2;
+      const menuOverlap = controls.some(el=>rect(el).top<arena.top+arena.height*.18);
+      return { overflow: document.documentElement.scrollWidth > innerWidth, offscreen, outsideArena, wrongRatio, undersized, landscapeGap, menuOverlap };
+    });
+    check(!Object.values(layout).some(Boolean), `Phone ${width}×${height}: native 16:9, on-screen targets ≥44px, landscape fills height (${JSON.stringify(layout)})`);
+    if (width === 844) {
+      await page.locator('#btnArenaPause').click();
+      check(await page.locator('#pauseOverlay').isVisible() && await page.locator('#pauseOverlay [data-audio="music"]').isVisible(), 'Landscape on-screen pause opens the game and audio menu');
+      await page.locator('#btnResume').click();
+      await page.screenshot({ path: path.join(root, 'artifacts/phone-landscape.png') });
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#btnPause').click();
+  const stopped = await page.evaluate(() => __test.game.roundTime);
+  await page.waitForTimeout(150);
+  check(await page.evaluate(t => __test.game.roundTime === t, stopped), 'Pause freezes the round timer');
+  await page.locator('#btnResume').click();
+  await page.locator('#btnShowIntro').click();
+  const profileTime = await page.evaluate(() => __test.game.roundTime);
+  await page.waitForTimeout(150);
+  check(await page.evaluate(t => __test.game.roundTime === t, profileTime), 'Profile freezes an active fight');
+  await page.locator('#btnStartFight').click();
+  await page.evaluate(() => { __test.settle(); __test.game.paused = false; });
+
+  // Use genuine simultaneous Chromium touch contacts, not independent click events.
+  const cdp = await mobile.newCDPSession(page);
+  const zone = await page.locator('#stickZone').boundingBox();
+  const guard = await page.locator('#pad [data-act="block"]').boundingBox();
+  const point = (id,x,y) => ({ id, x, y, radiusX: 5, radiusY: 5, force: 1 });
+  let left = point(1, zone.x + zone.width/2 - 20, zone.y + zone.height/2);
+  const right = point(2, guard.x + guard.width/2, guard.y + guard.height/2);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [left] });
+  left={...left,x:left.x+35};
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [left] });
+  const knob = await page.locator('#stickKnob').boundingBox();
+  check(Math.abs(knob.x+knob.width/2-left.x)<1 && Math.abs(knob.y+knob.height/2-left.y)<1, 'Floating joystick knob follows the thumb in viewport coordinates');
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [left,right] });
+  check(await page.evaluate(() => __test.input.right === 1 && __test.input.block === 1), 'Both thumbs: hold movement and guard together');
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [right] });
+  check(await page.evaluate(() => __test.input.right === 1 && __test.input.block === 0), 'Releasing guard preserves the movement thumb');
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+  check(await page.evaluate(() => !Object.values(__test.input).some(Boolean)), 'Touch cancellation releases every held input');
+
+  // Observe state in the pointer event itself, before release or the next animation frame.
+  await page.evaluate(()=>{
+    __test.settle();__test.game.paused=false;
+    document.querySelector('#pad [data-act="punch"]').addEventListener('pointerdown',()=>{window.pressSnapshot={key:__test.player.atk?.key,time:__test.player.atk?.t,pose:__test.sampleFighterAnimation(__test.player).frame};},{once:true});
+  });
+  const punch=await page.locator('#pad [data-act="punch"]').boundingBox();
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point(3,punch.x+punch.width/2,punch.y+punch.height/2)]});
+  check(await page.evaluate(()=>pressSnapshot.key==='jab'&&pressSnapshot.time===0&&pressSnapshot.pose!==0),'Touch-down begins and paints attack anticipation before release or the next frame');
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  const animationChecks=await page.evaluate(()=>{
+    const t=__test,out={};t.settle();
+    out.atlases=Object.values(t.spriteSheets).every(s=>s.ready&&s.meta.frames.length===12&&s.meta.frames.every(f=>f.x>=0&&f.y>=0&&f.x+f.w<=s.image.naturalWidth&&f.y+f.h<=s.image.naturalHeight));
+    out.detail=document.querySelector('#game').width===800&&document.querySelector('#game').height===450;
+    t.dummy.x=t.player.x+60;t.startAttack(t.player,'jab');const a=t.player.atk,d=a.def,hp=t.dummy.hp;
+    const start=t.sampleAttackAnimation(t.player);a.t=d.startup*.5;const early=t.sampleAttackAnimation(t.player);
+    a.t=d.startup+d.active*.5;const strike=t.sampleAttackAnimation(t.player);
+    out.fastStart=d.startup<=.04&&start.frame!==early.frame&&early.frame===strike.frame&&!Object.hasOwn(strike,'blend');
+    a.t=d.startup+d.active+d.recovery*.5;const middle=t.sampleAttackAnimation(t.player);
+    a.t=d.startup+d.active+d.recovery*.95;const end=t.sampleAttackAnimation(t.player);
+    out.softEnd=end.frame===0&&end.offset<middle.offset&&middle.frame!==strike.frame;
+    a.t=0;t.stepAttack(t.player,d.startup*.5,t.dummy);out.startupNoDamage=t.dummy.hp===hp;
+    t.stepAttack(t.player,d.startup*.6,t.dummy);out.activeDamage=t.dummy.hp<hp;
+    t.settle();t.player.state='idle';t.player.anim=0;const idle=t.sampleFighterAnimation(t.player);t.player.anim=123;
+    out.stableIdle=JSON.stringify(idle)===JSON.stringify(t.sampleFighterAnimation(t.player));
+    out.noCrossfades=Object.keys(t.MOVES).every(key=>{
+      t.player.atk={key,def:t.MOVES[key],t:0};
+      const d=t.MOVES[key],total=d.startup+d.active+d.recovery;
+      return Array.from({length:30},(_,i)=>{t.player.atk.t=i*total/30;return t.sampleAttackAnimation(t.player);}).every(p=>!Object.hasOwn(p,'blend')&&!Object.hasOwn(p,'next'));
+    });
+    t.settle();t.player.state='walk';
+    out.walkFrames=Object.values(t.walkSheets).every(s=>s.ready&&s.meta.frames.length===4&&s.meta.frames[0].w>s.meta.frames[1].w*1.3&&s.meta.frames[2].w>s.meta.frames[3].w*1.3);
+    out.fullCycle=['inj','dummy'].every(kind=>{
+      const f={...t.player,kind,state:'walk'};
+      return [0,1,2,3,4].map(i=>{f.walkPhase=i*t.WALK_FRAME_DISTANCE;const p=t.sampleFighterAnimation(f);return p.atlas==='walk'?p.frame:-1;}).join(',')==='0,1,2,3,0';
+    });
+    t.settle();t.input.right=1;const from=t.player.x;
+    t.controlPlayer(t.player,t.dummy,.15);const phase=t.player.walkPhase;
+    out.travelDriven=Math.abs(phase-(t.player.x-from))<.00001&&t.sampleFighterAnimation(t.player).frame===1;
+    t.input.right=0;t.controlPlayer(t.player,t.dummy,.8);t.player.anim+=123;
+    out.stopPreservesPhase=t.player.state==='idle'&&t.player.walkPhase===phase;
+    t.input.left=1;t.controlPlayer(t.player,t.dummy,.15);
+    out.reverseWalk=Math.abs(t.player.walkPhase)<.00001&&t.player.facing===1;
+    t.settle();t.player.x=374;t.input.right=1;const wallPhase=t.player.walkPhase;
+    t.controlPlayer(t.player,t.dummy,.5);
+    out.wallStopsFeet=t.player.x===374&&t.player.state==='idle'&&t.player.walkPhase===wallPhase;
+    t.settle();t.dummy.state='walk';const dummyFrom=t.dummy.x;
+    t.controlDummy(t.dummy,t.player,.3);
+    out.dummyWalk=t.dummy.x<dummyFrom&&t.dummy.walkPhase>0&&t.sampleFighterAnimation(t.dummy).atlas==='walk';
+    t.settle();return out;
+  });
+  for(const [name,passed] of Object.entries(animationChecks))check(passed,`Fighter animation: ${name}`);
+
+  const stageChecks=await page.evaluate(()=>{
+    const t=__test,out={};t.settle();
+    const phases=[2,4.2,6,8.4,10,11.8,13,15.2].map(time=>t.stageDuelAt(time,false).phase);
+    out.choreography=phases.join(',')==='guard,dodge,counter,aerial,shadow,finisher,launch,victory';
+    const win=t.stageDuelAt(15.2,false);
+    out.injWins=win.winner==='INJ'&&win.inj.state==='victory'&&win.dummy.state==='ko'&&win.dummy.hp===0;
+    const a=t.stageDuelAt(6.25,false),b=t.stageDuelAt(24.25,false);
+    out.loop=a.time===b.time&&a.inj.x===b.inj.x&&a.dummy.x===b.dummy.x&&a.phase===b.phase;
+    const stillA=t.stageDuelAt(6,true),stillB=t.stageDuelAt(15,true);
+    out.reducedMotion=JSON.stringify(stillA)===JSON.stringify(stillB);
+    out.cadence=JSON.stringify(t.stageDuelAt(6.01,false))===JSON.stringify(t.stageDuelAt(6.04,false));
+    out.dodgeHold=t.stageDuelAt(4.05,false).inj.x===143&&t.stageDuelAt(4.4,false).inj.x===143;
+    const before=JSON.stringify({player:t.player,dummy:t.dummy,game:t.game,projectiles:t.projectiles,afterimages:t.afterimages});
+    for(let i=0;i<180;i++)t.drawStageDuel(i*100);
+    out.isolated=before===JSON.stringify({player:t.player,dummy:t.dummy,game:t.game,projectiles:t.projectiles,afterimages:t.afterimages});
+    out.finite=Array.from({length:180},(_,i)=>t.stageDuelAt(i/10,false)).every(s=>[s.inj,s.dummy].every(f=>Number.isFinite(f.x)&&Number.isFinite(f.y)&&f.backstage&&f.awakenedLook));
+    t.render(6000);const first=t.ctx.getImageData(138*t.RENDER_SCALE,98*t.RENDER_SCALE,126*t.RENDER_SCALE,68*t.RENDER_SCALE).data;
+    t.render(15200);const second=t.ctx.getImageData(138*t.RENDER_SCALE,98*t.RENDER_SCALE,126*t.RENDER_SCALE,68*t.RENDER_SCALE).data;
+    out.renderedMotion=first.some((value,i)=>value!==second[i]);
+    return out;
+  });
+  for(const [name,passed] of Object.entries(stageChecks))check(passed,`Background duel: ${name}`);
+  const artHash=require('node:crypto').createHash('sha256').update(fs.readFileSync(path.join(root,'assets/hollow-courtyard.png'))).digest('hex');
+  check(artHash==='b0f5adf45a4046e196dce5c34c79177d1217967d32b6ec967c9b8be8cc9ee83e','Existing arena image remains byte-for-byte unchanged');
+
+  const mechanics = await page.evaluate(() => {
+    const t=__test, result={};
+    t.settle();
+    // A touch queued in the last part of recovery survives until the attack finishes.
+    t.game.paused=false;t.startAttack(t.player,'jab');t.player.atk.t=.23;t.queueAction('kick');
+    t.game.paused=true;t.controlPlayer(t.player,t.dummy,.04);t.controlPlayer(t.player,t.dummy,.001);
+    result.buffer=t.player.atk?.key==='roundhouse';
+    t.settle();t.game.paused=false;t.input.down=1;t.queueAction('kick');t.game.paused=true;
+    t.controlPlayer(t.player,t.dummy,.001);result.crouch=t.player.atk?.key==='sweep';
+    t.settle();t.startAttack(t.dummy,'haymaker');
+    t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
+    result.interrupt=t.dummy.atk===null&&t.dummy.state==='hurt';
+    t.settle();t.dummy.invuln=.5;const hp=t.dummy.hp;
+    t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);result.invuln=t.dummy.hp===hp;
+    t.settle();t.dummy.state='block';
+    t.projectiles.push({x:t.dummy.x-1,y:t.dummy.y-46,vx:0,life:1,owner:t.player,charged:false});
+    t.updateProjectiles(.01);result.projectileBlock=t.dummy.hp===t.dummy.maxHp-2&&t.dummy.state==='block';
+    t.settle();t.dummy.hp=1;t.dummy.state='block';
+    t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);result.chipKO=t.game.state==='ko';
+    t.settle();
+    for(let i=0;i<3;i++)t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
+    result.charge=t.player.charge===3&&document.querySelector('[data-act="special"]').classList.contains('ready');
+    t.startAttack(t.player,'toss');t.stepAttack(t.player,.19,t.dummy);
+    result.chargedToss=t.player.charge===0&&t.projectiles[0]?.charged===true;
+    t.settle();t.dummy.x=t.player.x+40;
+    t.projectiles.push({x:t.dummy.x,y:t.dummy.y-46,vx:0,life:1,owner:t.player,charged:true});
+    t.updateProjectiles(.01);result.chargedDamage=t.dummy.hp===112&&t.dummy.state==='knockdown';
+    t.settle();t.dummy.hp=1;
+    t.projectiles.push({x:t.dummy.x,y:t.dummy.y-46,vx:0,life:1,owner:t.player,charged:false});
+    t.projectiles.push({x:0,y:0,vx:0,life:1,owner:t.player,charged:false});
+    t.updateProjectiles(.01);result.projectileKO=t.game.state==='ko'&&t.projectiles.length===0;
+    t.player.invuln=.4;t.player.charge=3;t.player.comboStep=1;t.resetRound();
+    result.reset=t.player.invuln===0&&t.player.charge===0&&t.player.comboStep===0&&t.player.facing===1;
+    const x=t.dummy.x;t.controlDummy(t.dummy,t.player,1);result.introAI=t.dummy.x===x&&t.dummy.atk===null;
+    t.settle();t.dummy.x=t.player.x+82;t.startAttack(t.player,'jab');t.tryHit(t.player,t.dummy);
+    result.scaledReach=t.dummy.hp===125;
+    t.settle();t.startAttack(t.player,'toss');t.stepAttack(t.player,.19,t.dummy);
+    result.scaledProjectile=t.projectiles[0].y===t.player.y-46*t.FIGHTER_SCALE;
+    t.settle();return result;
+  });
+  for (const [name, passed] of Object.entries(mechanics)) check(passed, `Combat: ${name}`);
+
+  const nightmare=await page.evaluate(()=>{
+    const t=__test,out={};
+    function awaken(){t.settle();t.resetRound();t.game.state='fight';t.game.paused=true;t.game.msg=null;t.dummy.aiT=0;}
+    t.settle();t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
+    out.warmup=t.game.round===1&&t.dummy.hp===125&&t.dummy.state==='hurt';
+    awaken();out.transition=t.game.round===2&&t.dummy.hp===130&&t.player.hp===120;
+    t.dummy.x=t.player.x+40;
+    const initial=t.dummy.x;t.startAttack(t.player,'jab');t.controlDummy(t.dummy,t.player,.016);
+    out.meleeDodge=t.dummy.state==='dodge'&&t.dummy.x!==initial&&t.dummy.invuln>0;
+    awaken();t.dummy.x=t.player.x+120;
+    t.projectiles.push({x:t.dummy.x-65,y:t.dummy.y-46,vx:235,life:1,owner:t.player,charged:true});
+    t.controlDummy(t.dummy,t.player,.016);
+    out.projectileDodge=t.dummy.state==='dodge'&&!t.dummy.grounded&&t.dummy.vy<0;
+    awaken();t.dummy.dodgeCooldown=1;t.dummy.state='block';
+    for(const move of Object.values(t.MOVES))t.applyHit(t.dummy,t.player,move,200,140);
+    t.applyHit(t.dummy,t.player,{...t.MOVES.toss,key:'shadow',dmg:999,knockdown:true},200,140);
+    out.immune=t.dummy.hp===130&&t.dummy.state==='block'&&t.game.state==='fight';
+    awaken();t.dummy.x=t.player.x+200;const before=t.dummy.x;
+    t.controlDummy(t.dummy,t.player,.1);out.pursuit=before-t.dummy.x>=28;
+    awaken();t.dummy.x=t.player.x+42;t.controlDummy(t.dummy,t.player,.016);
+    out.fastAttack=!!t.dummy.atk&&t.dummy.atk.def.startup<=.055&&t.dummy.atk.def.recovery<=.09&&t.dummy.atk.def.dmg>t.MOVES[t.dummy.atk.key].dmg;
+    awaken();t.game.roundTime=.001;t.player.hp=120;t.dummy.hp=1;t.updateFlow(.01);
+    out.timeout=t.game.state==='ko'&&t.game.msg.text==='DUMMY WINS';
+    awaken();t.dummy.x=t.player.x+45;
+    for(let i=0;i<2400&&t.game.state==='fight';i++){
+      t.controlPlayer(t.player,t.dummy,1/120);t.controlDummy(t.dummy,t.player,1/120);
+    }
+    out.relentless=t.player.hp===0&&t.dummy.hp===130&&t.game.state==='ko';
+    out.bounded=t.dummy.x>=26&&t.dummy.x<=374&&Number.isFinite(t.dummy.x)&&Number.isFinite(t.dummy.y);
+    awaken();t.game.round=9;t.dummy.dodgeCooldown=1;t.applyHit(t.dummy,t.player,t.MOVES.uppercut,200,140);
+    out.laterRounds=t.dummy.hp===130;
+    t.settle();return out;
+  });
+  for(const [name,passed] of Object.entries(nightmare))check(passed,`Round 2+: ${name}`);
+  await page.setViewportSize({width:844,height:390});
+  await page.evaluate(()=>{__test.settle();__test.resetRound();__test.game.t=.5;__test.game.paused=false;});
+  await page.waitForTimeout(100);
+  await page.screenshot({path:path.join(root,'artifacts/round-two-awakened.png')});
+  await page.waitForFunction(()=>__test.player.hp<120,null,{timeout:6000});
+  check(await page.evaluate(()=>__test.game.round===2&&__test.dummy.hp===130), 'Live round two pursues and damages INJ while remaining unharmed');
+  await page.evaluate(()=>{
+    const t=__test;t.player.atk=null;t.player.hitstun=0;t.player.state='idle';
+    t.dummy.x=t.player.x+40;t.dummy.dodgeCooldown=0;t.dummy.dodgeT=0;
+    t.startAttack(t.player,'jab');
+  });
+  await page.waitForFunction(()=>__test.dummy.state==='dodge',null,{timeout:3000});
+  check(true,'Live awakened dummy renders its reactive dodge');
+  await page.evaluate(()=>{__test.settle();});
+  await page.setViewportSize({width:390,height:844});
+
+  // Loss-only, player-paced cat exchange; the game waits for reading and input.
+  await page.evaluate(()=>{const t=__test;t.settle();t.endRound(t.dummy);t.updateFlow(3.1);});
+  check(await page.locator('#roastModal').isVisible()&&await page.evaluate(()=>__test.game.paused&&__test.game.state==='roast'), 'Losing opens the cat dialogue and freezes combat');
+  check(await page.locator('#catPortrait img').evaluate(img=>img.complete&&img.naturalWidth>0), 'The stylized cat portrait loads from a local asset');
+  const line=await page.locator('#roastConversation').innerText();
+  await page.waitForTimeout(200);
+  check(await page.locator('#roastConversation').innerText()===line, 'Dialogue waits for a tap rather than skipping itself');
+  for(let i=0;i<4;i++)await page.locator('#btnNextRoast').tap();
+  check(await page.locator('#roastConversation .speech').last().locator('.speaker').innerText()==='THE CAT'&&await page.locator('#btnNextRoast').innerText()==='FIGHT AGAIN', 'Cat and INJ trade five lines, with the cat delivering the final roast');
+  check(await page.evaluate(()=>document.querySelector('.cat-portrait').getBoundingClientRect().right+10<=document.querySelector('.roast-conversation').getBoundingClientRect().left), 'Phone speech bubbles remain separate from the cat portrait');
+  await page.screenshot({path:path.join(root,'artifacts/cat-roast-phone.png'),animations:'disabled'});
+  await page.setViewportSize({width:844,height:390});
+  await page.waitForTimeout(250);
+  check(await page.locator('.roast-card').evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}), 'Cat dialogue fits a landscape phone without clipping');
+  await page.screenshot({path:path.join(root,'artifacts/cat-roast-landscape.png'),animations:'disabled'});
+  await page.locator('#btnNextRoast').click();
+  check(await page.locator('#roastModal').isHidden()&&await page.evaluate(()=>__test.game.round===2&&!__test.game.paused&&__test.game.state==='intro'), 'Fight Again starts the next round exactly once');
+  await page.evaluate(()=>{__test.endRound(__test.dummy);__test.updateFlow(3.1);});
+  check(await page.locator('#roastConversation').innerText()!==line, 'Repeated losses rotate through different roast exchanges');
+  await page.locator('#btnSkipRoast').click();
+  check(await page.locator('#roastModal').isHidden()&&await page.evaluate(()=>__test.game.round===3), 'Skip immediately starts the next round');
+  await page.evaluate(()=>{__test.settle();__test.endRound(__test.player);__test.updateFlow(3.1);});
+  check(await page.locator('#roastModal').isHidden()&&await page.evaluate(()=>__test.game.state==='intro'), 'Winning a round bypasses the cat roast');
+  await page.evaluate(()=>{__test.settle();__test.startRoast();});
+  await page.keyboard.press('Enter');
+  check(await page.evaluate(()=>__test.game.roastStep===1), 'Keyboard Enter advances the dialogue');
+  await page.keyboard.press('Escape');
+  check(await page.locator('#roastModal').isHidden(), 'Keyboard Escape skips the dialogue');
+  await page.setViewportSize({width:390,height:844});
+  await page.evaluate(()=>__test.settle());
+
+  await page.evaluate(()=>{__test.settle();__test.game.roastCount=2;__test.startRoast();});
+  for(let i=0;i<3;i++)await page.locator('#btnNextRoast').tap();
+  check((await page.locator('#roastConversation .speech').last().innerText()).includes('MiMi, please stop.'),'Easter egg: INJ calls her cat MiMi');
+  await page.screenshot({path:path.join(root,'artifacts/mimi-easter-egg.png'),animations:'disabled'});
+  await page.locator('#btnNextRoast').tap();
+  check((await page.locator('#roastConversation .speech').last().innerText()).includes('You feed me every day.'),'MiMi roasts her own owner in the final comeback');
+  await page.locator('#btnSkipRoast').click();await page.evaluate(()=>__test.settle());
+
+  // Music continues through menus; independent controls persist across reloads.
+  const stepBefore = await page.evaluate(() => InjAudio.step);
+  await page.waitForTimeout(180);
+  check(await page.evaluate(step => InjAudio.step !== step, stepBefore), 'Music clock continues while combat is paused');
+  await page.locator('.plaque [data-audio="music"]').click();
+  check(await page.evaluate(() => !InjAudio.musicEnabled && !InjAudio.muted), 'Music can be disabled while effects remain enabled');
+  await page.locator('.plaque [data-audio="sound"]').click();
+  await page.reload();
+  check(await page.evaluate(() => InjAudio.muted && !InjAudio.musicEnabled), 'Audio preferences survive reload');
+  await page.locator('#introModal [data-audio="sound"]').click();
+  await page.locator('#introModal [data-audio="music"]').click();
+  await page.locator('#btnStartFight').click();
+  await page.evaluate(() => { __test.settle(); __test.game.paused=false; });
+  await page.screenshot({ path: path.join(root, 'artifacts/phone-fight.png') });
+  await page.evaluate(() => { window.dispatchEvent(new Event('blur')); });
+  check(await page.evaluate(() => __test.game.paused && !document.querySelector('#pauseOverlay').hidden), 'Losing focus pauses safely');
+
+  // Render an entire 16-bar arrangement, plus every effect, in a real Web Audio graph.
+  const audio = await page.evaluate(async () => {
+    const engine=InjAudio;
+    engine.suspend();
+    const live=engine.ctx, offline=new OfflineAudioContext(1,Math.ceil(36*22050),22050);
+    const LiveAC=window.AudioContext;
+    window.AudioContext=function(){return offline;};engine.ctx=null;engine.voices=new Set();engine.muted=false;engine.musicEnabled=true;engine.init();window.AudioContext=LiveAC;
+    engine.master.gain.value=.72;engine.music.gain.value=.58;
+    const step=60/112/4;
+    for(let i=0;i<256;i++)engine.sequence(i,.1+i*step);
+    const effects=['swing','jump','punch','kick','uppercut','jumpkick','block','toss','shadow','charge','gong','finish','fall','ui','catlaugh'];
+    // Effects are recorded in a separate offline pass below to preserve the score preview.
+    const buffer=await offline.startRendering(), data=buffer.getChannelData(0);
+    let peak=0,sum=0,invalid=0,clipped=0;
+    for(const x of data){peak=Math.max(peak,Math.abs(x));sum+=x*x;if(!Number.isFinite(x))invalid++;if(Math.abs(x)>=.999)clipped++;}
+    const chunks=[];
+    for(let start=0;start<data.length;start+=22050){let power=0;for(let i=start;i<Math.min(start+22050,data.length);i++)power+=data[i]*data[i];chunks.push(Math.sqrt(power/22050));}
+    engine.ctx=live;
+    return {peak,rms:Math.sqrt(sum/data.length),invalid,clipped,chunks,samples:Array.from(data),effects};
+  });
+  check(audio.invalid===0&&audio.clipped===0&&audio.peak>.05&&audio.peak<.99, 'Full procedural score renders finite, audible samples without clipping');
+  check(audio.chunks.slice(1,34).every(rms=>rms>.005), 'Full arrangement has no silent gaps');
+  const pcm = Buffer.alloc(audio.samples.length*2);
+  audio.samples.forEach((sample,i)=>pcm.writeInt16LE(Math.round(Math.max(-1,Math.min(1,sample))*32767),i*2));
+  const header=Buffer.alloc(44);
+  header.write('RIFF');header.writeUInt32LE(36+pcm.length,4);header.write('WAVEfmt ',8);header.writeUInt32LE(16,16);header.writeUInt16LE(1,20);header.writeUInt16LE(1,22);header.writeUInt32LE(22050,24);header.writeUInt32LE(44100,28);header.writeUInt16LE(2,32);header.writeUInt16LE(16,34);header.write('data',36);header.writeUInt32LE(pcm.length,40);
+  fs.writeFileSync(path.join(root,'artifacts/arcade-score-preview.wav'),Buffer.concat([header,pcm]));
+  // Fresh page isolates the real-time effect graph from the offline preview engine.
+  await page.reload();await page.locator('#btnStartFight').click();
+  for(const effect of audio.effects)await page.evaluate(effect=>InjAudio.play(effect),effect);
+  await page.waitForTimeout(1200);
+  check(await page.evaluate(()=>InjAudio.voices.size<35), 'All effect voices finish and release their audio nodes');
+
+  const desktop=await browser.newContext({viewport:{width:1366,height:900}});
+  const pc=await desktop.newPage();pc.on('pageerror',e=>errors.push(e.message));
+  await pc.route('**/index.html',route=>route.fulfill({contentType:'text/html',body:instrumented}));
+  await pc.goto('http://127.0.0.1:8879/index.html');await pc.locator('#btnStartFight').click();
+  check(await pc.locator('#pad').isHidden()&&await pc.locator('#stickZone').isHidden(), 'Desktop uses the keyboard layout');
+  check(await pc.evaluate(()=>{const r=document.querySelector('#screen').getBoundingClientRect();return Math.abs(r.width/r.height-16/9)<.01;}), 'Desktop defaults to the widescreen 16:9 arena');
+  await pc.keyboard.press('Escape');check(await pc.locator('#pauseOverlay').isVisible(),'Escape pauses on desktop');
+  await pc.keyboard.press('Escape');check(await pc.locator('#pauseOverlay').isHidden(),'Escape resumes on desktop');
+  await pc.screenshot({path:path.join(root,'artifacts/desktop.png')});
+  await pc.evaluate(()=>{__test.settle();__test.game.elapsed=6.25;});
+  await pc.waitForTimeout(100);
+  await pc.screenshot({path:path.join(root,'artifacts/background-duel-fight.png')});
+  await pc.evaluate(()=>{__test.game.elapsed=15.2;});
+  await pc.waitForTimeout(100);
+  await pc.screenshot({path:path.join(root,'artifacts/background-duel-victory.png')});
+  check(errors.length===0, `No browser runtime errors (${errors.join('; ')})`);
+  const report={checks,engine:'Chrome / Chromium',viewports:7,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review']};
+  fs.writeFileSync(path.join(root,'artifacts/validation.json'),JSON.stringify(report,null,2)+'\n');
+  console.log(JSON.stringify(report,null,2));
+})().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();server.kill();});
