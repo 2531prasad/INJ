@@ -1,10 +1,16 @@
 {
-  "checks": 116,
+  "checks": 126,
+  "nightmareBenchmark": {
+    "trials": 100,
+    "policies": 7,
+    "dummyWins": 100,
+    "playerWins": 0
+  },
   "engine": "Chrome / Chromium",
   "viewports": 9,
   "audio": {
     "peak": 0.5534541010856628,
-    "rms": 0.030126398423892774,
+    "rms": 0.030126398513188817,
     "clippedSamples": 0
   },
   "limitations": [

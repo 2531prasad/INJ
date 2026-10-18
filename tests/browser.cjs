@@ -10,7 +10,7 @@ catch (_) { pw = require(path.join(process.env.HOME, '.cache/codex-runtimes/code
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const hook = `window.__test={game,player,dummy,input,pressBuf,projectiles,afterimages,MOVES,
-  resetRound,resetInput,queueAction,startAttack,stepAttack,applyHit,tryHit,updateProjectiles,controlPlayer,controlDummy,physics,update,updateFlow,endRound,dodgeDummy,FIGHTER_SCALE,hurtbox,arenaImg,startRoast,advanceRoast,finishRoast,ROASTS,stageDuelAt,drawStageDuel,render,ctx,spriteSheets,walkSheets,WALK_FRAME_DISTANCE,sampleAttackAnimation,sampleFighterAnimation,RENDER_SCALE,get W(){return W;},fitArena,
+  resetRound,resetInput,queueAction,startAttack,stepAttack,applyHit,tryHit,updateProjectiles,controlPlayer,controlDummy,physics,update,updateFlow,endRound,dodgeDummy,FIGHTER_SCALE,hurtbox,arenaImg,startRoast,advanceRoast,finishRoast,ROASTS,stageDuelAt,drawStageDuel,drawFighter,render,ctx,spriteSheets,walkSheets,WALK_FRAME_DISTANCE,sampleAttackAnimation,sampleFighterAnimation,RENDER_SCALE,get W(){return W;},fitArena,
   settle(){game.round=0;resetRound();game.state='fight';game.paused=true;game.msg=null;dummy.aiT=999;}};`;
 const instrumented = source.replace('\n})();\n</script>', `\n${hook}\n})();\n</script>`);
 assert.notEqual(instrumented, source, 'Test hook was injected only into the served test copy');
@@ -63,35 +63,42 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
       const near = (a,b) => Math.abs(a-b)<.01;
       const canvas = document.querySelector('#game');
       const content=canvas.getBoundingClientRect();
-      const expected=innerWidth>innerHeight?innerWidth/(innerHeight-56):2;
+      const expected=innerWidth>innerHeight?innerWidth/innerHeight:2;
       const wrongRatio=!near(content.width/content.height,canvas.width/canvas.height)||Math.abs(canvas.width/canvas.height-expected)>.01;
       const undersized = controls.some(el=>rect(el).width<44||rect(el).height<44);
-      const tools=rect(document.querySelector('.phone-tools'));
-      const fullscreen=rect(document.querySelector('#btnPhoneFullscreen'));
-      const landscapeGap=innerWidth>innerHeight&&Math.abs(arena.height-(innerHeight-56))>2;
-      const fullscreenMissing=fullscreen.height<44||fullscreen.top<arena.bottom-1||fullscreen.bottom>innerHeight||tools.width===0;
+      const fullscreen=rect(document.querySelector('#btnArenaMenu'));
+      const menu=document.querySelector('#btnArenaMenu'),icon=rect(menu.querySelector('svg'));
+      const overlap=r=>fullscreen.left<r.right&&fullscreen.right>r.left&&fullscreen.top<r.bottom&&fullscreen.bottom>r.top;
+      const utilityOverlap=[...controls,document.querySelector('#stickZone')].some(el=>visible(el)&&overlap(rect(el)));
+      const utilityHeavy=icon.width>20||icon.height>20||getComputedStyle(menu).borderTopWidth!=='0px'||document.querySelector('.arena-tools');
+      const landscapeGap=innerWidth>innerHeight&&Math.abs(arena.height-innerHeight)>2;
+      const fullscreenMissing=fullscreen.height<44||fullscreen.top<arena.top||fullscreen.bottom>arena.bottom||fullscreen.left<arena.left||fullscreen.right>arena.right||!!document.querySelector('.phone-tools');
       const menuOverlap = controls.some(el=>rect(el).top<arena.top+arena.height*.18);
-      return { overflow: document.documentElement.scrollWidth > innerWidth, offscreen, outsideArena, wrongRatio, undersized, landscapeGap, menuOverlap, fullscreenMissing };
+      return { overflow: document.documentElement.scrollWidth > innerWidth, offscreen, outsideArena, wrongRatio, undersized, landscapeGap, menuOverlap, fullscreenMissing,utilityOverlap,utilityHeavy:!!utilityHeavy };
     });
-    check(!Object.values(layout).some(Boolean), `Phone ${width}×${height}: dynamic aspect, on-screen targets ≥44px, landscape reserves fullscreen bar (${JSON.stringify(layout)})`);
-    if (width === 844) {
-      await page.locator('#btnArenaPause').click();
-      check(await page.locator('#pauseOverlay').isVisible() && await page.locator('#pauseOverlay [data-audio="music"]').isVisible(), 'Landscape on-screen pause opens the game and audio menu');
-      await page.locator('#btnResume').click();
-      await page.screenshot({ path: path.join(root, 'artifacts/phone-landscape.png') });
-    }
+    check(!Object.values(layout).some(Boolean), `Phone ${width}×${height}: dynamic aspect, on-screen targets ≥44px, fullscreen embedded and landscape fills height (${JSON.stringify(layout)})`);
+    await page.locator('#btnArenaMenu').click();
+    const menuLayout=await page.evaluate(()=>{
+      const r=document.querySelector('#screen').getBoundingClientRect(),p=document.querySelector('.pause-panel').getBoundingClientRect();
+      const controls=[...document.querySelectorAll('.pause-grid button')].map(el=>({rect:el.getBoundingClientRect(),overflow:el.scrollWidth>el.clientWidth+1}));
+      return p.top>=r.top&&p.bottom<=r.bottom&&p.left>=r.left&&p.right<=r.right&&controls.every(({rect:b,overflow})=>b.width>=44&&b.height>=44&&b.top>=p.top&&b.bottom<=p.bottom&&!overflow);
+    });
+    check(menuLayout,`Phone ${width}×${height}: compact settings menu fits, readable targets ≥44px`);
+    if(width===390||width===844)await page.screenshot({path:path.join(root,width===390?'artifacts/menu-portrait.png':'artifacts/menu-landscape.png')});
+    await page.locator('#btnResume').click();
+    if(width===844)await page.screenshot({path:path.join(root,'artifacts/phone-landscape.png')});
   }
   // A changing aspect changes world width without stretching or resetting combat.
   await page.evaluate(()=>{__test.settle();__test.player.hp=93;__test.dummy.hp=107;__test.startAttack(__test.player,'jab');__test.player.atk.t=.04;});
   const resizeBefore=await page.evaluate(()=>({width:__test.W,gap:__test.dummy.x-__test.player.x}));
   for(const [width,height] of [[956,440],[1024,500],[667,375]]){
     await viewport({width,height});
-    await page.waitForFunction(()=>Math.abs(__test.W/225-innerWidth/(innerHeight-56))<.01);
+    await page.waitForFunction(()=>Math.abs(__test.W/225-innerWidth/innerHeight)<.01);
     const sizing=await page.evaluate(()=>{
       const t=__test,r=document.querySelector('#game').getBoundingClientRect();
       return {ratio:r.width/r.height,backing:document.querySelector('#game').width/450,width:t.W,hp:[t.player.hp,t.dummy.hp],attack:t.player.atk?.t,gap:t.dummy.x-t.player.x,bounded:[t.player,t.dummy].every(f=>f.x>=26&&f.x<=t.W-26)};
     });
-    check(Math.abs(sizing.ratio-width/(height-56))<.01&&Math.abs(sizing.backing-sizing.ratio)<.01&&sizing.width!==resizeBefore.width,`Dynamic ${width}×${height}: canvas fills available space with uniform scaling`);
+    check(Math.abs(sizing.ratio-width/height)<.01&&Math.abs(sizing.backing-sizing.ratio)<.01&&sizing.width!==resizeBefore.width,`Dynamic ${width}×${height}: canvas fills available space with uniform scaling`);
     check(sizing.hp[0]===93&&sizing.hp[1]===107&&sizing.attack===.04&&Math.abs(sizing.gap-resizeBefore.gap)<.001&&sizing.bounded,`Dynamic ${width}×${height}: resize preserves health, attack progress and fighter spacing`);
   }
   await viewport({width:390,height:844});
@@ -153,20 +160,32 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     check(await page.evaluate(()=>!__test.player.grounded&&__test.player.vy<0&&__test.input.right===1&&__test.player.vx>0),`Phone ${width}×${height}: joystick diagonal-up launches a forward jump`);
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   }
-  await page.locator('#btnPhoneFullscreen').click();
+  await page.locator('#btnArenaMenu').click();
+  await page.locator('#pauseOverlay [data-audio="music"]').focus();
+  await page.keyboard.press('Tab');
+  check(await page.evaluate(()=>document.activeElement.id==='btnResume'),'Game menu traps Tab at the last action');
+  await page.keyboard.press('Shift+Tab');
+  check(await page.evaluate(()=>document.activeElement.dataset.audio==='music'),'Game menu traps Shift+Tab at the first action');
+  const mutedBefore=await page.evaluate(()=>InjAudio.muted);
+  await page.locator('#pauseOverlay [data-audio="sound"]').click();
+  check(await page.evaluate(before=>InjAudio.muted!==before&&document.querySelector('#pauseOverlay [data-audio="sound"]').textContent.includes(InjAudio.muted?'off':'on'),mutedBefore),'Compact menu audio action updates sound state and label');
+  await page.locator('#pauseOverlay [data-audio="sound"]').click();
+  await page.locator('#pauseOverlay [data-fullscreen]').click();
   await page.waitForFunction(()=>!!document.fullscreenElement);
-  check(await page.evaluate(()=>document.fullscreenElement===document.documentElement&&document.body.classList.contains('native-fullscreen')&&Math.abs(__test.W/225-innerWidth/innerHeight)<.01),'Phone fullscreen button below arena enters native fullscreen');
-  await page.locator('#btnArenaPause').click();
+  check(await page.evaluate(()=>document.fullscreenElement===document.querySelector('.wrap')&&document.body.classList.contains('native-fullscreen')&&Math.abs(__test.W/225-innerWidth/innerHeight)<.01),'Compact game menu enters native fullscreen and fills the display');
   await page.locator('#pauseOverlay [data-fullscreen]').click();
   await page.waitForFunction(()=>!document.fullscreenElement);
-  check(await page.locator('#btnPhoneFullscreen').isVisible(),'Fullscreen can be exited from the phone pause menu');
+  check(await page.locator('#pauseOverlay [data-fullscreen]').isVisible(),'Fullscreen can be exited from the phone pause menu');
   await page.locator('#btnResume').click();
-  await page.evaluate(()=>{document.documentElement.requestFullscreen=undefined;document.documentElement.webkitRequestFullscreen=undefined;});
-  await page.locator('#btnPhoneFullscreen').click();
+  check(await page.evaluate(()=>document.activeElement.id==='btnArenaMenu'&&document.querySelector('#btnArenaMenu').getAttribute('aria-expanded')==='false'),'Closing game menu restores focus to the quiet trigger');
+  await page.evaluate(()=>{document.querySelector('.wrap').requestFullscreen=undefined;document.querySelector('.wrap').webkitRequestFullscreen=undefined;});
+  await page.locator('#btnArenaMenu').click();
+  await page.locator('#pauseOverlay [data-fullscreen]').click();
   check(await page.evaluate(()=>document.body.classList.contains('expanded-view')&&document.querySelector('#fullscreenStatus').textContent.includes('Add to Home Screen')),'Unsupported phone fullscreen shows an expanded view with an honest Home Screen hint');
-  await page.locator('#btnPhoneFullscreen').click();
+  await page.locator('#pauseOverlay [data-fullscreen]').click();
   check(await page.evaluate(()=>!document.body.classList.contains('expanded-view')),'Expanded-view fallback can be exited');
-  await page.evaluate(()=>{delete document.documentElement.requestFullscreen;delete document.documentElement.webkitRequestFullscreen;__test.settle();});
+  await page.locator('#btnResume').click();
+  await page.evaluate(()=>{delete document.querySelector('.wrap').requestFullscreen;delete document.querySelector('.wrap').webkitRequestFullscreen;__test.settle();});
   await viewport({width:390,height:844});
 
   const animationChecks=await page.evaluate(()=>{
@@ -284,50 +303,75 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   });
   for (const [name, passed] of Object.entries(mechanics)) check(passed, `Combat: ${name}`);
 
-  const sparring=await page.evaluate(()=>{
+  const difficulty=await page.evaluate(()=>{
     const t=__test,out={};
     function roundTwo(){t.settle();t.resetRound();t.game.state='fight';t.game.paused=true;t.game.msg=null;t.dummy.aiT=0;}
+    t.settle();t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);const warmDamage=130-t.dummy.hp;
     roundTwo();t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
     const damaged=t.dummy.hp;t.controlDummy(t.dummy,t.player,.016);
-    out.takesDamage=damaged===125&&t.dummy.hp===damaged&&t.dummy.state==='hurt';
-    roundTwo();t.dummy.state='block';t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
-    out.chipDamage=t.dummy.hp===129;
+    out.armoredButDamageable=damaged<130&&130-damaged<warmDamage&&t.dummy.hp===damaged;
+    roundTwo();t.dummy.state='block';t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);out.chipDamage=t.dummy.hp===129;
     roundTwo();t.dummy.x=t.player.x+40;
     t.projectiles.push({x:t.dummy.x,y:t.dummy.y-46,vx:0,life:1,owner:t.player,charged:true});t.updateProjectiles(.01);
-    out.chargedHit=t.dummy.hp===112&&t.dummy.state==='knockdown';
+    out.chargedHit=t.dummy.hp===125&&t.dummy.state==='knockdown';
     roundTwo();t.startAttack(t.dummy,'roundhouse');
-    out.readableAttack=t.dummy.atk.def.startup>=.24&&t.dummy.atk.def.recovery>=.34&&t.dummy.atk.def.dmg<t.MOVES.roundhouse.dmg;
+    out.fastHeavyAttack=t.dummy.atk.def.startup<=.045&&t.dummy.atk.def.recovery<=.075&&t.dummy.atk.def.dmg>t.MOVES.roundhouse.dmg;
     roundTwo();t.dummy.x=t.player.x+200;const before=t.dummy.x;t.controlDummy(t.dummy,t.player,.1);
-    out.pursuit=before-t.dummy.x<=7.21&&before>t.dummy.x;
+    out.fastPursuit=before-t.dummy.x>=30;
     roundTwo();t.dummy.x=t.player.x+45;t.dodgeDummy(t.dummy,t.player);
-    out.vulnerableDodge=t.dummy.dodgeCooldown>=1.8&&t.dummy.invuln===0;
-    t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);out.dodgeCanBeHit=t.dummy.hp===125&&t.dummy.dodgeT===0;
+    out.quickDodge=t.dummy.dodgeCooldown<=.24&&t.dummy.invuln>0&&t.dummy.dodgeT<=.13;
     roundTwo();t.dummy.hp=1;t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
-    out.beatable=t.game.state==='ko'&&t.game.msg.text==='INJ WINS'&&!t.game.lost;
+    out.stillBeatable=t.game.state==='ko'&&t.game.msg.text==='INJ WINS'&&!t.game.lost;
     roundTwo();t.game.roundTime=.001;t.player.hp=120;t.dummy.hp=1;t.updateFlow(.01);
-    out.fairTimeout=t.game.state==='ko'&&t.game.msg.text==='INJ WINS';
+    out.noForcedOutcome=t.game.msg.text==='INJ WINS';
     roundTwo();t.dummy.x=t.player.x+55;
-    for(let i=0;i<480&&t.game.state==='fight';i++){t.controlPlayer(t.player,t.dummy,1/120);t.controlDummy(t.dummy,t.player,1/120);}
-    out.breathingRoom=t.player.hp>80&&t.game.state==='fight';
-    roundTwo();t.game.round=20;t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
-    out.laterRoundsBeatable=t.dummy.hp===125;
-    roundTwo();t.player.x=170;t.dummy.x=225;
-    for(let i=0;i<7200&&t.game.state==='fight';i++){
-      if(!t.player.atk&&t.player.hitstun<=0)t.pressBuf.punch=performance.now()+220;
-      t.input.right=+(t.dummy.x-t.player.x>55);t.input.left=+(t.player.x-t.dummy.x>55);
-      t.controlPlayer(t.player,t.dummy,1/120);t.controlDummy(t.dummy,t.player,1/120);
-    }
-    out.simpleComboWins=t.game.state==='ko'&&!t.game.lost&&t.game.msg.text==='INJ WINS';
-    t.settle();return out;
+    for(let i=0;i<2400&&t.game.state==='fight';i++){t.controlPlayer(t.player,t.dummy,1/120);t.controlDummy(t.dummy,t.player,1/120);}
+    out.idlePlayerLoses=t.player.hp===0&&t.game.lost;
+    roundTwo();t.game.round=20;t.startAttack(t.dummy,'jab');out.laterRoundsHard=t.dummy.atk.def.recovery<=.075;
+    const play=InjAudio.play;InjAudio.play=()=>{};
+    let dummyWins=0,playerWins=0;
+    try{
+      for(let trial=0;trial<100;trial++){
+        roundTwo();t.game.paused=false;t.game.roundTime=30;
+        const policy=trial%7;
+        for(let frame=0;frame<1801&&t.game.state==='fight';frame++){
+          const p=t.player,op=t.dummy,dir=Math.sign(op.x-p.x),gap=Math.abs(op.x-p.x);
+          t.input.left=0;t.input.right=0;t.input.down=+(policy===6);t.input.up=+(policy===4);t.input.block=+(policy===5);
+          if(policy&&policy!==5&&policy!==6){
+            const move=policy===3?-dir:gap>56?dir:0;t.input.left=+(move<0);t.input.right=+(move>0);
+          }
+          if(policy&&!p.atk&&p.hitstun<=0){
+            const act=policy===1?'punch':policy===2?['punch','kick','upper'][Math.floor(frame/24)%3]:policy===3?'special':policy===4?'kick':policy===5?(frame%80<8?'punch':null):'kick';
+            if(act)t.pressBuf[act]=performance.now()+220;
+          }
+          t.update(1/60);
+        }
+        if(t.game.state==='fight')t.endRound(t.player.hp>=t.dummy.hp?t.player:t.dummy);
+        if(t.game.lost)dummyWins++;else playerWins++;
+      }
+    }finally{InjAudio.play=play;t.settle();}
+    return {checks:out,benchmark:{trials:100,policies:7,dummyWins,playerWins}};
   });
-  for(const [name,passed] of Object.entries(sparring))check(passed,`Manageable opponent: ${name}`);
+  for(const [name,passed] of Object.entries(difficulty.checks))check(passed,`Nightmare opponent: ${name}`);
+  check(difficulty.benchmark.dummyWins>=99,`Nightmare benchmark: dummy wins ${difficulty.benchmark.dummyWins}/100 against seven scripted play styles (not a human win-rate estimate)`);
+  const halos=await page.evaluate(()=>{
+    const t=__test;t.settle();const f={...t.player,charge:0};
+    // Stabilize Chrome's GPU-to-CPU readback switch before comparing alpha edges.
+    for(let i=0;i<4;i++)t.ctx.getImageData(0,0,1,1);
+    t.ctx.clearRect(0,0,t.W,225);t.drawFighter(f);const before=t.ctx.getImageData(0,0,t.W*2,450).data;
+    t.ctx.clearRect(0,0,t.W,225);t.drawFighter({...f,charge:3});const after=t.ctx.getImageData(0,0,t.W*2,450).data;
+    const noChargeHalo=before.every((value,i)=>value===after[i]);
+    document.querySelector('#btnPause').focus();const noFocusRing=getComputedStyle(document.querySelector('#btnPause')).outlineStyle==='none';
+    t.render(0);return {noChargeHalo,noFocusRing};
+  });
+  check(halos.noChargeHalo,'INJ charged sprite has no hand or floor halo');
+  check(halos.noFocusRing,'Focused buttons have no outline halo');
   await viewport({width:844,height:390});
   await page.evaluate(()=>{__test.settle();__test.resetRound();__test.game.state='fight';__test.game.msg=null;__test.game.paused=false;__test.dummy.x=__test.player.x+55;__test.dummy.aiT=0;});
-  await page.waitForFunction(()=>__test.player.hp<120,null,{timeout:10000});
-  check(await page.evaluate(()=>__test.game.round===2&&__test.player.hp>80),'Live round two attacks at a manageable pace');
-  await page.screenshot({path:path.join(root,'artifacts/round-two-sparring.png')});
-  await page.evaluate(()=>{__test.settle();});
-  await viewport({width:390,height:844});
+  await page.waitForFunction(()=>__test.player.hp<120,null,{timeout:6000});
+  check(await page.evaluate(()=>__test.game.round===2),'Live round two attacks aggressively');
+  await page.screenshot({path:path.join(root,'artifacts/round-two-nightmare.png')});
+  await page.evaluate(()=>{__test.settle();});await viewport({width:390,height:844});
 
   // Loss-only, player-paced cat exchange; the game waits for reading and input.
   await page.evaluate(()=>{const t=__test;t.settle();t.endRound(t.dummy);t.updateFlow(3.1);});
@@ -434,7 +478,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await pc.waitForTimeout(100);
   await pc.screenshot({path:path.join(root,'artifacts/background-duel-victory.png')});
   check(errors.length===0, `No browser runtime errors (${errors.join('; ')})`);
-  const report={checks,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review']};
+  const report={checks,nightmareBenchmark:difficulty.benchmark,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review']};
   fs.writeFileSync(path.join(root,'artifacts/validation.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify(report,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();server.kill();});

@@ -160,11 +160,7 @@
     font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.12em;
     padding:14px 22px;background:linear-gradient(180deg, #b3232c 0%, #75141b 100%);
     border:2px solid #e0603c;color:#fff;border-radius:6px;cursor:pointer;
-    min-height:48px;box-shadow:0 6px 20px rgba(179,35,44,.4);transition:background .15s ease,transform .15s ease;
-  }
-  @keyframes ctaPulse{
-    0%{transform:scale(1);box-shadow:0 0 10px rgba(179,35,44,.4);}
-    100%{transform:scale(1.03);box-shadow:0 0 24px rgba(224,96,60,.7);}
+    min-height:48px;box-shadow:inset 0 1px 0 #ffffff20;transition:background .15s ease,transform .15s ease;
   }
   .fight-cta:active{transform:scale(.96);}
   .intro-tip{font-size:11px;color:#8b8577;}
@@ -207,17 +203,26 @@
   .abtn{font-size:7px;background:linear-gradient(160deg,#30282b,#16131a);box-shadow:0 4px 0 #09080d,inset 0 1px 0 #ffffff12;}
   .abtn.big{font-size:8px;}
   .abtn.sp{width:112px;height:46px;font-size:7px;color:#edc77e;}
-  .abtn.ready{border-color:#ffd681;box-shadow:0 0 16px #d9a44145,inset 0 1px 0 #ffe7a44a;color:#fff0c7;}
-  .pause-overlay{position:absolute;inset:0;z-index:8;background:#090811c9;backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;}
+  .abtn.ready{border-color:#ffd681;box-shadow:inset 0 1px 0 #ffe7a44a;color:#fff0c7;}
+  .pause-overlay{position:absolute;inset:0;z-index:8;background:#080a1099;backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:4px;}
   .pause-overlay[hidden]{display:none;}
-  .pause-overlay p{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--gold);}
-  .pause-overlay small{font-size:13px;color:#c0b298;}
+  .pause-panel{width:min(360px,calc(100% - 12px));max-height:100%;overflow:auto;padding:10px;border-radius:16px;background:#17171fee;box-shadow:0 10px 28px #0006;}
+  .pause-panel h2{margin:0 0 8px;font:600 10px/18px 'Chakra Petch',sans-serif;letter-spacing:.2em;color:#b9b2a8;text-align:left;}
+  .pause-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+  .pause-grid button{min-width:0;min-height:44px;padding:6px;border:0;border-radius:6px;background:#ffffff0a;color:#d9d2c7;font:600 12px/15px 'Chakra Petch',sans-serif;cursor:pointer;touch-action:manipulation;}
+  .pause-grid button:hover,.pause-grid button:focus-visible{background:#ffffff14;}
+  .pause-grid button:active{background:#ffffff20;}
+  .pause-grid .menu-resume{grid-column:span 2;background:#d9c397;color:#211d1a;}
+  .pause-grid .menu-resume:hover,.pause-grid .menu-resume:focus-visible{background:#e9d5ad;}
+  .pause-grid .menu-resume:active{background:#f2ddb4;}
+  .pause-grid [data-audio][aria-pressed="false"]{color:#8a8786;}
   .intro-card{margin:auto;flex-shrink:0;}
   .intro-tag{font-size:7px;line-height:1.8;}
   .intro-footer .sound-strip{width:100%;}
   .intro-tip{line-height:1.6;}
   .intro-quick{display:none;}
-  button:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
+  button:focus,summary:focus{outline:none;}
+  button:focus-visible{box-shadow:none;background-color:#342b30;}
   @media(max-width:680px) and (orientation:portrait){
     .wrap{padding:10px 10px calc(12px + env(safe-area-inset-bottom));gap:10px;}
     .plaque{padding-bottom:8px;gap:8px;}
@@ -226,7 +231,6 @@
     .kicker{font-size:5px;letter-spacing:.05em;}
     .plaque-btns{gap:4px;}
     .plaque-btns .pbtn{font-size:6px;padding:6px 8px;}
-    #btnFullscreen{display:none;}
     .sound-strip{gap:4px;}
     .sound-strip .pbtn{padding:6px 8px;}
     .screen{border-width:2px;border-radius:8px;}
@@ -258,16 +262,13 @@
     .intro-footer .sound-strip{width:auto;}
     .intro-tip{display:none;}
   }
-  .arena-pause{display:none;position:absolute;z-index:4;top:15%;left:calc(50% - 22px);width:44px;height:44px;align-items:center;justify-content:center;border:1px solid #e8dcc23d;border-radius:6px;background:#100e1699;color:var(--bone);font-size:20px;cursor:pointer;touch-action:manipulation;}
-  .pause-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;}
-  .pause-overlay .fight-cta{width:auto;}
   #pad{z-index:3;right:12px;bottom:12px;gap:10px;}
   #pad .padrow{gap:10px;}
   #pad .abtn{width:64px;height:60px;background:#17131b8c;box-shadow:inset 0 1px 0 #ffffff17;font-size:8px;border-color:#e8dcc270;}
   #pad .abtn.big{width:72px;height:72px;border-radius:50%;font-size:8px;}
   #pad .abtn.sp{width:64px;height:48px;font-size:7px;color:#edc77e;}
   #pad .abtn.down{background:#9f2834c9;border-color:var(--gold);}
-  #pad .abtn.ready{border-color:#ffd681;box-shadow:0 0 16px #d9a44145;}
+  #pad .abtn.ready{border-color:#ffd681;box-shadow:none;}
   #stickZone{z-index:2;top:28%;height:72%;width:42%;}
   #stickZone::before{content:'';position:absolute;left:20px;bottom:22px;width:110px;height:110px;border:2px solid #e8dcc24d;border-radius:50%;background:radial-gradient(circle,#d9a44130 0 20%,#e8dcc208 21% 100%);pointer-events:none;}
   #stickZone::after{content:'MOVE / ↑ JUMP';position:absolute;left:20px;bottom:8px;width:114px;text-align:center;font-size:9px;color:#e8dcc299;pointer-events:none;}
@@ -285,10 +286,6 @@
     #stickBase{width:88px;height:88px;}
     #stickKnob{width:44px;height:44px;}
   }
-  @media (pointer:coarse) and (orientation:landscape), (max-height:550px) and (orientation:landscape){
-    .arena-pause{display:flex;}
-  }
-  .phone-tools{display:none;}
   .stick-directions{pointer-events:none;position:absolute;left:20px;bottom:22px;width:110px;height:110px;color:#e8dcc2aa;font-size:18px;}
   .stick-directions span{position:absolute;}
   .stick-directions span:nth-child(1){left:calc(50% - 6px);top:3px;}
@@ -296,18 +293,19 @@
   .stick-directions span:nth-child(3){right:5px;top:calc(50% - 12px);}
   .stick-directions span:nth-child(4){left:calc(50% - 6px);bottom:2px;}
   #stickZone.active .stick-directions{opacity:0;}
-  @media (pointer:coarse), (max-width:680px), (max-height:550px){
-    .phone-tools{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:100%;min-height:56px;padding:6px;}
-    .phone-tools .pbtn{min-height:44px;min-width:180px;font-size:8px;touch-action:manipulation;}
-    #fullscreenStatus{max-width:340px;text-align:center;font-size:12px;color:var(--bone);}
-    #fullscreenStatus:empty{display:none;}
-    .native-fullscreen .phone-tools{display:none;}
-  }
+  .arena-menu{position:absolute;z-index:4;left:calc(50% - 22px);bottom:0;width:44px;height:44px;padding:0;border:0;background:transparent;color:#ded7cbbf;cursor:pointer;touch-action:manipulation;}
+  .arena-menu svg{position:absolute;width:18px;height:18px;left:13px;bottom:5px;fill:currentColor;filter:drop-shadow(0 1px 1px #000b);pointer-events:none;}
+  .arena-menu:hover,.arena-menu:focus-visible{background:transparent;color:#fff1d6;box-shadow:none;}
+  .arena-menu:active{color:#fff;}
+  #fullscreenStatus{display:block;margin-top:8px;color:#c0b6a8;font:400 11px/15px 'Chakra Petch',sans-serif;text-wrap:pretty;}
+  #fullscreenStatus:empty{display:none;}
+  .wrap:fullscreen,.wrap:-webkit-full-screen,.native-fullscreen .wrap,.expanded-view .wrap{max-width:none;width:100%;height:100dvh;min-height:100dvh;padding:0;gap:0;align-items:center;justify-content:center;background:#09080e;}
+  .native-fullscreen .plaque,.expanded-view .plaque{display:none;}
+  .native-fullscreen .screen,.expanded-view .screen{border:0;border-radius:0;box-shadow:none;}
+  .expanded-view .wrap{position:fixed;inset:0;z-index:900;}
   @media (max-width:680px) and (orientation:portrait){
     .stick-directions{left:10px;bottom:22px;width:76px;height:76px;font-size:16px;}
   }
-  .expanded-view .plaque{display:none;}
-  .expanded-view .wrap{max-width:none;min-height:100dvh;padding:0;justify-content:center;}
   @media(prefers-reduced-motion:reduce){
     *,*::before,*::after{animation:none!important;transition:none!important;}
   }
@@ -417,7 +415,6 @@
     <div class="plaque-btns">
       <button class="pbtn" id="btnShowIntro">PROFILE</button>
       <button class="pbtn alt" id="btnPause" aria-label="Pause game">PAUSE</button>
-      <button class="pbtn alt" id="btnFullscreen" data-fullscreen aria-pressed="false">FULLSCREEN</button>
     </div>
     <div class="sound-strip"><button class="pbtn alt" data-audio="sound" aria-pressed="true">SOUND ON</button><button class="pbtn alt" data-audio="music" aria-pressed="true">MUSIC ON</button></div>
     <div class="legend">
@@ -435,8 +432,20 @@
 
   <div class="screen" id="screen">
     <canvas id="game" width="900" height="450" aria-label="INJ arcade fighting arena"></canvas>
-    <button id="btnArenaPause" class="arena-pause" aria-label="Pause game">Ⅱ</button>
-    <div id="pauseOverlay" class="pause-overlay" hidden><p>TAKE A BREATH</p><button class="fight-cta" id="btnResume">RESUME FIGHT</button><div class="pause-actions"><button class="pbtn alt" data-profile>PROFILE</button><button class="pbtn alt" data-fullscreen aria-pressed="false">FULLSCREEN</button><button class="pbtn alt" data-audio="sound" aria-pressed="true">SOUND ON</button><button class="pbtn alt" data-audio="music" aria-pressed="true">MUSIC ON</button></div><small>Your fight is right where you left it.</small></div>
+    <button id="btnArenaMenu" class="arena-menu" aria-label="Pause and game settings" aria-controls="pauseOverlay" aria-expanded="false" title="Game menu"><svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="3" cy="9" r="1.5"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="9" r="1.5"/></svg></button>
+    <div id="pauseOverlay" class="pause-overlay" hidden>
+      <section class="pause-panel" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+        <h2 id="pauseTitle">PAUSED</h2>
+        <div class="pause-grid">
+          <button class="menu-resume" id="btnResume">Resume fight</button>
+          <button data-fullscreen aria-pressed="false">Full screen</button>
+          <button data-profile>INJ profile</button>
+          <button data-audio="sound" aria-pressed="true">Sound on</button>
+          <button data-audio="music" aria-pressed="true">Music on</button>
+        </div>
+        <small id="fullscreenStatus" role="status"></small>
+      </section>
+    </div>
     <div class="crt"></div>
     <div id="stickZone" aria-label="Joystick: left and right to move, up to jump, down to crouch">
       <div class="stick-directions" aria-hidden="true"><span>↑</span><span>←</span><span>→</span><span>↓</span></div>
@@ -454,7 +463,6 @@
       </div>
     </div>
   </div>
-  <div class="phone-tools"><button class="pbtn alt" id="btnPhoneFullscreen" data-fullscreen aria-pressed="false">FULLSCREEN</button><small id="fullscreenStatus" role="status"></small></div>
 </div>
 
 <div id="roastModal" class="roast-overlay" role="dialog" aria-modal="true" aria-labelledby="roastTitle" hidden>
@@ -566,7 +574,7 @@ function makeFighter(o){return{
   hp:o.hp,maxHp:o.hp,state:'idle',anim:0,walkPhase:0,grounded:true,
   vx:0,vy:0,atk:null,hitstun:0,flash:0,knockT:0,invuln:0,
   comboStep:0,comboTimer:0,fallT:0,crouching:false,aiT:0.4,blockT:0,pose:null,charge:0,
-  dodgeT:0,dodgeCooldown:0,dodgeFrom:0,dodgeTo:0,leapCooldown:0,rushStep:0,lastThreat:null,evadeTextT:0
+  dodgeT:0,dodgeCooldown:0,dodgeFrom:0,dodgeTo:0,leapCooldown:0,rushStep:0,lastThreat:null,lastMissile:null,evadeTextT:0
 };}
 
 const player=makeFighter({name:'INJ',kind:'inj',pal:INJ_PAL,x:W/2-56,facing:1,hp:120});
@@ -606,6 +614,7 @@ function dust(x,y){
 /* ============================== game state ============================== */
 const game={state:'intro',t:0,roundTime:99,msg:null,hitStop:0,shake:0,shakeX:0,shakeY:0,
   koTimer:0,hits:0,hitTimer:0,round:1,paused:true,started:false,elapsed:0,lost:false,roastCount:0,roastStep:0,roastSet:0};
+const isNightmare=f=>f===dummy&&game.round>=2;
 const ROASTS=[
   [
     ['CAT','HAHA. You brought a gold ring to a fight and still got pawned.'],
@@ -659,7 +668,7 @@ function updateFlow(dt){
     game.t+=dt;
     if(game.t<1.1){
       if(!game.gongPlayed){Sfx.play('gong');game.gongPlayed=true;}
-      game.msg={text:'ROUND '+game.round,sub:game.round>=2?'SPARRING':'',big:15};
+      game.msg={text:'ROUND '+game.round,sub:game.round>=2?'DUMMY AWAKENED':'',big:15};
     }
     else if(game.t<1.8) game.msg={text:'FIGHT!',sub:'',big:22};
     else {game.msg=null;game.state='fight';}
@@ -683,8 +692,8 @@ function startAttack(f,key){
   f.atk={key:key,def:MOVES[key],t:0,hasHit:false,fired:false};
   if(f===dummy&&game.round>=2){
     const move=MOVES[key];
-    f.atk.def={...move,startup:Math.max(.24,move.startup),recovery:Math.max(.34,move.recovery),
-      dmg:Math.max(3,Math.round(move.dmg*.65))};
+    f.atk.def={...move,startup:Math.min(.045,move.startup*.5),recovery:Math.min(.075,move.recovery*.25),
+      dmg:Math.ceil(move.dmg*1.6)};
   }
   if(f===player&&key==='toss'){
     f.atk.charged=f.charge>=3;
@@ -724,9 +733,10 @@ function tryHit(att,def){
 }
 function applyHit(def,att,d,cx,cy){
   if(def.invuln>0||def.state==='knockdown'||def.state==='ko'||game.state!=='fight')return;
+  if(isNightmare(def))d={...d,dmg:Math.max(1,Math.round(d.dmg*.3)),kb:d.kb*.25};
   const facingAttacker=Math.sign(att.x-def.x)===def.facing;
   if(def.state==='block'&&facingAttacker){
-    def.hp=Math.max(0,def.hp-Math.round(d.dmg*.2));
+    def.hp=Math.max(0,def.hp-Math.max(1,Math.round(d.dmg*.2)));
     def.vx=att.facing*d.kb*.45;def.flash=.1;
     blockSpark(cx,cy);game.shake=1.5;game.hitStop=.03;Sfx.play('block');
     if(def.hp<=0){def.state='ko';def.grounded=false;def.vy=-170;endRound(att);}
@@ -757,9 +767,9 @@ function applyHit(def,att,d,cx,cy){
     def.state='ko';def.vy=-235;def.grounded=false;def.vx=att.facing*d.kb*1.5;
     endRound(att);
   }else if(d.knockdown){
-    def.state='knockdown';def.knockT=0;def.vy=-190;def.grounded=false;def.hitstun=0;
+    def.state='knockdown';def.knockT=0;def.vy=isNightmare(def)?-95:-190;def.grounded=false;def.hitstun=0;
   }else{
-    def.hitstun=d.heavy?0.4:0.26;
+    def.hitstun=isNightmare(def)?.055:d.heavy?.4:.26;
     def.state='hurt';
   }
 }
@@ -879,20 +889,22 @@ function controlPlayer(f,op,dt){
     f.facing=op.x>f.x?1:-1;
   }
 }
-// All rounds are beatable. Round one stays gentle; later rounds spar at a fixed,
-// moderate pace with visible wind-ups, recovery and breathing room between attacks.
-function dodgeDummy(f,op){
+// Round one is gentle. Round two onward deliberately targets near-certain defeat,
+// through overwhelming reactions and pressure, with real but rare damage windows.
+function dodgeDummy(f,op,leap=false){
   if(f.dodgeCooldown>0||f.hitstun>0||['ko','knockdown'].includes(f.state)||game.state!=='fight')return false;
   const dir=Math.sign(op.x-f.x)||f.facing;
-  f.atk=null;f.vx=0;f.blockT=0;f.dodgeT=.22;f.dodgeCooldown=1.8;
-  f.dodgeFrom=f.x;f.dodgeTo=clamp(f.x-dir*24,26,W-26);f.state='dodge';
+  const hard=isNightmare(f);
+  f.atk=null;f.vx=0;f.blockT=0;f.dodgeT=hard?.13:.22;f.dodgeCooldown=hard?.24:1.8;
+  f.dodgeFrom=f.x;f.dodgeTo=clamp(hard&&Math.abs(op.x-f.x)<100?op.x+dir*58:f.x-dir*(hard?64:24),26,W-26);f.state='dodge';
+  if(hard){f.invuln=.14;if(leap&&f.grounded){f.grounded=false;f.vy=-360;}}
   return true;
 }
 function controlDummy(f,op,dt){
   f.anim+=dt;
+  if(isNightmare(f)){controlNightmareDummy(f,op,dt);return;}
   f.dodgeCooldown=Math.max(0,f.dodgeCooldown-dt);
   if(game.state!=='fight'){physics(f,dt);return;}
-  const sparring=game.round>=2;
   if(f.atk){stepAttack(f,dt,op);}
   else if(f.state==='ko'){/*falling*/}
   else if(f.state==='knockdown'){
@@ -910,27 +922,59 @@ function controlDummy(f,op,dt){
     f.aiT-=dt;
     const distance=Math.abs(op.x-f.x),dir=Math.sign(op.x-f.x)||f.facing;
     if(f.aiT<=0){
-      f.aiT=sparring?.65+rnd()*.5:.6+rnd()*.8;
+      f.aiT=.6+rnd()*.8;
       if(distance>72)f.state='walk';
-      else if(sparring){
-        const choice=rnd();
-        if(op.atk&&choice<.12&&dodgeDummy(f,op)){/* occasional, vulnerable backstep */}
-        else if(choice<.32){f.blockT=.25+rnd()*.2;f.state='block';}
-        else{
-          const chain=['jab','straight','haymaker','roundhouse','jab','sweep'];
-          startAttack(f,chain[f.rushStep++%chain.length]);
-        }
-      }else if(distance<56&&rnd()<.26)startAttack(f,'haymaker');
+      else if(distance<56&&rnd()<.26)startAttack(f,'haymaker');
       else if(rnd()<.32){f.blockT=.55+rnd()*.55;f.state='block';}
       else f.state='idle';
     }
     if(f.state==='walk'&&!f.atk){
-      const travel=Math.min((sparring?72:54)*dt,Math.max(0,distance-54));
+      const travel=Math.min(54*dt,Math.max(0,distance-54));
       if(travel>0)moveWalking(f,dir*travel);else f.state='idle';
     }
   }
   physics(f,dt);
   if(!f.atk&&f.grounded&&!['ko','hurt','knockdown','dodge'].includes(f.state))f.facing=op.x>f.x?1:-1;
+}
+
+function controlNightmareDummy(f,op,dt){
+  f.dodgeCooldown=Math.max(0,f.dodgeCooldown-dt);f.leapCooldown=Math.max(0,f.leapCooldown-dt);f.aiT=Math.max(0,f.aiT-dt);
+  if(game.state!=='fight'||f.state==='ko'){physics(f,dt);return;}
+  if(f.state==='knockdown'){
+    f.knockT+=dt;if(f.knockT>.22&&f.grounded){f.state='idle';f.invuln=.12;}
+    physics(f,dt);return;
+  }
+  if(f.hitstun>0){f.hitstun=Math.max(0,f.hitstun-dt);f.state='hurt';physics(f,dt);return;}
+  const distance=Math.abs(op.x-f.x),dir=Math.sign(op.x-f.x)||f.facing;
+  const melee=op.atk&&!op.atk.def.projectile&&!op.atk.hasHit&&op.atk!==f.lastThreat
+    &&distance<(op.atk.def.box[0]+op.atk.def.box[2]+24)*FIGHTER_SCALE&&Math.abs(op.y-f.y)<120;
+  const missile=projectiles.find(p=>p.owner===op&&p!==f.lastMissile&&(p.x-f.x)*p.vx<0&&Math.abs(p.x-f.x)<115);
+  if(melee||missile){
+    if(melee)f.lastThreat=op.atk;if(missile)f.lastMissile=missile;
+    if(rnd()<.985&&!f.dodgeT){
+      if(!dodgeDummy(f,op,!!missile)&&!f.atk){f.blockT=.09;f.state='block';}
+    }
+  }
+  if(f.dodgeT>0){
+    f.dodgeT=Math.max(0,f.dodgeT-dt);f.x=lerp(f.dodgeFrom,f.dodgeTo,smooth(1-f.dodgeT/.13));
+    if(f.dodgeT===0){f.state=f.grounded?'idle':'jump';f.aiT=0;}
+  }else if(f.atk){
+    if(distance>60)f.x+=dir*(f.grounded?155:260)*dt;
+    stepAttack(f,dt,op);
+  }else if(f.blockT>0){f.blockT=Math.max(0,f.blockT-dt);f.state='block';}
+  else{
+    f.facing=dir;
+    if(distance>58){
+      if(f.grounded)moveWalking(f,dir*Math.min(310*dt,distance-46));
+      else{f.state='jump';f.x+=dir*270*dt;}
+      if(f.grounded&&distance>125&&f.leapCooldown===0){f.vy=-345;f.grounded=false;f.state='jump';f.leapCooldown=.75;}
+    }
+    if(f.aiT===0&&distance<100){
+      const chain=['jab','straight','sweep','jab','uppercut','roundhouse'];
+      startAttack(f,!f.grounded?'jkick':!op.grounded?'uppercut':chain[f.rushStep++%chain.length]);f.aiT=.025;
+    }
+  }
+  physics(f,dt);if(!f.atk&&Math.abs(op.x-f.x)>3)f.facing=op.x>f.x?1:-1;
 }
 
 /* ============================== projectiles / particles ============================== */
@@ -1030,7 +1074,7 @@ function drawFighter(f,ghost=false){
     ctx.save();ctx.fillStyle='#05081170';
     const contact=clamp(1-(GROUND-f.y)/200,.55,1);
     ctx.beginPath();ctx.ellipse(f.x,GROUND+1,23*contact,3.2,0,0,Math.PI*2);ctx.fill();
-    if(f.charge>=3||f.awakenedLook){
+    if(f.awakenedLook){
       ctx.strokeStyle=f.kind==='inj'?'#d7bb6f88':'#f18b6177';ctx.lineWidth=.6;
       ctx.beginPath();ctx.ellipse(f.x,GROUND+1,25,3.2,0,.1,Math.PI-.1);ctx.stroke();
     }
@@ -1056,11 +1100,7 @@ function drawFighter(f,ghost=false){
     drawSpriteFrame(f,pose.frame,pose.atlas);ctx.filter='none';
   }
   ctx.restore();
-  if(f.kind==='inj'&&f.charge>=3&&!ghost&&!f.reflection){
-    const x=f.x+f.facing*13,y=f.y-69;
-    ctx.save();const glint=ctx.createRadialGradient(x,y,0,x,y,7);
-    glint.addColorStop(0,'#ffe7aab3');glint.addColorStop(1,'#d9a44100');ctx.fillStyle=glint;ctx.fillRect(x-7,y-7,14,14);ctx.restore();
-  }
+
 }
 
 /* A deterministic, cosmetic duel on the distant terrace. These actors never enter
@@ -1253,6 +1293,7 @@ function render(now){
   drawBar(W/2+34,12,W/2-66,9,dummy.hp/dummy.maxHp,true,'#b3232c','#e8b24c');
   text(player.name,32,32,7,'#e8d9b0','left');
   text(dummy.name,W-32,32,7,'#e8d9b0','right');
+  if(isNightmare(dummy))text('AWAKENED',W-32,41,4,'#ff9275','right');
   for(let i=0;i<3;i++){
     ctx.fillStyle=player.charge>i?'#edc878':'#544354';ctx.fillRect(32+i*8,37,5,2);
   }
@@ -1440,11 +1481,12 @@ const btnShowIntro=document.getElementById('btnShowIntro');
 const btnCloseIntro=document.getElementById('btnCloseIntro');
 const btnPause=document.getElementById('btnPause');
 const btnResume=document.getElementById('btnResume');
+const btnArenaMenu=document.getElementById('btnArenaMenu');
 let focusBeforeProfile=null;
 function syncAudioUI(){
   for(const btn of document.querySelectorAll('[data-audio]')){
     const sound=btn.dataset.audio==='sound',on=sound?!Sfx.muted:Sfx.musicEnabled;
-    btn.textContent=(sound?'SOUND ':'MUSIC ')+(on?'ON':'OFF');btn.setAttribute('aria-pressed',String(on));
+    btn.textContent=btn.closest('.pause-panel')?((sound?'Sound ':'Music ')+(on?'on':'off')):((sound?'SOUND ':'MUSIC ')+(on?'ON':'OFF'));btn.setAttribute('aria-pressed',String(on));
   }
 }
 document.querySelectorAll('[data-audio]').forEach(btn=>btn.addEventListener('click',()=>{
@@ -1457,35 +1499,35 @@ function closeIntro(){
   Sfx.start();
   introModal.classList.add('hidden');
   if(!game.started){game.started=true;game.t=0;game.gongPlayed=false;}
-  game.paused=false;pauseOverlay.hidden=true;resetInput();last=performance.now();
+  game.paused=false;pauseOverlay.hidden=true;btnArenaMenu.setAttribute('aria-expanded','false');resetInput();last=performance.now();
   Sfx.setMode(game.state==='fight'?'fight':'menu');
   btnPause.textContent='PAUSE';btnPause.setAttribute('aria-label','Pause game');
-  if(focusBeforeProfile)focusBeforeProfile.focus({preventScroll:true});else btnPause.focus({preventScroll:true});
+  if(focusBeforeProfile?.getClientRects().length)focusBeforeProfile.focus({preventScroll:true});else btnArenaMenu.focus({preventScroll:true});
 }
 function openIntro(){
   focusBeforeProfile=document.activeElement;
   game.paused=true;resetInput();Sfx.setMode('menu');
-  pauseOverlay.hidden=true;introModal.classList.remove('hidden');
+  pauseOverlay.hidden=true;btnArenaMenu.setAttribute('aria-expanded','false');introModal.classList.remove('hidden');
   btnStartFight.textContent=game.started?'RETURN TO FIGHT':'▶ ENTER THE ARENA';
   btnStartFight.focus({preventScroll:true});
 }
 function pauseGame(){
   if(!game.started||game.state==='roast'||!introModal.classList.contains('hidden'))return;
-  game.paused=true;resetInput();Sfx.setMode('menu');pauseOverlay.hidden=false;
+  game.paused=true;resetInput();Sfx.setMode('menu');pauseOverlay.hidden=false;btnArenaMenu.setAttribute('aria-expanded','true');
   btnPause.textContent='RESUME';btnPause.setAttribute('aria-label','Resume game');
   if(!document.hidden)btnResume.focus({preventScroll:true});
 }
 function resumeGame(){
   if(game.state==='roast'||!introModal.classList.contains('hidden'))return;
-  Sfx.start();game.paused=false;resetInput();last=performance.now();pauseOverlay.hidden=true;
+  Sfx.start();game.paused=false;resetInput();last=performance.now();pauseOverlay.hidden=true;btnArenaMenu.setAttribute('aria-expanded','false');
   Sfx.setMode(game.state==='fight'?'fight':'menu');
-  btnPause.textContent='PAUSE';btnPause.setAttribute('aria-label','Pause game');btnPause.focus({preventScroll:true});
+  btnPause.textContent='PAUSE';btnPause.setAttribute('aria-label','Pause game');btnArenaMenu.focus({preventScroll:true});
 }
 btnStartFight.addEventListener('click',closeIntro);
 btnShowIntro.addEventListener('click',openIntro);
 btnCloseIntro.addEventListener('click',closeIntro);
 btnPause.addEventListener('click',()=>game.paused?resumeGame():pauseGame());
-document.getElementById('btnArenaPause').addEventListener('click',pauseGame);
+btnArenaMenu.addEventListener('click',pauseGame);
 document.querySelector('[data-profile]').addEventListener('click',openIntro);
 btnResume.addEventListener('click',resumeGame);
 window.addEventListener('blur',()=>{resetInput();if(game.started)pauseGame();});
@@ -1499,7 +1541,9 @@ function syncFullscreenUI(){
   document.body.classList.toggle('native-fullscreen',native);
   const expanded=document.body.classList.contains('expanded-view');
   for(const btn of document.querySelectorAll('[data-fullscreen]')){
-    btn.textContent=native?'EXIT FULLSCREEN':expanded?'EXIT EXPANDED VIEW':'FULLSCREEN';
+    const label=native?'Exit fullscreen':expanded?'Exit expanded view':'Enter fullscreen';
+    btn.textContent=native?'Exit full screen':expanded?'Exit expanded view':'Full screen';
+    btn.setAttribute('aria-label',label);btn.title=label;
     btn.setAttribute('aria-pressed',String(native||expanded));
   }
 }
@@ -1511,10 +1555,11 @@ async function toggleFullscreen(){
   }else if(document.body.classList.contains('expanded-view')){
     document.body.classList.remove('expanded-view');fullscreenStatus.textContent='';
   }else{
-    const request=document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen;
+    const target=document.querySelector('.wrap');
+    const request=target.requestFullscreen||target.webkitRequestFullscreen;
     try{
       if(!request)throw new Error('Fullscreen unavailable');
-      await request.call(document.documentElement);
+      await request.call(target);
       fullscreenStatus.textContent='';
     }catch(_){
       document.body.classList.add('expanded-view');
@@ -1531,8 +1576,8 @@ for(const event of ['fullscreenchange','webkitfullscreenchange'])document.addEve
 /* ============================== keyboard ============================== */
 window.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
-  if(k==='tab'&&(!introModal.classList.contains('hidden')||game.state==='roast')){
-    const dialog=game.state==='roast'?roastModal:introModal;
+  if(k==='tab'&&(!introModal.classList.contains('hidden')||game.state==='roast'||!pauseOverlay.hidden)){
+    const dialog=game.state==='roast'?roastModal:!introModal.classList.contains('hidden')?introModal:pauseOverlay;
     const buttons=[...dialog.querySelectorAll('button')].filter(btn=>btn.getClientRects().length);
     const first=buttons[0],end=buttons[buttons.length-1];
     if(e.shiftKey&&(document.activeElement===first||!dialog.contains(document.activeElement))){e.preventDefault();end.focus();}
@@ -1605,7 +1650,7 @@ const arenaObserver=new ResizeObserver(()=>{
   if(fitPending)return;fitPending=true;
   requestAnimationFrame(()=>{fitPending=false;fitArena();});
 });
-for(const el of document.querySelectorAll('.wrap,.plaque,.phone-tools'))arenaObserver.observe(el);
+for(const el of document.querySelectorAll('.wrap,.plaque'))arenaObserver.observe(el);
 fitArena();
 btnStartFight.focus({preventScroll:true});
 
