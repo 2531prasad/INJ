@@ -594,7 +594,7 @@ function makeFighter(o){return{
   hp:o.hp,maxHp:o.hp,state:'idle',anim:0,walkPhase:0,grounded:true,
   vx:0,vy:0,atk:null,hitstun:0,flash:0,knockT:0,invuln:0,
   comboStep:0,comboTimer:0,fallT:0,crouching:false,aiT:0.4,blockT:0,pose:null,charge:0,
-  dodgeT:0,dodgeCooldown:0,dodgeFrom:0,dodgeTo:0,leapCooldown:0,rushStep:0,lastThreat:null,lastMissile:null,evadeTextT:0
+  dodgeT:0,dodgeCooldown:0,dodgeFrom:0,dodgeTo:0,rushStep:0,restT:0,openingT:0,burstLeft:0,lastThreat:null,lastMissile:null,evadeTextT:0
 };}
 
 const player=makeFighter({name:'INJ',kind:'inj',pal:INJ_PAL,x:W/2-56,facing:1,hp:120});
@@ -634,7 +634,7 @@ function dust(x,y){
 /* ============================== game state ============================== */
 const game={state:'intro',t:0,roundTime:99,msg:null,hitStop:0,shake:0,shakeX:0,shakeY:0,
   koTimer:0,hits:0,hitTimer:0,round:1,paused:true,started:false,elapsed:0,lost:false,roastCount:0,roastStep:0,roastSet:0};
-const isNightmare=f=>f===dummy&&game.round>=2;
+const isAwakened=f=>f===dummy&&game.round>=2;
 const ROASTS=[
   [
     ['CAT','HAHA. You brought a gold ring to a fight and still got pawned.'],
@@ -712,8 +712,8 @@ function startAttack(f,key){
   f.atk={key:key,def:MOVES[key],t:0,hasHit:false,fired:false};
   if(f===dummy&&game.round>=2){
     const move=MOVES[key];
-    f.atk.def={...move,startup:Math.min(.045,move.startup*.5),recovery:Math.min(.075,move.recovery*.25),
-      dmg:Math.ceil(move.dmg*1.6)};
+    f.atk.def={...move,startup:Math.max(.07,move.startup*1.15),recovery:Math.max(.18,move.recovery*.85),
+      dmg:Math.ceil(move.dmg*1.25)};
   }
   if(f===player&&key==='toss'){
     f.atk.charged=f.charge>=3;
@@ -753,7 +753,7 @@ function tryHit(att,def){
 }
 function applyHit(def,att,d,cx,cy){
   if(def.invuln>0||def.state==='knockdown'||def.state==='ko'||game.state!=='fight')return;
-  if(isNightmare(def))d={...d,dmg:Math.max(1,Math.round(d.dmg*.3)),kb:d.kb*.25};
+  if(isAwakened(def))d={...d,dmg:Math.max(1,Math.round(d.dmg*.4)),kb:d.kb*.65};
   const facingAttacker=Math.sign(att.x-def.x)===def.facing;
   if(def.state==='block'&&facingAttacker){
     def.hp=Math.max(0,def.hp-Math.max(1,Math.round(d.dmg*.2)));
@@ -787,11 +787,12 @@ function applyHit(def,att,d,cx,cy){
     def.state='ko';def.vy=-235;def.grounded=false;def.vx=att.facing*d.kb*1.5;
     endRound(att);
   }else if(d.knockdown){
-    def.state='knockdown';def.knockT=0;def.vy=isNightmare(def)?-95:-190;def.grounded=false;def.hitstun=0;
+    def.state='knockdown';def.knockT=0;def.vy=isAwakened(def)?-135:-190;def.grounded=false;def.hitstun=0;
   }else{
-    def.hitstun=isNightmare(def)?.055:d.heavy?.4:.26;
+    def.hitstun=isAwakened(def)?.16:d.heavy?.4:.26;
     def.state='hurt';
   }
+  if(isAwakened(def)){def.burstLeft=0;def.restT=Math.max(def.restT,.24);def.openingT=Math.max(def.openingT,.18);}
 }
 
 /* ============================== input ============================== */
@@ -909,20 +910,28 @@ function controlPlayer(f,op,dt){
     f.facing=op.x>f.x?1:-1;
   }
 }
-// Round one is gentle. Round two onward deliberately targets near-certain defeat,
-// through overwhelming reactions and pressure, with real but rare damage windows.
+// Round one is gentle. Awakened rounds favour evasive footwork and short bursts,
+// with committed strikes and visible breathing room that the player can punish.
 function dodgeDummy(f,op,leap=false){
   if(f.dodgeCooldown>0||f.hitstun>0||['ko','knockdown'].includes(f.state)||game.state!=='fight')return false;
   const dir=Math.sign(op.x-f.x)||f.facing;
-  const hard=isNightmare(f);
-  f.atk=null;f.vx=0;f.blockT=0;f.dodgeT=hard?.13:.22;f.dodgeCooldown=hard?.24:1.8;
-  f.dodgeFrom=f.x;f.dodgeTo=clamp(hard&&Math.abs(op.x-f.x)<100?op.x+dir*58:f.x-dir*(hard?64:24),26,W-26);f.state='dodge';
-  if(hard){f.invuln=.14;if(leap&&f.grounded){f.grounded=false;f.vy=-360;}}
+  const hard=isAwakened(f);
+  f.atk=null;f.vx=0;f.blockT=0;f.dodgeT=hard?.18:.22;f.dodgeCooldown=hard?.68:1.8;
+  f.dodgeFrom=f.x;f.dodgeTo=clamp(f.x-dir*(hard?48:24),26,W-26);
+  if(hard&&Math.abs(f.dodgeTo-f.x)<18)f.dodgeTo=clamp(op.x+dir*62,26,W-26);
+  f.state='dodge';
+  if(hard){
+    f.burstLeft=0;f.invuln=leap?.15:.1;
+    if(leap){
+      f.dodgeTo=clamp(f.x+dir*54,26,W-26);
+      if(f.grounded){f.grounded=false;f.vy=-430;}
+    }
+  }
   return true;
 }
 function controlDummy(f,op,dt){
   f.anim+=dt;
-  if(isNightmare(f)){controlNightmareDummy(f,op,dt);return;}
+  if(isAwakened(f)){controlAwakenedDummy(f,op,dt);return;}
   f.dodgeCooldown=Math.max(0,f.dodgeCooldown-dt);
   if(game.state!=='fight'){physics(f,dt);return;}
   if(f.atk){stepAttack(f,dt,op);}
@@ -957,11 +966,11 @@ function controlDummy(f,op,dt){
   if(!f.atk&&f.grounded&&!['ko','hurt','knockdown','dodge'].includes(f.state))f.facing=op.x>f.x?1:-1;
 }
 
-function controlNightmareDummy(f,op,dt){
-  f.dodgeCooldown=Math.max(0,f.dodgeCooldown-dt);f.leapCooldown=Math.max(0,f.leapCooldown-dt);f.aiT=Math.max(0,f.aiT-dt);
+function controlAwakenedDummy(f,op,dt){
+  f.dodgeCooldown=Math.max(0,f.dodgeCooldown-dt);f.aiT=Math.max(0,f.aiT-dt);f.openingT=Math.max(0,f.openingT-dt);
   if(game.state!=='fight'||f.state==='ko'){physics(f,dt);return;}
   if(f.state==='knockdown'){
-    f.knockT+=dt;if(f.knockT>.22&&f.grounded){f.state='idle';f.invuln=.12;}
+    f.knockT+=dt;if(f.knockT>.48&&f.grounded){f.state='idle';f.invuln=.16;}
     physics(f,dt);return;
   }
   if(f.hitstun>0){f.hitstun=Math.max(0,f.hitstun-dt);f.state='hurt';physics(f,dt);return;}
@@ -971,30 +980,52 @@ function controlNightmareDummy(f,op,dt){
   const missile=projectiles.find(p=>p.owner===op&&p!==f.lastMissile&&(p.x-f.x)*p.vx<0&&Math.abs(p.x-f.x)<115);
   if(melee||missile){
     if(melee)f.lastThreat=op.atk;if(missile)f.lastMissile=missile;
-    if(rnd()<.985&&!f.dodgeT){
-      if(!dodgeDummy(f,op,!!missile)&&!f.atk){f.blockT=.09;f.state='block';}
+    // The start of each pause is guaranteed punishable; later it may evade a new
+    // threat instead of letting repeated jabs hold it in an endless stun loop.
+    if(f.openingT===0&&(!f.atk||f.atk.t<f.atk.def.startup)&&rnd()<.9&&!f.dodgeT){
+      if(!dodgeDummy(f,op,!!missile)&&!f.atk&&rnd()<.35){f.blockT=.16;f.state='block';}
     }
   }
   if(f.dodgeT>0){
-    f.dodgeT=Math.max(0,f.dodgeT-dt);f.x=lerp(f.dodgeFrom,f.dodgeTo,smooth(1-f.dodgeT/.13));
-    if(f.dodgeT===0){f.state=f.grounded?'idle':'jump';f.aiT=0;}
+    f.dodgeT=Math.max(0,f.dodgeT-dt);f.x=lerp(f.dodgeFrom,f.dodgeTo,smooth(1-f.dodgeT/.18));
+    if(f.dodgeT===0){f.state=f.grounded?'idle':'jump';f.restT=.28+rnd()*.18;f.openingT=.24;}
   }else if(f.atk){
-    if(distance>60)f.x+=dir*(f.grounded?155:260)*dt;
+    if(distance>65)f.x+=dir*(f.grounded?45:110)*dt;
     stepAttack(f,dt,op);
+    if(!f.atk){
+      if(f.burstLeft===0){f.restT=.65+rnd()*.4;f.openingT=.32;}
+      else f.aiT=.1+rnd()*.08;
+    }
   }else if(f.blockT>0){f.blockT=Math.max(0,f.blockT-dt);f.state='block';}
+  else if(f.restT>0){
+    f.restT=Math.max(0,f.restT-dt);
+    if(f.grounded&&distance<70)moveWalking(f,-dir*38*dt);
+    else f.state=f.grounded?'idle':'jump';
+  }
   else{
     f.facing=dir;
     if(distance>58){
-      if(f.grounded)moveWalking(f,dir*Math.min(310*dt,distance-46));
-      else{f.state='jump';f.x+=dir*270*dt;}
-      if(f.grounded&&distance>125&&f.leapCooldown===0){f.vy=-345;f.grounded=false;f.state='jump';f.leapCooldown=.75;}
+      if(f.grounded)moveWalking(f,dir*Math.min(185*dt,distance-54));
+      else{f.state='jump';f.x+=dir*170*dt;}
     }
-    if(f.aiT===0&&distance<100){
-      const chain=['jab','straight','sweep','jab','uppercut','roundhouse'];
-      startAttack(f,!f.grounded?'jkick':!op.grounded?'uppercut':chain[f.rushStep++%chain.length]);f.aiT=.025;
+    if(f.aiT===0&&distance<90){
+      if(f.burstLeft===0&&f.dodgeCooldown===0&&f.grounded&&rnd()<.35){
+        dodgeDummy(f,op);
+      }else{
+        if(f.burstLeft===0)f.burstLeft=rnd()<.6?2:1;
+        const chain=['jab','straight','roundhouse','jab','sweep','jab','straight','uppercut'];
+        startAttack(f,!f.grounded?'jkick':!op.grounded?'uppercut':chain[f.rushStep++%chain.length]);f.burstLeft--;
+      }
     }
   }
-  physics(f,dt);if(!f.atk&&Math.abs(op.x-f.x)>3)f.facing=op.x>f.x?1:-1;
+  const landingAttack=f.atk;
+  physics(f,dt);
+  // Landing can finish an aerial strike before stepAttack reaches its recovery.
+  if(landingAttack&&!f.atk){
+    if(f.burstLeft===0){f.restT=.65+rnd()*.4;f.openingT=.32;}
+    else f.aiT=.1+rnd()*.08;
+  }
+  if(!f.atk&&Math.abs(op.x-f.x)>3)f.facing=op.x>f.x?1:-1;
 }
 
 /* ============================== projectiles / particles ============================== */
@@ -1313,7 +1344,7 @@ function render(now){
   drawBar(W/2+34,12,W/2-66,9,dummy.hp/dummy.maxHp,true,'#b3232c','#e8b24c');
   text(player.name,32,32,7,'#e8d9b0','left');
   text(dummy.name,W-32,32,7,'#e8d9b0','right');
-  if(isNightmare(dummy))text('AWAKENED',W-32,41,4,'#ff9275','right');
+  if(isAwakened(dummy))text('AWAKENED',W-32,41,4,'#ff9275','right');
   for(let i=0;i<3;i++){
     ctx.fillStyle=player.charge>i?'#edc878':'#544354';ctx.fillRect(32+i*8,37,5,2);
   }

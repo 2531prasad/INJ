@@ -415,28 +415,44 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     roundTwo();t.dummy.state='block';t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);out.chipDamage=t.dummy.hp===129;
     roundTwo();t.dummy.x=t.player.x+40;
     t.projectiles.push({x:t.dummy.x,y:t.dummy.y-46,vx:0,life:1,owner:t.player,charged:true});t.updateProjectiles(.01);
-    out.chargedHit=t.dummy.hp===125&&t.dummy.state==='knockdown';
+    out.chargedHit=t.dummy.hp===123&&t.dummy.state==='knockdown';
     roundTwo();t.startAttack(t.dummy,'roundhouse');
-    out.fastHeavyAttack=t.dummy.atk.def.startup<=.045&&t.dummy.atk.def.recovery<=.075&&t.dummy.atk.def.dmg>t.MOVES.roundhouse.dmg;
+    out.readableHeavyAttack=t.dummy.atk.def.startup>=.07&&t.dummy.atk.def.recovery>=.18&&t.dummy.atk.def.dmg>t.MOVES.roundhouse.dmg&&t.dummy.atk.def.dmg<18;
+    const committed=t.dummy.atk;committed.t=committed.def.startup+.01;t.startAttack(t.player,'jab');t.controlDummy(t.dummy,t.player,.01);
+    out.activeStrikeCommits=t.dummy.atk===committed&&t.dummy.dodgeT===0;
     roundTwo();t.dummy.x=t.player.x+200;const before=t.dummy.x;t.controlDummy(t.dummy,t.player,.1);
-    out.fastPursuit=before-t.dummy.x>=30;
+    out.agilePursuit=before-t.dummy.x>=18&&before-t.dummy.x<25;
     roundTwo();t.dummy.x=t.player.x+45;t.dodgeDummy(t.dummy,t.player);
-    out.quickDodge=t.dummy.dodgeCooldown<=.24&&t.dummy.invuln>0&&t.dummy.dodgeT<=.13;
+    out.quickDodge=t.dummy.dodgeCooldown>=.6&&t.dummy.invuln>0&&t.dummy.invuln<t.dummy.dodgeT&&t.dummy.dodgeT<=.18;
+    t.controlDummy(t.dummy,t.player,.2);
+    out.dodgeHasOpening=t.dummy.dodgeT===0&&t.dummy.invuln===0&&t.dummy.restT>=.28&&!t.dummy.atk;
+    roundTwo();t.dummy.x=t.player.x+55;t.dummy.restT=.7;t.dummy.openingT=.32;t.startAttack(t.player,'jab');t.controlDummy(t.dummy,t.player,.1);
+    const restHp=t.dummy.hp;t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
+    out.restIsPunishable=t.dummy.restT>0&&!t.dummy.atk&&t.dummy.dodgeT===0&&t.dummy.hp<restHp;
+    roundTwo();t.dummy.x=t.player.x+55;t.dummy.burstLeft=0;t.startAttack(t.dummy,'jab');
+    const move=t.dummy.atk.def;t.controlDummy(t.dummy,t.player,move.startup+move.active+move.recovery+.001);
+    out.burstHasPause=!t.dummy.atk&&t.dummy.restT>=.65&&t.dummy.openingT>=.32;
+    t.controlDummy(t.dummy,t.player,.3);out.pauseDoesNotAttack=!t.dummy.atk&&t.dummy.restT>0;
+    roundTwo();t.dummy.grounded=false;t.dummy.y=t.player.y-1;t.dummy.vy=60;t.dummy.burstLeft=0;t.startAttack(t.dummy,'jkick');t.controlDummy(t.dummy,t.player,.016);
+    out.aerialLandingHasPause=t.dummy.grounded&&!t.dummy.atk&&t.dummy.restT>=.65&&t.dummy.openingT>=.32;
     roundTwo();t.dummy.hp=1;t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);
     out.stillBeatable=t.game.state==='ko'&&t.game.msg.text==='INJ WINS'&&!t.game.lost;
     roundTwo();t.game.roundTime=.001;t.player.hp=120;t.dummy.hp=1;t.updateFlow(.01);
     out.noForcedOutcome=t.game.msg.text==='INJ WINS';
     roundTwo();t.dummy.x=t.player.x+55;
-    for(let i=0;i<2400&&t.game.state==='fight';i++){t.controlPlayer(t.player,t.dummy,1/120);t.controlDummy(t.dummy,t.player,1/120);}
+    for(let i=0;i<7200&&t.game.state==='fight';i++){t.controlPlayer(t.player,t.dummy,1/120);t.controlDummy(t.dummy,t.player,1/120);}
     out.idlePlayerLoses=t.player.hp===0&&t.game.lost;
-    roundTwo();t.game.round=20;t.startAttack(t.dummy,'jab');out.laterRoundsHard=t.dummy.atk.def.recovery<=.075;
+    roundTwo();t.game.round=20;t.startAttack(t.dummy,'jab');out.laterRoundsHard=t.dummy.atk.def.dmg>t.MOVES.jab.dmg&&t.dummy.atk.def.recovery>=.18;
     const play=InjAudio.play;InjAudio.play=()=>{};
-    let dummyWins=0,playerWins=0;
+    let dummyWins=0,playerWins=0,attacks=0,dodges=0,restFrames=0,frames=0;
+    const policyResults=['idle','punch spam','mixed attacks','Shadow kiting','jumping kicks','guard/counter','crouch/sweep'].map(policy=>({policy,trials:0,dummyWins:0,playerWins:0}));
     try{
       for(let trial=0;trial<100;trial++){
-        roundTwo();t.game.paused=false;t.game.roundTime=30;
+        roundTwo();t.game.paused=false;t.game.roundTime=99;
         const policy=trial%7;
-        for(let frame=0;frame<1801&&t.game.state==='fight';frame++){
+        // Hit-stop pauses the round clock, so allow enough simulation time for
+        // the actual 99-second timer to expire instead of judging HP early.
+        for(let frame=0;frame<18000&&t.game.state==='fight';frame++){
           const p=t.player,op=t.dummy,dir=Math.sign(op.x-p.x),gap=Math.abs(op.x-p.x);
           t.input.left=0;t.input.right=0;t.input.down=+(policy===6);t.input.up=+(policy===4);t.input.block=+(policy===5);
           if(policy&&policy!==5&&policy!==6){
@@ -446,16 +462,20 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
             const act=policy===1?'punch':policy===2?['punch','kick','upper'][Math.floor(frame/24)%3]:policy===3?'special':policy===4?'kick':policy===5?(frame%80<8?'punch':null):'kick';
             if(act)t.pressBuf[act]=performance.now()+220;
           }
-          t.update(1/60);
+          const attack=op.atk,dodge=op.dodgeT;
+          t.update(1/60);frames++;if(op.restT>0)restFrames++;
+          if(op.atk&&op.atk!==attack)attacks++;if(op.dodgeT>dodge)dodges++;
         }
-        if(t.game.state==='fight')t.endRound(t.player.hp>=t.dummy.hp?t.player:t.dummy);
-        if(t.game.lost)dummyWins++;else playerWins++;
+        if(t.game.state==='fight')throw new Error('Awakened benchmark exceeded its five-minute simulation cap');
+        policyResults[policy].trials++;
+        if(t.game.lost){dummyWins++;policyResults[policy].dummyWins++;}else{playerWins++;policyResults[policy].playerWins++;}
       }
     }finally{InjAudio.play=play;t.settle();}
-    return {checks:out,benchmark:{trials:100,policies:7,dummyWins,playerWins}};
+    return {checks:out,benchmark:{trials:100,roundSeconds:99,policies:7,dummyWins,playerWins,policyResults,attacks,dodges,restFraction:restFrames/frames}};
   });
-  for(const [name,passed] of Object.entries(difficulty.checks))check(passed,`Nightmare opponent: ${name}`);
-  check(difficulty.benchmark.dummyWins>=99,`Nightmare benchmark: dummy wins ${difficulty.benchmark.dummyWins}/100 against seven scripted play styles (not a human win-rate estimate)`);
+  for(const [name,passed] of Object.entries(difficulty.checks))check(passed,`Awakened opponent: ${name}`);
+  check(difficulty.benchmark.dummyWins>difficulty.benchmark.playerWins&&difficulty.benchmark.playerWins>=5,`Awakened benchmark: dummy wins ${difficulty.benchmark.dummyWins}/100 against seven scripted play styles (not a human win-rate estimate)`);
+  check(difficulty.benchmark.dodges>difficulty.benchmark.attacks&&difficulty.benchmark.restFraction>.25,'Awakened fighting style favours evasions over attacks and spends substantial time in recovery windows');
   const halos=await page.evaluate(()=>{
     const t=__test;t.settle();const f={...t.player,charge:0};
     // Stabilize Chrome's GPU-to-CPU readback switch before comparing alpha edges.
@@ -471,7 +491,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await viewport({width:844,height:390});
   await page.evaluate(()=>{__test.settle();__test.resetRound();__test.game.state='fight';__test.game.msg=null;__test.game.paused=false;__test.dummy.x=__test.player.x+55;__test.dummy.aiT=0;});
   await page.waitForFunction(()=>__test.player.hp<120,null,{timeout:6000});
-  check(await page.evaluate(()=>__test.game.round===2),'Live round two attacks aggressively');
+  check(await page.evaluate(()=>__test.game.round===2),'Live round two still threatens an idle player');
   await page.screenshot({path:path.join(root,'artifacts/round-two-nightmare.png')});
   await page.evaluate(()=>{__test.settle();});await viewport({width:390,height:844});
 
@@ -580,7 +600,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await pc.waitForTimeout(100);
   await pc.screenshot({path:path.join(root,'artifacts/background-duel-victory.png')});
   check(errors.length===0, `No browser runtime errors (${errors.join('; ')})`);
-  const report={checks,nightmareBenchmark:difficulty.benchmark,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review']};
+  const report={checks,awakenedBenchmark:difficulty.benchmark,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review']};
   fs.writeFileSync(path.join(root,'artifacts/validation.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify(report,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();server.kill();});

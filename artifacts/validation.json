@@ -1,16 +1,64 @@
 {
-  "checks": 161,
-  "nightmareBenchmark": {
+  "checks": 168,
+  "awakenedBenchmark": {
     "trials": 100,
+    "roundSeconds": 99,
     "policies": 7,
-    "dummyWins": 100,
-    "playerWins": 0
+    "dummyWins": 88,
+    "playerWins": 12,
+    "policyResults": [
+      {
+        "policy": "idle",
+        "trials": 15,
+        "dummyWins": 15,
+        "playerWins": 0
+      },
+      {
+        "policy": "punch spam",
+        "trials": 15,
+        "dummyWins": 11,
+        "playerWins": 4
+      },
+      {
+        "policy": "mixed attacks",
+        "trials": 14,
+        "dummyWins": 13,
+        "playerWins": 1
+      },
+      {
+        "policy": "Shadow kiting",
+        "trials": 14,
+        "dummyWins": 9,
+        "playerWins": 5
+      },
+      {
+        "policy": "jumping kicks",
+        "trials": 14,
+        "dummyWins": 14,
+        "playerWins": 0
+      },
+      {
+        "policy": "guard/counter",
+        "trials": 14,
+        "dummyWins": 14,
+        "playerWins": 0
+      },
+      {
+        "policy": "crouch/sweep",
+        "trials": 14,
+        "dummyWins": 12,
+        "playerWins": 2
+      }
+    ],
+    "attacks": 1817,
+    "dodges": 7387,
+    "restFraction": 0.5011612188365651
   },
   "engine": "Chrome / Chromium",
   "viewports": 9,
   "audio": {
     "peak": 0.5534541010856628,
-    "rms": 0.03012639850689567,
+    "rms": 0.030126398295519382,
     "clippedSamples": 0
   },
   "limitations": [

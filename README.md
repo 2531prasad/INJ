@@ -20,7 +20,7 @@ Phones use the on-screen joystick and action buttons. The upward 90° wedge—fr
 
 Desktop controls: A/D to move, W to jump, S to crouch, J to punch, K to kick, U to uppercut, L for Shadow, Shift to guard, and Escape to pause.
 
-Round 1 is a warmup. Round two onward is intentionally insufferable: the awakened dummy is extremely fast, evasive, aggressive, and armored. Rare real openings remain, but defeat is the expected outcome. It won all 100 trials against seven scripted play styles; that is not a measured human win rate.
+Round 1 is a warmup. From round two, the awakened dummy favours evasive footwork and one- or two-hit bursts instead of constant combos. Bursts end in 0.65–1.05 seconds of breathing room, with a guaranteed opening before it can evade another threat. Dodges also leave an opening, active strikes commit, and its damage, armor and pursuit speed are reduced from the previous version. The tuning target is roughly **85% dummy victories**, rather than 99%; this is not a measured human win rate. The latest 100-fight regression benchmark uses full 99-second rounds and seven scripted play styles. The latest run produced 88 dummy wins and 12 INJ wins. [Balance notes](artifacts/opponent-balance.md) explain the changes and test limits; raw metrics are in [validation.json](artifacts/validation.json).
 
 ## Project reference
 
@@ -32,6 +32,6 @@ Round 1 is a warmup. Round two onward is intentionally insufferable: the awakene
 
 Run `node tests/browser.cjs` with Playwright and Chrome/Chromium installed. Set `INJ_PLAYWRIGHT` and `INJ_CHROME` if needed. The test suite starts its own local server and injects inspection hooks only into the served test copy.
 
-The latest run passed 161 checks in headless Chrome across phone and desktop viewports. This includes actual double-tap/pinch input, simultaneous controls while gesture blocking is active, jump-cone boundaries, fullscreen profile visibility, and emulated Home Screen launch signals. Physical-phone ergonomics, actual Safari/Home Screen chrome, and subjective speaker/headphone listening still need testing.
+The latest run passed 168 checks in headless Chrome across phone and desktop viewports. This includes actual double-tap/pinch input, simultaneous controls while gesture blocking is active, jump-cone boundaries, fullscreen profile visibility, and emulated Home Screen launch signals. Physical-phone ergonomics, actual Safari/Home Screen chrome, and subjective speaker/headphone listening still need testing.
 
 The optional Python atlas inspection tools require Pillow. They regenerate source bounds and animation anchors without modifying image pixels.
