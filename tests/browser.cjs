@@ -3,7 +3,6 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { spawn } = require('node:child_process');
 const { pathToFileURL } = require('node:url');
 let pw;
 try { pw = require(process.env.INJ_PLAYWRIGHT || 'playwright'); }
@@ -16,15 +15,16 @@ const hook = `window.__test={...window.INJ,get W(){return window.INJ.world.width
 const instrumented = mainSource+'\n'+hook;
 async function instrumentPage(page){
   await page.route('**/js/main.js',route=>route.fulfill({contentType:'text/javascript',body:instrumented}));
+  page.on('requestfailed',request=>{if(request.url().startsWith('http://127.0.0.1:8879/')&&/\.(?:js|css)(?:$|\?)/.test(request.url()))resourceErrors.push(request.url()+': '+request.failure()?.errorText);});
 }
-const server = spawn('python3', ['-m', 'http.server', '8879', '--bind', '127.0.0.1'], { cwd: root, stdio: 'ignore' });
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const server = require('./server.cjs')(root,8879);
+const resourceErrors=[];
 let browser;
 let checks = 0;
 function check(condition, message) { assert.ok(condition, message); checks++; console.log('PASS', message); }
 
 (async () => {
-  for (let i = 0; i < 30; i++) { try { await fetch('http://127.0.0.1:8879'); break; } catch (_) { await delay(100); } }
+  await server.ready;
   const chrome = process.env.INJ_CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
   browser = await pw.chromium.launch({ headless: true, ...(fs.existsSync(chrome) ? { executablePath: chrome } : {}) });
   check(!/<style\b|<script(?![^>]*\bsrc=)[^>]*>/i.test(source),'HTML contains markup and external source links, without an inline game or stylesheet');
@@ -34,7 +34,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   actual.on('requestfailed',request=>{if(/(?:127\.0\.0\.1|^file:)/.test(request.url())&&/\.(?:js|css)(?:$|\?)/.test(request.url()))productionErrors.push(request.url()+': '+request.failure()?.errorText);});
   for(const url of ['http://127.0.0.1:8879/index.html',pathToFileURL(path.join(root,'index.html')).href]){
     await actual.goto(url);
-    await actual.waitForFunction(()=>window.InjAudio&&window.INJ&&Object.values(INJ.spriteSheets).every(s=>s.ready)&&Object.values(INJ.walkSheets).every(s=>s.ready)&&INJ.arenaImg.naturalWidth>0);
+    await actual.waitForFunction(()=>window.InjAudio&&window.INJ&&INJ.r8Sheet.ready&&Object.values(INJ.spriteSheets).every(s=>s.ready)&&Object.values(INJ.walkSheets).every(s=>s.ready)&&INJ.arenaImg.naturalWidth>0);
     check(await actual.evaluate(()=>!window.__test&&INJ.game.paused&&InjAudio.ctx===null&&document.styleSheets.length>=7&&document.querySelector('#screen').clientHeight>100),`Uninstrumented ${url.startsWith('file:')?'direct file':'HTTP'} launch loads modules, art and styles without test hooks`);
     await actual.locator('#btnStartFight').tap();await actual.locator('#btnArenaMenu').tap();
     await actual.evaluate(()=>{INJ.game.round=4;INJ.player.hp=1;});
@@ -435,13 +435,13 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     roundTwo();t.dummy.state='block';t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);out.chipDamage=t.dummy.hp===129;
     roundTwo();t.dummy.x=t.player.x+40;
     t.projectiles.push({x:t.dummy.x,y:t.dummy.y-46,vx:0,life:1,owner:t.player,charged:true});t.updateProjectiles(.01);
-    out.chargedHit=t.dummy.hp===123&&t.dummy.state==='knockdown';
+    out.chargedHit=t.dummy.hp===122&&t.dummy.state==='knockdown';
     roundTwo();t.startAttack(t.dummy,'roundhouse');
     out.readableHeavyAttack=t.dummy.atk.def.startup>=.07&&t.dummy.atk.def.recovery>=.18&&t.dummy.atk.def.dmg>t.MOVES.roundhouse.dmg&&t.dummy.atk.def.dmg<18;
     const committed=t.dummy.atk;committed.t=committed.def.startup+.01;t.startAttack(t.player,'jab');t.controlDummy(t.dummy,t.player,.01);
     out.activeStrikeCommits=t.dummy.atk===committed&&t.dummy.dodgeT===0;
     roundTwo();t.dummy.x=t.player.x+200;const before=t.dummy.x;t.controlDummy(t.dummy,t.player,.1);
-    out.agilePursuit=before-t.dummy.x>=18&&before-t.dummy.x<25;
+    out.agilePursuit=before-t.dummy.x>=15&&before-t.dummy.x<20;
     roundTwo();t.dummy.x=t.player.x+45;t.dodgeDummy(t.dummy,t.player);
     out.quickDodge=t.dummy.dodgeCooldown>=.6&&t.dummy.invuln>0&&t.dummy.invuln<t.dummy.dodgeT&&t.dummy.dodgeT<=.18;
     t.controlDummy(t.dummy,t.player,.2);
@@ -479,7 +479,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
             const move=policy===3?-dir:gap>56?dir:0;t.input.left=+(move<0);t.input.right=+(move>0);
           }
           if(policy&&!p.atk&&p.hitstun<=0){
-            const act=policy===1?'punch':policy===2?['punch','kick','upper'][Math.floor(frame/24)%3]:policy===3?'special':policy===4?'kick':policy===5?(frame%80<8?'punch':null):'kick';
+            const act=policy===1?'punch':policy===2?['punch','kick','upper'][Math.floor(frame/24)%3]:policy===3?'special':policy===4?(p.grounded?null:'kick'):policy===5?(frame%80<8?'punch':null):'kick';
             if(act)t.pressBuf[act]=performance.now()+220;
           }
           const attack=op.atk,dodge=op.dodgeT;
@@ -496,6 +496,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   for(const [name,passed] of Object.entries(difficulty.checks))check(passed,`Awakened opponent: ${name}`);
   check(difficulty.benchmark.dummyWins>difficulty.benchmark.playerWins&&difficulty.benchmark.playerWins>=5,`Awakened benchmark: dummy wins ${difficulty.benchmark.dummyWins}/100 against seven scripted play styles (not a human win-rate estimate)`);
   check(difficulty.benchmark.dodges>difficulty.benchmark.attacks&&difficulty.benchmark.restFraction>.25,'Awakened fighting style favours evasions over attacks and spends substantial time in recovery windows');
+  const r8Benchmarks=await require('./r8.cjs')(page,check,root);
   const halos=await page.evaluate(()=>{
     const t=__test;t.settle();const f={...t.player,charge:0};
     // Stabilize Chrome's GPU-to-CPU readback switch before comparing alpha edges.
@@ -581,7 +582,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     engine.master.gain.value=.72;engine.music.gain.value=.58;
     const step=60/112/4;
     for(let i=0;i<256;i++)engine.sequence(i,.1+i*step);
-    const effects=['swing','jump','punch','kick','uppercut','jumpkick','block','toss','shadow','charge','gong','finish','fall','ui','catlaugh'];
+    const effects=['swing','jump','punch','kick','uppercut','jumpkick','block','toss','shadow','charge','gong','finish','fall','ui','catlaugh','engine','boost','rim','transform'];
     // Effects are recorded in a separate offline pass below to preserve the score preview.
     const buffer=await offline.startRendering(), data=buffer.getChannelData(0);
     let peak=0,sum=0,invalid=0,clipped=0;
@@ -620,7 +621,8 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await pc.waitForTimeout(100);
   await pc.screenshot({path:path.join(root,'artifacts/background-duel-victory.png')});
   check(errors.length===0, `No browser runtime errors (${errors.join('; ')})`);
-  const report={checks,awakenedBenchmark:difficulty.benchmark,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review']};
+  check(resourceErrors.length===0, `All local split-script and stylesheet requests complete (${resourceErrors.join('; ')})`);
+  const report={checks,awakenedBenchmark:difficulty.benchmark,r8Benchmarks,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review','Scripted phase benchmarks do not measure human loss rates; a full R8 encounter carries INJ health between forms']};
   fs.writeFileSync(path.join(root,'artifacts/validation.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify(report,null,2));
-})().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();server.kill();});
+})().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();await server.close();});

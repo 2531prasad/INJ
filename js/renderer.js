@@ -53,6 +53,10 @@
     App.drawFighter(App.player);
 
     for (const p of App.projectiles) {
+      if (p.style === 'rim') {
+        App.drawRim(p, now);
+        continue;
+      }
       const radius = p.charged ? 16 : 12;
       const g = App.ctx.createRadialGradient(p.x, p.y, 1, p.x, p.y, radius);
       g.addColorStop(0, p.charged ? '#ffe7a4' : '#c2a6ed');
@@ -126,16 +130,18 @@
       '#b3232c',
       '#e8b24c'
     );
-    drawBar(
-      App.world.width / 2 + 34,
-      12,
-      App.world.width / 2 - 66,
-      9,
-      App.dummy.hp / App.dummy.maxHp,
-      true,
-      '#b3232c',
-      '#e8b24c'
-    );
+    if (App.isR8(App.dummy)) App.drawR8Health();
+    else
+      drawBar(
+        App.world.width / 2 + 34,
+        12,
+        App.world.width / 2 - 66,
+        9,
+        App.dummy.hp / App.dummy.maxHp,
+        true,
+        '#b3232c',
+        '#e8b24c'
+      );
     text(App.player.name, 32, 32, 7, '#e8d9b0', 'left');
     text(App.dummy.name, App.world.width - 32, 32, 7, '#e8d9b0', 'right');
     if (App.isAwakened(App.dummy))

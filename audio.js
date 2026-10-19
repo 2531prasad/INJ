@@ -172,6 +172,15 @@
       const tone = (offset, f1, f2, d, wave, vol, cutoff) => this.tone(at + offset, f1, f2, d, wave, vol, bus, cutoff);
       const noise = (offset, d, f, vol, filter) => this.noise(at + offset, d, f, vol, bus, filter);
       switch (type) {
+        case 'engine':
+          tone(0, 68, 158, .16, 'sawtooth', .13, 1000); noise(0,.06,850,.07,'bandpass'); break;
+        case 'boost':
+          noise(0,.16,2400,.15,'bandpass'); tone(0,130,340,.17,'triangle',.2,2200); break;
+        case 'rim':
+          tone(0,1180,730,.1,'sine',.13,4000); tone(.025,790,525,.13,'triangle',.08,3000); break;
+        case 'transform':
+          for(let i=0;i<5;i++){tone(i*.14,82+i*22,55+i*33,.16,'triangle',.16,2200);noise(i*.14,.045,1200+i*200,.09,'bandpass');}
+          tone(.76,294,588,.3,'triangle',.18,3000); break;
         case 'swing': noise(0, .045, 1900, .09, 'bandpass'); break;
         case 'jump': tone(0, 170, 420, .095, 'triangle', .11, 1600); break;
         case 'punch':

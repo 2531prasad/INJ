@@ -140,9 +140,10 @@
     App.ctx.imageSmoothingEnabled = true;
     App.bctx.drawImage(marks, shift, 0, previousWidth, App.H);
     for (const fighter of [App.player, App.dummy]) {
-      fighter.x = App.clamp(fighter.x + shift, 26, App.world.width - 26);
-      fighter.dodgeFrom = App.clamp(fighter.dodgeFrom + shift, 26, App.world.width - 26);
-      fighter.dodgeTo = App.clamp(fighter.dodgeTo + shift, 26, App.world.width - 26);
+      const margin = App.fighterMargin(fighter);
+      fighter.x = App.clamp(fighter.x + shift, margin, App.world.width - margin);
+      fighter.dodgeFrom = App.clamp(fighter.dodgeFrom + shift, margin, App.world.width - margin);
+      fighter.dodgeTo = App.clamp(fighter.dodgeTo + shift, margin, App.world.width - margin);
     }
     for (const object of [...App.projectiles, ...App.particles]) object.x += shift;
     for (const ghost of App.afterimages) ghost.f.x += shift;

@@ -19,7 +19,7 @@
     f.vx = 0;
     f.blockT = 0;
     f.dodgeT = hard ? 0.18 : 0.22;
-    f.dodgeCooldown = hard ? 0.68 : 1.8;
+    f.dodgeCooldown = hard ? App.LEVEL_TWO.dodgeCooldown : 1.8;
     f.dodgeFrom = f.x;
     f.dodgeTo = App.clamp(f.x - dir * (hard ? 48 : 24), 26, App.world.width - 26);
     if (hard && Math.abs(f.dodgeTo - f.x) < 18)
@@ -40,6 +40,10 @@
   }
   function controlDummy(f, op, dt) {
     f.anim += dt;
+    if (App.isR8(f)) {
+      App.controlR8(f, op, dt);
+      return;
+    }
     if (App.isAwakened(f)) {
       controlAwakenedDummy(f, op, dt);
       return;
@@ -140,7 +144,7 @@
       if (
         f.openingT === 0 &&
         (!f.atk || f.atk.t < f.atk.def.startup) &&
-        App.rnd() < 0.9 &&
+        App.rnd() < App.LEVEL_TWO.reaction &&
         !f.dodgeT
       ) {
         if (!dodgeDummy(f, op, !!missile) && !f.atk && App.rnd() < 0.35) {
@@ -154,16 +158,16 @@
       f.x = App.lerp(f.dodgeFrom, f.dodgeTo, App.smooth(1 - f.dodgeT / 0.18));
       if (f.dodgeT === 0) {
         f.state = f.grounded ? 'idle' : 'jump';
-        f.restT = 0.28 + App.rnd() * 0.18;
-        f.openingT = 0.24;
+        f.restT = App.LEVEL_TWO.dodgeRest + App.rnd() * 0.18;
+        f.openingT = 0.3;
       }
     } else if (f.atk) {
       if (distance > 65) f.x += dir * (f.grounded ? 45 : 110) * dt;
       App.stepAttack(f, dt, op);
       if (!f.atk) {
         if (f.burstLeft === 0) {
-          f.restT = 0.65 + App.rnd() * 0.4;
-          f.openingT = 0.32;
+          f.restT = App.LEVEL_TWO.rest + App.rnd() * App.LEVEL_TWO.restRange;
+          f.openingT = App.LEVEL_TWO.opening;
         } else f.aiT = 0.1 + App.rnd() * 0.08;
       }
     } else if (f.blockT > 0) {
@@ -176,7 +180,7 @@
     } else {
       f.facing = dir;
       if (distance > 58) {
-        if (f.grounded) App.moveWalking(f, dir * Math.min(185 * dt, distance - 54));
+        if (f.grounded) App.moveWalking(f, dir * Math.min(App.LEVEL_TWO.speed * dt, distance - 54));
         else {
           f.state = 'jump';
           f.x += dir * 170 * dt;
@@ -186,7 +190,7 @@
         if (f.burstLeft === 0 && f.dodgeCooldown === 0 && f.grounded && App.rnd() < 0.35) {
           dodgeDummy(f, op);
         } else {
-          if (f.burstLeft === 0) f.burstLeft = App.rnd() < 0.6 ? 2 : 1;
+          if (f.burstLeft === 0) f.burstLeft = App.rnd() < 0.45 ? 2 : 1;
           const chain = [
             'jab',
             'straight',
@@ -210,8 +214,8 @@
     // Landing can finish an aerial strike before stepAttack reaches its recovery.
     if (landingAttack && !f.atk) {
       if (f.burstLeft === 0) {
-        f.restT = 0.65 + App.rnd() * 0.4;
-        f.openingT = 0.32;
+        f.restT = App.LEVEL_TWO.rest + App.rnd() * App.LEVEL_TWO.restRange;
+        f.openingT = App.LEVEL_TWO.opening;
       } else f.aiT = 0.1 + App.rnd() * 0.08;
     }
     if (!f.atk && Math.abs(op.x - f.x) > 3) f.facing = op.x > f.x ? 1 : -1;

@@ -16,19 +16,20 @@ Read [inj.md](inj.md) for current behavior, then [docs/architecture.md](docs/arc
 
 | Change | Start here |
 | --- | --- |
-| Opponent decisions, dodges, pauses, difficulty | `js/opponent.js`; damage modifiers also live in `js/combat.js` |
-| Attack damage, hitboxes, timing | `js/content.js`, `js/combat.js` |
+| Opponent decisions, dodges, pauses, difficulty | `js/opponent.js` for Dummy, `js/r8.js` for Goldline; tuning in `js/r8-content.js`, damage in `js/combat.js` |
+| Attack damage, hitboxes, timing | `js/content.js`, `js/r8-content.js`, `js/combat.js` |
 | Joystick, jump wedge, keyboard, input buffering | `js/controls.js`; physics in `js/movement.js` |
+| Opponent selection / two-form health / transformation | `js/encounters.js`, `js/rounds.js` |
 | Restart / rounds / loss dialogue | `js/menus.js`, `js/rounds.js`; dialogue lines in `js/content.js` |
 | Fullscreen, iPhone app mode, gestures, aspect ratio | `js/display.js`, `styles/immersive.css` |
-| Fighter pose / walking art | `js/fighters.js`, `assets/*-frames.js` |
+| Fighter pose / walking art | `js/fighters.js`, `js/r8-renderer.js`, `assets/*-frames.js` |
 | Arena / distant duel / HUD | `js/arena.js`, `js/renderer.js` |
 | Music and effects | `audio.js` |
 | Menu and phone layout | `index.html`, `styles/layout.css`, `styles/responsive.css` |
 
 ## Preserve unless the user changes the brief
 
-Phone first; independent two-thumb input; joystick jump wedge from 10:30–1:30; dynamic 18:9 default without stretching fighters; instant attack starts; no sprite crossfades; no hand/focus halos; one quiet three-dot menu. Round one is gentle; awakened rounds use evasions, short bursts and punishable pauses, targeting roughly 85% losses rather than forced outcomes. Restart returns to round one. MiMi is INJ's own cat.
+Phone first; independent two-thumb input; joystick jump wedge from 10:30–1:30; dynamic 18:9 default without stretching fighters; instant attack starts; no sprite crossfades; no hand/focus halos; one quiet three-dot menu. Round one is gentle; round two uses evasions, short bursts and punishable pauses, targeting roughly 60% losses. Round three is the two-health Goldline encounter: car ~65%, robot ~85% loss targets. These are playtesting goals, never winner-selection probabilities. Preserve INJ health/charge across transformation and clear both boss pools on restart. Restart returns to round one. MiMi is INJ's own cat.
 
 The detailed arena plate and authored sprites have source notes in `assets/README.md`. Frame-inspection tools read alpha bounds; they do not redraw the art. Preserve image assets during code-only changes.
 

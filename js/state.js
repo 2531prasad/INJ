@@ -31,6 +31,7 @@
       crouching: false,
       aiT: 0.4,
       blockT: 0,
+      counterMove: null,
       pose: null,
       charge: 0,
       dodgeT: 0,
@@ -90,7 +91,7 @@
     roastStep: 0,
     roastSet: 0
   };
-  const isAwakened = (f) => f === dummy && game.round >= 2;
+  const isAwakened = (f) => f === dummy && f.kind === 'dummy' && game.round >= 2;
 
   Object.assign(App, {
     makeFighter,

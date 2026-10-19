@@ -5,6 +5,7 @@
   'use strict';
   /* ============================== combat ============================== */
   function hurtbox(f) {
+    if (App.isR8(f)) return App.r8Hurtbox(f);
     const low = f.state === 'crouch' || (f.atk && ['sweep', 'cpunch'].includes(f.atk.key));
     return {
       x: f.x - 13 * App.FIGHTER_SCALE,
@@ -15,6 +16,10 @@
   }
   function startAttack(f, key) {
     if (f.atk) return;
+    if (App.isR8(f)) {
+      App.startR8Attack(f, key);
+      return;
+    }
     f.atk = { key: key, def: App.MOVES[key], t: 0, hasHit: false, fired: false };
     if (f === App.dummy && App.game.round >= 2) {
       const move = App.MOVES[key];
@@ -22,7 +27,7 @@
         ...move,
         startup: Math.max(0.07, move.startup * 1.15),
         recovery: Math.max(0.18, move.recovery * 0.85),
-        dmg: Math.ceil(move.dmg * 1.25)
+        dmg: Math.ceil(move.dmg * App.LEVEL_TWO.damage)
       };
     }
     if (f === App.player && key === 'toss') {
@@ -36,6 +41,10 @@
     f.state = 'attack';
   }
   function stepAttack(f, dt, opp) {
+    if (f.atk.def.mechanical) {
+      App.stepR8Attack(f, dt, opp);
+      return;
+    }
     const a = f.atk,
       d = a.def;
     a.t += dt;
@@ -43,10 +52,16 @@
       if (!a.fired && a.t >= d.startup) {
         a.fired = true;
         const charged = !!a.charged;
+        const originY = f.y - 46 * App.FIGHTER_SCALE,
+          lowTarget = App.isR8(opp) && opp.form === 'car';
         App.projectiles.push({
           x: f.x + f.facing * 18 * App.FIGHTER_SCALE,
-          y: f.y - 46 * App.FIGHTER_SCALE,
+          y: originY,
           vx: f.facing * (charged ? 265 : 235),
+          vy: lowTarget
+            ? ((opp.y - 20 - originY) * (charged ? 265 : 235)) /
+              Math.max(16, Math.abs(opp.x - f.x) - 18 * App.FIGHTER_SCALE)
+            : 0,
           life: 1.7,
           owner: f,
           charged
@@ -77,13 +92,11 @@
     )
       return;
     const d = a.def;
-    const bx =
-      att.facing > 0
-        ? att.x + d.box[0] * App.FIGHTER_SCALE
-        : att.x - (d.box[0] + d.box[2]) * App.FIGHTER_SCALE;
-    const by = att.y + d.box[1] * App.FIGHTER_SCALE,
-      bw = d.box[2] * App.FIGHTER_SCALE,
-      bh = d.box[3] * App.FIGHTER_SCALE;
+    const scale = d.worldBox ? 1 : App.FIGHTER_SCALE;
+    const bx = att.facing > 0 ? att.x + d.box[0] * scale : att.x - (d.box[0] + d.box[2]) * scale;
+    const by = att.y + d.box[1] * scale,
+      bw = d.box[2] * scale,
+      bh = d.box[3] * scale;
     const ub = hurtbox(def);
     if (bx < ub.x + ub.w && bx + bw > ub.x && by < ub.y + ub.h && by + bh > ub.y) {
       a.hasHit = true;
@@ -101,7 +114,13 @@
     )
       return;
     if (App.isAwakened(def))
-      d = { ...d, dmg: Math.max(1, Math.round(d.dmg * 0.4)), kb: d.kb * 0.65 };
+      d = { ...d, dmg: Math.max(1, Math.round(d.dmg * App.LEVEL_TWO.armor)), kb: d.kb * 0.8 };
+    if (App.isR8(def))
+      d = {
+        ...d,
+        dmg: Math.max(1, Math.round(d.dmg * App.R8_TUNING[def.form].armor)),
+        kb: d.kb * 0.55
+      };
     const facingAttacker = Math.sign(att.x - def.x) === def.facing;
     if (def.state === 'block' && facingAttacker) {
       def.hp = Math.max(0, def.hp - Math.max(1, Math.round(d.dmg * 0.2)));
@@ -112,6 +131,7 @@
       App.game.hitStop = 0.03;
       App.Sfx.play('block');
       if (def.hp <= 0) {
+        if (App.beginR8Transform(def)) return;
         def.state = 'ko';
         def.grounded = false;
         def.vy = -170;
@@ -119,6 +139,15 @@
       }
       return;
     }
+    // Engine commitment: light hits still damage a winding-up machine, but
+    // cannot reset its attack forever. Charged Shadow and sweeps can stagger it.
+    const committed =
+      App.isR8(def) &&
+      def.atk &&
+      !d.knockdown &&
+      def.atk.t >= 0.06 &&
+      def.atk.t < def.atk.def.startup + def.atk.def.active;
+    const mechanicalAttack = committed ? def.atk : null;
     def.atk = null;
     def.blockT = 0;
     def.dodgeT = 0;
@@ -128,7 +157,8 @@
     App.game.shake = d.heavy ? 7 : 4;
     def.vx = att.facing * d.kb;
     App.hitSpark(cx, cy, !!d.heavy);
-    App.bloodBurst(cx, cy, d.heavy ? 14 : 7);
+    if (App.isR8(def)) App.blockSpark(cx, cy);
+    else App.bloodBurst(cx, cy, d.heavy ? 14 : 7);
     if (d.key === 'shadow') App.Sfx.play('shadow');
     else if (d.key === 'uppercut') App.Sfx.play('uppercut');
     else if (d.key === 'jkick') App.Sfx.play('jumpkick');
@@ -150,25 +180,44 @@
         });
     }
     if (def.hp <= 0) {
+      if (App.beginR8Transform(def)) return;
       def.state = 'ko';
       def.vy = -235;
       def.grounded = false;
       def.vx = att.facing * d.kb * 1.5;
       App.endRound(att);
+    } else if (mechanicalAttack) {
+      def.atk = mechanicalAttack;
+      def.state = 'attack';
+      def.vx *= 0.2;
+      def.hitstun = 0;
     } else if (d.knockdown) {
       def.state = 'knockdown';
       def.knockT = 0;
-      def.vy = App.isAwakened(def) ? -135 : -190;
+      def.vy = App.isAwakened(def) || App.isR8(def) ? -135 : -190;
       def.grounded = false;
       def.hitstun = 0;
     } else {
-      def.hitstun = App.isAwakened(def) ? 0.16 : d.heavy ? 0.4 : 0.26;
+      def.hitstun = App.isR8(def)
+        ? def.form === 'car'
+          ? 0.16
+          : 0.14
+        : App.isAwakened(def)
+          ? 0.16
+          : d.heavy
+            ? 0.4
+            : 0.26;
       def.state = 'hurt';
     }
     if (App.isAwakened(def)) {
       def.burstLeft = 0;
       def.restT = Math.max(def.restT, 0.24);
       def.openingT = Math.max(def.openingT, 0.18);
+    }
+    if (App.isR8(def)) {
+      def.burstLeft = 0;
+      def.restT = 0;
+      def.openingT = Math.max(def.openingT, 0.12);
     }
   }
 

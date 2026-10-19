@@ -7,7 +7,8 @@
   // Walk phase measures actual travel in facing coordinates, not elapsed idle time.
   // Reversing movement plays the same footfalls backward; a wall stops the cycle.
   function moveWalking(f, dx) {
-    const next = App.clamp(f.x + dx, 26, App.world.width - 26),
+    const margin = App.fighterMargin(f);
+    const next = App.clamp(f.x + dx, margin, App.world.width - margin),
       travel = next - f.x;
     f.x = next;
     f.walkPhase += travel * f.facing;
@@ -34,7 +35,8 @@
         App.Sfx.play('fall');
       }
     }
-    f.x = App.clamp(f.x, 26, App.world.width - 26);
+    const margin = App.fighterMargin(f);
+    f.x = App.clamp(f.x, margin, App.world.width - margin);
     f.flash = Math.max(0, f.flash - dt);
   }
   function controlPlayer(f, op, dt) {

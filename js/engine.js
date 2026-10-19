@@ -19,7 +19,9 @@
     }
     App.updateFlow(dt);
     if (App.game.paused) return;
+    if (App.game.state === 'transform') return;
     App.controlPlayer(App.player, App.dummy, dt);
+    if (App.game.state === 'transform') return;
     App.controlDummy(App.dummy, App.player, dt);
     App.updateProjectiles(dt);
     App.updateParticles(dt);

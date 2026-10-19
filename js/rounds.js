@@ -35,6 +35,7 @@
     App.bctx.clearRect(0, 0, App.world.width, App.H);
     App.game.roundTime = 99;
     App.game.round++;
+    App.configureOpponent(App.game.round);
     App.game.state = 'intro';
     App.game.t = 0;
     App.game.msg = null;
@@ -56,7 +57,7 @@
         }
         App.game.msg = {
           text: 'ROUND ' + App.game.round,
-          sub: App.game.round >= 2 ? 'DUMMY AWAKENED' : '',
+          sub: App.encounterSubtitle(),
           big: 15
         };
       } else if (App.game.t < 1.8) App.game.msg = { text: 'FIGHT!', sub: '', big: 22 };
@@ -64,11 +65,17 @@
         App.game.msg = null;
         App.game.state = 'fight';
       }
+    } else if (App.game.state === 'transform') {
+      App.game.t += dt;
+      if (App.game.t >= 2.1) App.completeR8Transform();
     } else if (App.game.state === 'fight') {
       App.game.roundTime -= dt;
       if (App.game.roundTime <= 0) {
         App.game.roundTime = 0;
-        endRound(App.player.hp >= App.dummy.hp ? App.player : App.dummy);
+        // Both boss forms must be cleared before the active phase clock expires.
+        endRound(
+          App.isR8(App.dummy) ? App.dummy : App.player.hp >= App.dummy.hp ? App.player : App.dummy
+        );
       }
     } else if (App.game.state === 'ko') {
       App.game.koTimer -= dt;

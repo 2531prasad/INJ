@@ -65,6 +65,7 @@
     };
   }
   function sampleFighterAnimation(f) {
+    if (App.isR8(f)) return App.sampleR8Animation(f);
     if (f.atk) return sampleAttackAnimation(f);
     const frames = {
       idle: 0,
@@ -103,6 +104,10 @@
     App.ctx.restore();
   }
   function drawFighter(f, ghost = false) {
+    if (App.isR8(f)) {
+      App.drawR8(f, ghost);
+      return;
+    }
     const pose = sampleFighterAnimation(f);
     if (!spriteSheets[f.kind]?.ready) return;
     if (!ghost && !f.backstage && !f.reflection) {

@@ -1,4 +1,6 @@
-# Awakened dummy balance · 19 October 2026
+# Historical v0.15 awakened dummy balance · 19 October 2026
+
+This records the earlier 85% build. See [current v0.17 balance](r8-balance.md) for the 60% level-two target and Goldline encounter. The metrics below belong to that older build; `validation.json` now records the latest run.
 
 Round two onward now targets a difficult, evasive encounter with roughly 85% dummy victories, replacing the previous near-certain defeat tuning. That percentage is design intent, not a measured human win rate. Round one remains the original warmup.
 

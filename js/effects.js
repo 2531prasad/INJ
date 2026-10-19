@@ -76,6 +76,7 @@
     for (let i = App.projectiles.length - 1; i >= 0; i--) {
       const p = App.projectiles[i];
       p.x += p.vx * dt;
+      p.y += (p.vy || 0) * dt;
       p.life -= dt;
       if (App.rnd() < 0.6)
         App.particles.push({
@@ -92,11 +93,13 @@
       const target = p.owner === App.player ? App.dummy : App.player;
       const ub = App.hurtbox(target);
       if (p.x > ub.x && p.x < ub.x + ub.w && p.y > ub.y && p.y < ub.y + ub.h) {
-        const move = p.charged
-          ? { ...App.MOVES.toss, key: 'shadow', dmg: 18, kb: 175, heavy: true, knockdown: true }
-          : App.MOVES.toss;
+        const move =
+          p.move ||
+          (p.charged
+            ? { ...App.MOVES.toss, key: 'shadow', dmg: 18, kb: 175, heavy: true, knockdown: true }
+            : App.MOVES.toss);
         App.applyHit(target, p.owner, move, p.x, p.y);
-        if (App.game.state === 'ko') return;
+        if (App.game.state !== 'fight') return;
         App.projectiles.splice(i, 1);
         continue;
       }

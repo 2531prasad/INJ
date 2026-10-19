@@ -37,3 +37,7 @@ Use case: stylized-concept. Asset type: production background plate for a 16:9 s
 ## Home Screen app mark
 
 `app-icon.svg` is an original code-native INJ monogram in the existing bone, plum, crimson and gold palette. It does not edit source portraits or fighter art. `tools/render-app-icons.cjs` rasterizes this vector through Chrome into `app-icon-180.png`, `app-icon-192.png` and `app-icon-512.png` for Apple touch icons and the web app manifest. Regenerate with `node tools/render-app-icons.cjs`; `INJ_PLAYWRIGHT` and `INJ_CHROME` can override the local tool paths.
+
+## Goldline / blue Audi R8
+
+`r8-sprites-v1.png` is a sixteen-pose, 1254×1254 RGBA atlas generated with built-in ImageGen on 19 October 2026, before its moves were implemented. It includes low car, thruster/dash/rim/rear-up poses, transformation stages and an original blue-and-gold humanoid robot. The source PNG is copied without pixel editing. `r8-frames.js` contains alpha-component bounds and per-pose roots; regenerate with `python3 tools/inspect-r8.py`. Exhaust is excluded from airborne body anchors. [Exact prompt and provenance](r8-generation.md). The existing arena and INJ/Dummy art are unchanged.

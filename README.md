@@ -20,7 +20,9 @@ Phones use the on-screen joystick and action buttons. The upward 90° wedge—fr
 
 Desktop controls: A/D to move, W to jump, S to crouch, J to punch, K to kick, U to uppercut, L for Shadow, Shift to guard, and Escape to pause.
 
-Round 1 is a warmup. From round two, the awakened dummy favours evasive footwork and one- or two-hit bursts instead of constant combos. Bursts end in 0.65–1.05 seconds of breathing room, with a guaranteed opening before it can evade another threat. Dodges also leave an opening, active strikes commit, and its damage, armor and pursuit speed are reduced from the previous version. The tuning target is roughly **85% dummy victories**, rather than 99%; this is not a measured human win rate. The latest 100-fight regression benchmark uses full 99-second rounds and seven scripted play styles. [Balance notes](artifacts/opponent-balance.md) explain the changes and test limits; raw metrics are in [validation.json](artifacts/validation.json).
+Round 1 is a warmup. Round 2 keeps the awakened Dummy's evasions, short bursts and punishable pauses, with a gentler **60% loss target**. Round 3 introduces **Goldline**, a blue Audi R8 with gold rims: **140 car HP** with dash, thruster leap, rim disc and occasional rear-up attacks, then **165 robot HP** with piston punches, wheel kicks, jet uppercuts, dive slams and wheel-shield counters. Its car and robot forms target **65%** and **85%** losses respectively. These are tuning goals, not measured human probabilities or predetermined winners.
+
+Both boss health bars are visible. INJ keeps remaining health/charge through the transformation; crouching strikes reach the low car, and Shadow aims down automatically. Each form has a 99-second phase clock; timeouts lose to the boss. Later rounds repeat Goldline for now. [Balance notes](artifacts/r8-balance.md) record the scripted checks and their limits. [Sprite source and exact ImageGen prompt](assets/r8-generation.md) document the new sixteen-pose atlas.
 
 ## Source organization
 
@@ -38,6 +40,6 @@ Round 1 is a warmup. From round two, the awakened dummy favours evasive footwork
 
 Run `node tests/structure.cjs`, then `node tests/browser.cjs` with Playwright and Chrome/Chromium installed. Set `INJ_PLAYWRIGHT` and `INJ_CHROME` if needed. The test suite starts its own local server and appends inspection hooks only to an intercepted test copy of `js/main.js`. It separately checks unmodified HTTP and direct-file startup.
 
-The latest run passed 174 checks in headless Chrome across phone and desktop viewports. This includes actual double-tap/pinch input, simultaneous controls while gesture blocking is active, jump-cone boundaries, fullscreen profile visibility, and emulated Home Screen launch signals. Physical-phone ergonomics, actual Safari/Home Screen chrome, and subjective speaker/headphone listening still need testing.
+The latest run passed 208 checks in headless Chrome across phone and desktop viewports. This includes actual double-tap/pinch input, simultaneous controls while gesture blocking is active, jump-cone boundaries, fullscreen profile visibility, and emulated Home Screen launch signals. Physical-phone ergonomics, actual Safari/Home Screen chrome, and subjective speaker/headphone listening still need testing.
 
 The optional Python atlas inspection tools require Pillow. They regenerate source bounds and animation anchors without modifying image pixels.

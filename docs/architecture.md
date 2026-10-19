@@ -12,7 +12,9 @@ INJ remains a build-free static game. `index.html` contains the interface markup
 | --- | --- | --- |
 | `js/core.js` | Canvas context, dimensions, math, seeded randomness, shared audio reference | `world.width`, `clock.last`, `H`, `GROUND`, `ctx`, `Sfx` |
 | `js/content.js` | Fighter palettes, move definitions, rotating MiMi exchanges | `MOVES`, `INJ_PAL`, `DUM_PAL`, `ROASTS` |
+| `js/r8-content.js` | Mechanical moves and difficulty profiles | `R8_MOVES`, `R8_TUNING`, `LEVEL_TWO` |
 | `js/state.js` | Fighter models, live actors, match state, effect pools | `makeFighter`, `player`, `dummy`, `game`, `projectiles`, `particles`, `afterimages` |
+| `js/encounters.js` | Opponent ladder, form health, protected transformation and actor margins | `configureOpponent`, `beginR8Transform`, `completeR8Transform`, `fighterMargin`, `isR8` |
 | `js/arena.js` | Background bake/buffers, atmosphere and cosmetic distant duel | `paintArena`, `stageDuelAt`, `drawStageDuel`, `drawArenaAtmosphere` |
 | `js/effects.js` | Hit sparks, dust, blood, projectile and particle updates | `updateProjectiles`, `updateParticles`, `hitSpark`, `dust` |
 | `js/rounds.js` | KO, round reset, announcements, timeout and round progression | `endRound`, `resetRound`, `updateFlow` |
@@ -20,6 +22,8 @@ INJ remains a build-free static game. `index.html` contains the interface markup
 | `js/controls.js` | Keyboard and captured touch input, jump cone, buffering, control labels | `input`, `queueAction`, `resetInput`, `initControls` |
 | `js/movement.js` | Player decisions, jump/landing physics and distance-based walking | `controlPlayer`, `physics`, `moveWalking` |
 | `js/opponent.js` | Warmup and awakened opponent behavior | `controlDummy`, `controlAwakenedDummy`, `dodgeDummy` |
+| `js/r8.js` | Car/robot decisions, boost physics, shield counters and low hurtbox | `controlR8`, `startR8Attack`, `stepR8Attack`, `r8Hurtbox` |
+| `js/r8-renderer.js` | Sixteen hard-switched poses, two health bars and wheel projectiles | `r8Sheet`, `sampleR8Animation`, `drawR8`, `drawR8Health`, `drawRim` |
 | `js/fighters.js` | Atlas loading, hard pose changes, contact shadows and reflections | `sampleFighterAnimation`, `sampleAttackAnimation`, `drawFighter` |
 | `js/renderer.js` | Frame composition, projectiles/effects drawing, health bars and HUD | `render`, `text`, `drawBar` |
 | `js/menus.js` | Profile, pause, restart, audio controls, MiMi dialogue and page lifecycle | `pauseGame`, `resumeGame`, `restartGame`, `startRoast`, `initMenus` |
@@ -40,6 +44,10 @@ There are deliberate runtime cycles: combat updates control labels; input dispat
 
 The namespace is an internal implementation API, not a saved-game or external plugin format. Add a subsystem export only when another subsystem or a meaningful integration check needs it. Avoid duplicating mutable values in separate modules.
 
+## Goldline encounter boundary
+
+`dummy` remains the live opponent object for all rounds; check `kind` / `isR8` rather than its variable name. Round two uses `LEVEL_TWO`; round three onward configures the R8. Combat delegates its hurtbox and attack physics, while shared damage/guard still decides outcomes. Empty car health enters `transform`, clears attacks/input/projectiles and freezes simulation until the robot is installed. The second form preserves INJ health and charge, refills only robot health, resets the phase clock and resumes with brief entry protection. Timer expiry loses to the boss in either form; both pools must be cleared. The engine freezes transformation when paused. Keep these rules in `encounters.js` and `rounds.js`, not in renderer callbacks.
+
 ## Stylesheet order
 
 | File | Scope |
@@ -58,8 +66,9 @@ These files preserve the previous cascade in exactly this order. Some later rule
 
 - `node tests/structure.cjs`: local resource links, classic-script syntax, defer/bootstrap order and absence of production test hooks; no package dependencies.
 - `node tests/browser.cjs`: broad integration runner. Its sections cover mobile geometry/input/display, animation, combat/opponent balance, dialogue, audio and desktop. Test-only inspection is appended to an intercepted `js/main.js`, while separate production smoke tests use untouched HTTP and `file://` sources.
-- `tools/inspect-sprites.py`, `tools/inspect-walk.py`: alpha-bound/anchor extraction. `tools/render-app-icons.cjs`: code-native app-mark PNG export. See `assets/README.md` for provenance.
-- `artifacts/validation.json`: latest browser outcome and scripted opponent benchmark. `artifacts/module-refactor.json`: one-time AST/DOM/CSS extraction comparison against the pre-split source. It supplements runtime checks and is not a continuously enforced test.
+- `tests/r8.cjs`: boss integration checks, isolated 100-fight phase benchmarks and car/robot previews. Called by the main browser runner. `tests/server.cjs` owns the concurrent local HTTP server.
+- `tools/inspect-sprites.py`, `tools/inspect-walk.py`, `tools/inspect-r8.py`: alpha-bound/anchor extraction. `tools/render-app-icons.cjs`: code-native app-mark PNG export. See `assets/README.md` for provenance.
+- `artifacts/validation.json`: latest browser outcome and scripted opponent benchmarks. `artifacts/r8-balance.md` describes current difficulty targets, phase rules and measurement limits. The older `opponent-balance.md` is historical. `artifacts/module-refactor.json`: one-time AST/DOM/CSS extraction comparison against the pre-split source. It supplements runtime checks and is not a continuously enforced test.
 - `docs/archive/original-v0.1.md`: historical design and obsolete implementation notes. Read for history, not current file ownership.
 
 No production framework, package installation, compilation or local server is required. A server remains convenient for development. Existing Google Fonts requests are optional; gameplay uses local art and scripts.
