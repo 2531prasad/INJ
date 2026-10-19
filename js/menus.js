@@ -184,8 +184,27 @@
     App.render(0);
   }
 
+  function showVictory() {
+    const result = App.game.victory;
+    document.getElementById('victoryRound').textContent = 'ROUND ' + result.round + ' CLEAR';
+    document.getElementById('victoryOpponent').textContent = result.opponent + ' DEFEATED';
+    document.getElementById('victoryHealth').textContent = result.health + ' / ' + result.maxHealth;
+    document.getElementById('victoryCombo').textContent = result.bestCombo + ' HITS';
+    document.getElementById('victoryPanel').hidden = false;
+    document.getElementById('screen').classList.add('is-victory');
+    App.Sfx.setMode('menu');
+    document.getElementById('btnNextRound').focus({ preventScroll: true });
+  }
+  function hideVictory() {
+    const panel = document.getElementById('victoryPanel'),
+      returnFocus = panel.contains(document.activeElement);
+    panel.hidden = true;
+    document.getElementById('screen').classList.remove('is-victory');
+    if (returnFocus) btnArenaMenu.focus({ preventScroll: true });
+  }
   function initMenus() {
     btnNextRoast.addEventListener('click', advanceRoast);
+    document.getElementById('btnNextRound').addEventListener('click', App.finishVictory);
     document.getElementById('btnSkipRoast').addEventListener('click', finishRoast);
     document.querySelectorAll('[data-audio]').forEach((btn) =>
       btn.addEventListener('click', () => {
@@ -243,6 +262,8 @@
     pauseGame,
     resumeGame,
     restartGame,
+    showVictory,
+    hideVictory,
     initMenus
   });
 })(window.INJ);

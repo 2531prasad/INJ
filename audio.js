@@ -205,6 +205,11 @@
           [74,77,81].forEach((n,i) => tone(i*.045, midi(n), midi(n), .16, 'sine', .13)); break;
         case 'gong':
           [146.83,294.4,441.8].forEach((f,i) => tone(0, f, f*.998, .8-i*.16, 'sine', .22/(i+1))); break;
+        case 'victory':
+          [74,77,81,86,89].forEach((n,i) => {
+            tone(i*.09, midi(n), midi(n), .32, 'triangle', .12, 3000);
+            tone(.46+i*.025, midi(n-12), midi(n-12), .65, 'sine', .07, 2400);
+          }); break;
         case 'finish':
           [74,77,81,86].forEach((n,i) => tone(i*.075, midi(n), midi(n), .45, 'triangle', .15, 2600));
           this.kick(at, .4, bus); break;

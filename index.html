@@ -136,6 +136,18 @@
             <circle cx="15" cy="9" r="1.5" />
           </svg>
         </button>
+        <section id="victoryPanel" class="victory-panel" aria-labelledby="victoryTitle" hidden>
+          <div class="victory-copy">
+            <p id="victoryRound" class="victory-round">ROUND CLEAR</p>
+            <h2 id="victoryTitle">VICTORY</h2>
+            <p id="victoryOpponent" class="victory-opponent"></p>
+            <dl class="victory-stats">
+              <div><dt>HEALTH LEFT</dt><dd id="victoryHealth"></dd></div>
+              <div><dt>BEST KOMBO</dt><dd id="victoryCombo"></dd></div>
+            </dl>
+            <button id="btnNextRound" class="victory-next">Next round <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
         <div id="pauseOverlay" class="pause-overlay" hidden>
           <section class="pause-panel" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
             <h2 id="pauseTitle">PAUSED</h2>

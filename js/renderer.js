@@ -26,7 +26,43 @@
     App.ctx.fillStyle = 'rgba(255,255,255,0.16)';
     App.ctx.fillRect(x, y, w, 2);
   }
+  function drawVictory() {
+    const { ctx, game } = App;
+    ctx.save();
+    ctx.drawImage(App.bg, 0, 0, App.world.width, App.H);
+    ctx.fillStyle = '#0c0914b8';
+    ctx.fillRect(0, 0, App.world.width, App.H);
+    ctx.globalAlpha = 0.24;
+    App.drawFighter({ ...App.dummy, x: App.world.width * 0.78, y: App.GROUND,
+      state: 'ko', atk: null, grounded: true, flash: 0 });
+    ctx.globalAlpha = 1;
+    if (!App.reducedMotion) {
+      for (let i = 0; i < 16; i++) {
+        const x = (i * 53 + 23) % App.world.width,
+          y = (i * 31 + game.t * (13 + i % 4)) % App.H;
+        ctx.fillStyle = i % 3 ? '#eacb7b88' : '#fff1c388';
+        ctx.fillRect(x, y, i % 2 ? 1 : 2, 2);
+      }
+    }
+    const x = App.world.width * 0.25,
+      zoom = App.reducedMotion ? 1.12 : 1 + App.smooth(game.t / 0.8) * 0.12;
+    ctx.save();
+    ctx.translate(x, App.GROUND);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-x, -App.GROUND);
+    App.drawFighter({ ...App.player, x, y: App.GROUND, facing: 1, state: 'victory',
+      atk: null, grounded: true, flash: 0, invuln: 0 });
+    ctx.restore();
+    ctx.fillStyle = '#08060dcc';
+    ctx.fillRect(0, 0, App.world.width, 8);
+    ctx.fillRect(0, App.H - 8, App.world.width, 8);
+    ctx.restore();
+  }
   function render(now) {
+    if (App.game.state === 'victory') {
+      drawVictory();
+      return;
+    }
     // Repaint the full frame so camera shake cannot leave stale pixels at the edges.
     App.ctx.drawImage(App.bg, 0, 0, App.world.width, App.H);
     App.ctx.save();
@@ -44,7 +80,7 @@
 
     for (const ghost of App.afterimages) {
       App.ctx.save();
-      App.ctx.globalAlpha = (ghost.life / ghost.max) * 0.25;
+      App.ctx.globalAlpha = (ghost.life / ghost.max) * (ghost.f.nitroEcho ? 0.42 : 0.25);
       App.drawFighter(ghost.f, true);
       App.ctx.restore();
     }

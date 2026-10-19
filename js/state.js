@@ -85,6 +85,8 @@
     shakeX: 0,
     shakeY: 0,
     koTimer: 0,
+    victory: null,
+    bestCombo: 0,
     hits: 0,
     hitTimer: 0,
     round: 1,

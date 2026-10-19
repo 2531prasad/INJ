@@ -12,6 +12,62 @@ module.exports = async function verifyAbilities(page, check, root) {
       a.dummy.x = 205;
     }
     setup();
+    const spriteCanvas = document.createElement('canvas');
+    spriteCanvas.width = a.cv.width; spriteCanvas.height = a.cv.height;
+    const capture = spriteCanvas.getContext('2d', { willReadFrequently: true });
+    capture.setTransform(a.RENDER_SCALE, 0, 0, a.RENDER_SCALE, 0, 0);
+    const spritePixels = (fighter) => {
+      const liveContext = a.ctx;
+      try {
+        a.ctx = capture;
+        capture.clearRect(0, 0, a.world.width, a.H);
+        capture.save();
+        capture.translate(a.world.width / 2, a.GROUND);
+        a.drawSpriteFrame(fighter, 8);
+        capture.restore();
+        return capture.getImageData(0, 0, spriteCanvas.width, spriteCanvas.height).data;
+      } finally { a.ctx = liveContext; }
+    };
+    const originalPixels = spritePixels({ ...a.player, atk: null });
+    a.player.meter = 100; a.startAttack(a.player, 'nitrokick');
+    a.player.atk.t = 0.1;
+    const greenPixels = spritePixels(a.player);
+    let red = 0, green = 0, blue = 0, count = 0;
+    for (let i = 0; i < greenPixels.length; i += 4) {
+      if (greenPixels[i + 3] > 200) {
+        red += greenPixels[i]; green += greenPixels[i + 1]; blue += greenPixels[i + 2]; count++;
+      }
+    }
+    out.nitroSpriteTurnsGreen = count > 100 && green > red * 1.5 && green > blue * 1.5;
+    // Compare native alpha: Canvas and PNG sources can use different scaled edge filters.
+    const sheet = a.spriteSheets.inj, frame = sheet.meta.frames[8];
+    const native = document.createElement('canvas');
+    native.width = frame.w; native.height = frame.h;
+    const mask = native.getContext('2d', { willReadFrequently: true });
+    const nativePixels = image => {
+      mask.clearRect(0, 0, frame.w, frame.h);
+      mask.drawImage(image, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
+      return mask.getImageData(0, 0, frame.w, frame.h).data;
+    };
+    const sourceMask = nativePixels(sheet.image), greenMask = nativePixels(sheet.nitroImage);
+    out.greenTintPreservesSilhouette = greenMask.every((value, i) => i % 4 !== 3 || value === sourceMask[i]);
+    a.player.atk = null;
+    const restored = spritePixels(a.player);
+    let difference = 0, samples = 0;
+    for (let i = 0; i < restored.length; i += 4) {
+      if (originalPixels[i + 3] > 200 && restored[i + 3] > 200) {
+        for (let channel = 0; channel < 3; channel++) difference += Math.abs(restored[i + channel] - originalPixels[i + channel]);
+        samples += 3;
+      }
+    }
+    out.nitroTintDoesNotLeak = samples > 0 && difference / samples < 2;
+    const reduced = a.reducedMotion;
+    try {
+      a.reducedMotion = true;
+      a.player.meter = 100; a.startAttack(a.player, 'nitrokick');
+      out.reducedMotionKeepsGreen = spritePixels(a.player).some((value, i) => value !== originalPixels[i]);
+    } finally { a.reducedMotion = reduced; }
+    setup();
     a.player.meter = 99;
     a.updateChargeUI();
     const nitroButton = document.querySelector('[data-act="nitro"]');

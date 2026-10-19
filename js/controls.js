@@ -276,6 +276,13 @@
         return;
       }
       if (App.game.paused) return;
+      if (App.game.state === 'victory') {
+        if (!e.repeat && (k === 'enter' || k === ' ') && e.target.tagName !== 'BUTTON') {
+          e.preventDefault();
+          App.finishVictory();
+        }
+        return;
+      }
       if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' '].includes(k)) e.preventDefault();
       heldKeys.add(k);
       syncInput();

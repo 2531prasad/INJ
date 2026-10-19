@@ -17,16 +17,16 @@ INJ remains a build-free static game. `index.html` contains the interface markup
 | `js/encounters.js` | Opponent ladder, form health, protected transformation and actor margins | `configureOpponent`, `beginR8Transform`, `completeR8Transform`, `fighterMargin`, `isR8` |
 | `js/arena.js` | Background bake/buffers, atmosphere and cosmetic distant duel | `paintArena`, `stageDuelAt`, `drawStageDuel`, `drawArenaAtmosphere` |
 | `js/effects.js` | Hit sparks, dust, blood, projectile and particle updates | `updateProjectiles`, `updateParticles`, `hitSpark`, `dust` |
-| `js/rounds.js` | KO, round reset, announcements, timeout and round progression | `endRound`, `resetRound`, `updateFlow` |
+| `js/rounds.js` | KO, player-paced victory state/result, round reset, announcements, timeout and progression | `endRound`, `beginVictory`, `finishVictory`, `resetRound`, `updateFlow` |
 | `js/combat.js` | Attack lifecycle, slide/Nitro travel, hit detection, combo scaling, damage, guard, charge and interrupts | `startAttack`, `stepAttack`, `hurtbox`, `tryHit`, `applyHit`, `resetCombo` |
 | `js/controls.js` | Keyboard and captured touch input, jump cone, buffering, control labels | `input`, `queueAction`, `resetInput`, `initControls` |
 | `js/movement.js` | Player actions in all stances, slide/Nitro/aerial Shadow dispatch, jump/landing physics and distance-based walking | `controlPlayer`, `physics`, `moveWalking` |
 | `js/opponent.js` | Warmup and awakened opponent behavior | `controlDummy`, `controlAwakenedDummy`, `dodgeDummy` |
 | `js/r8.js` | Car/robot decisions, repeated-move recognition, recovery punishes, boost physics, shield counters and low hurtbox | `controlR8`, `startR8Attack`, `stepR8Attack`, `r8Hurtbox` |
 | `js/r8-renderer.js` | Sixteen hard-switched poses, single visible phase health bar and wheel projectiles | `r8Sheet`, `sampleR8Animation`, `drawR8`, `drawR8Health`, `drawRim` |
-| `js/fighters.js` | Atlas loading, hard pose changes, Nitro phase poses/trails, contact shadows and reflections | `sampleFighterAnimation`, `sampleAttackAnimation`, `drawFighter` |
-| `js/renderer.js` | Frame composition, projectiles/effects drawing, health bars and HUD | `render`, `text`, `drawBar` |
-| `js/menus.js` | Profile, pause, restart, audio controls, MiMi dialogue and page lifecycle | `pauseGame`, `resumeGame`, `restartGame`, `startRoast`, `initMenus` |
+| `js/fighters.js` | Atlas loading, hard pose changes, runtime green Nitro atlas cache, phase poses/flames, contact shadows and reflections | `sampleFighterAnimation`, `sampleAttackAnimation`, `drawFighter` |
+| `js/renderer.js` | Frame composition, victory stage, projectiles/effects drawing, health bars and HUD | `render`, `text`, `drawBar` |
+| `js/menus.js` | Profile, pause, restart, audio controls, MiMi/victory interfaces and page lifecycle | `pauseGame`, `resumeGame`, `restartGame`, `startRoast`, `initMenus` |
 | `js/display.js` | Native/expanded/Home Screen modes, browser gesture lock, arena resizing | `toggleFullscreen`, `fitArena`, `syncFullscreenUI`, `initDisplay` |
 | `js/engine.js` | Simulation tick, hit-stop, clock and animation loop | `update`, `frame`, `startEngine` |
 | `js/main.js` | One startup sequence | Initializes controls, menus and display, then starts the engine |
@@ -52,9 +52,15 @@ The namespace is an internal implementation API, not a saved-game or external pl
 
 `state.js` owns the independent `player.charge` (0–3 Shadow charge) and `player.meter` (0–100 Nitro energy). Shared combat credits clean hits, applies the escalating combo multiplier before armor, and clears a chain on interruption/block/whiff. `game.hits` and its 1.4-second `hitTimer` drive the HUD. Invalid/invulnerable hits do not extend the chain. Round resets clear both resources; robot reveal restores health while carrying them forward.
 
-`controls.js` owns NITRO / Q and rejects that action below full meter; `movement.js` dispatches it standing, crouching and airborne. The kick costs 100 on attack start, travels forward during its active window and can be blocked or interrupted. `combat.js` integrates only the elapsed active portion of each step, so the 60 ms startup / 160 ms active / 260 ms recovery burst travels 105.6 units at 660 units/s regardless of frame partition. Crouching selects a low hitbox/pose. Down + forward + Kick slides without spending meter; down + Kick remains the sweep. Airborne Shadow aims at the current opponent hurtbox when released, with no homing afterward. `fighters.js` reuses authored sweep/flying-kick frames, while `renderer.js` draws the Nitro bar and hit multiplier directly over the arena without a background panel. Nitro uses a quick coil/strike/recoil sequence with separate short-lived echoes and streaks; the fighter sprite remains opaque and hard-switched. Reduced motion omits decoration.
+`controls.js` owns NITRO / Q and rejects that action below full meter; `movement.js` dispatches it standing, crouching and airborne. The kick costs 100 on attack start, travels forward during its active window and can be blocked or interrupted. `combat.js` integrates only the elapsed active portion of each step, so the 60 ms startup / 160 ms active / 260 ms recovery burst travels 105.6 units at 660 units/s regardless of frame partition. Crouching selects a low hitbox/pose. Down + forward + Kick slides without spending meter; down + Kick remains the sweep. Airborne Shadow aims at the current opponent hurtbox when released, with no homing afterward. `fighters.js` reuses authored sweep/flying-kick frames, while `renderer.js` draws the Nitro bar and hit multiplier directly over the arena without a background panel. Nitro uses a quick coil/strike/recoil sequence with a cached green sprite recolor, separate short-lived green echoes and directional flame ribbons; the fighter sprite remains opaque and hard-switched. The runtime source-atop atlas recolor preserves native alpha and never rewrites assets. Reduced motion retains the green color cue and omits moving decoration.
 
 `index.html` owns the six labeled SVG action buttons. `controls.js` updates the Shadow label without replacing its icon and toggles Nitro's `hidden` state at full meter. `styles/responsive.css` fixes supporting actions above the larger round Punch/Kick targets, with a reserved Nitro slot so readiness never moves the other buttons. The quiet menu remains centered at the bottom. Touch capture stays independent when Nitro hides during an active press.
+
+## Victory boundary
+
+`combat.js` records `game.bestCombo` for the current round/encounter. `rounds.js` snapshots actual health, opponent and best combo in `game.victory` at an INJ win. A 1.1-second KO beat enters `victory`; losses retain their three-second beat and MiMi flow. A car clear still enters transformation and never opens a victory scene. Only robot defeat completes Goldline.
+
+`beginVictory` clears combat effects/input and installs the authored victory pose. `engine.js` advances the scene clock while skipping fighter controllers, projectiles and damage; pause freezes it. `renderer.js` owns the dimmed arena, subtle uniform hero close-up, defeated opponent and deterministic gold flecks. Rendering never decides progression. `menus.js` fills/shows the accessible `index.html` victory panel, hides the touch deck/joystick via the scene class and focuses Next Round. The quiet menu moves to the bottom-left for this scene. `finishVictory` accepts Next Round or Enter/Space once and resets the round; restart/reset clear the panel, snapshot, best combo and effects. `audio.js` owns the short victory fanfare. Reduced motion uses the final static framing without gold motion.
 
 ## Stylesheet order
 
@@ -66,7 +72,7 @@ The namespace is an internal implementation API, not a saved-game or external pl
 | `styles/layout.css` | Current header and pause panel, compact portrait adjustments |
 | `styles/responsive.css` | Landscape shell, final touch-deck sizing, portrait stick layout |
 | `styles/immersive.css` | Quiet menu trigger, fullscreen/app layouts, safe areas and gesture CSS |
-| `styles/dialogue.css` | MiMi portrait, bubbles, reading layout and reduced viewport adjustments |
+| `styles/dialogue.css` | MiMi portrait/dialogue plus the responsive victory panel |
 
 These files preserve the previous cascade in exactly this order. Some later rules intentionally refine earlier component rules; this extraction does not redesign or deduplicate them. Keep structural cleanup separate from behavior changes.
 
@@ -75,6 +81,7 @@ These files preserve the previous cascade in exactly this order. Some later rule
 - `node tests/structure.cjs`: local resource links, classic-script syntax, defer/bootstrap order and absence of production test hooks; no package dependencies.
 - `node tests/browser.cjs`: broad integration runner. Its sections cover mobile geometry/input/display, animation, combat/opponent balance, dialogue, audio and desktop. Test-only inspection is appended to an intercepted `js/main.js`, while separate production smoke tests use untouched HTTP and `file://` sources.
 - `tests/abilities.cjs`: combo arithmetic/reset rules, meter earning/spending, all three Nitro stances, phase timing/travel, transparent combo HUD, ready/hidden layout separation, repeated ability touch/capture, slide input and airborne projectile checks. Called by the main browser runner.
+- `tests/victory.cjs`: win/result lifecycle, battle freeze, pause/restart, car/robot boundaries, responsive scene geometry, and touch/keyboard progression. Called by the main browser runner.
 - `tests/r8.cjs`: boss integration checks, isolated 100-fight phase benchmarks and car/robot previews. Called by the main browser runner. `tests/server.cjs` owns the concurrent local HTTP server.
 - `tools/inspect-sprites.py`, `tools/inspect-walk.py`, `tools/inspect-r8.py`: alpha-bound/anchor extraction. `tools/render-app-icons.cjs`: code-native app-mark PNG export. See `assets/README.md` for provenance.
 - `artifacts/validation.json`: latest browser outcome and scripted opponent benchmarks. `artifacts/r8-balance.md` describes current difficulty targets, phase rules and measurement limits. The older `opponent-balance.md` is historical. `artifacts/module-refactor.json`: one-time AST/DOM/CSS extraction comparison against the pre-split source. It supplements runtime checks and is not a continuously enforced test.

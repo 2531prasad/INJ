@@ -208,6 +208,7 @@
     else App.Sfx.play('punch');
     if (att === App.player) {
       App.game.hits++;
+      App.game.bestCombo = Math.max(App.game.bestCombo, App.game.hits);
       App.game.hitTimer = 1.4;
       App.player.meter = Math.min(100, App.player.meter + 20);
       App.updateChargeUI();

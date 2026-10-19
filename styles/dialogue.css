@@ -284,3 +284,104 @@
     padding: 8px 20px;
   }
 }
+
+/* A player-paced win scene over the authored arena and victory pose. */
+.victory-panel[hidden] {
+  display: none;
+}
+.victory-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 44% 56%;
+  align-items: center;
+  pointer-events: none;
+}
+.victory-copy {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(4px, 0.8vw, 9px);
+  padding: 8px clamp(8px, 2.5vw, 28px) 8px 0;
+  color: #f1e3c0;
+  text-shadow: 0 2px 3px #08060d;
+  -webkit-font-smoothing: antialiased;
+}
+.victory-round,
+.victory-opponent,
+.victory-copy h2,
+.victory-stats,
+.victory-stats dd {
+  margin: 0;
+}
+.victory-round {
+  font: 700 clamp(7px, 1.2vw, 11px)/1.2 'Chakra Petch', sans-serif;
+  letter-spacing: 0.16em;
+  color: #d9bb79;
+}
+.victory-copy h2 {
+  font: clamp(18px, 5.3vw, 42px)/1.2 'Press Start 2P', monospace;
+  letter-spacing: -0.04em;
+  color: #f4d18a;
+  text-wrap: balance;
+}
+.victory-opponent {
+  font: 600 clamp(9px, 1.5vw, 14px)/1.2 'Chakra Petch', sans-serif;
+  letter-spacing: 0.06em;
+}
+.victory-stats {
+  display: flex;
+  gap: clamp(14px, 3vw, 32px);
+  font-family: 'Chakra Petch', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.victory-stats dt {
+  font-size: clamp(7px, 1.1vw, 10px);
+  line-height: 1.2;
+  color: #c8bda4;
+}
+.victory-stats dd {
+  font-size: clamp(12px, 2.2vw, 20px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+.victory-next {
+  min-height: 44px;
+  min-width: 110px;
+  padding: 9px 16px;
+  border: 1px solid #e3c58b88;
+  border-radius: 9px;
+  background: #312219e6;
+  color: #fff0cf;
+  font: 700 clamp(11px, 1.5vw, 14px)/1 'Chakra Petch', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 80ms ease-out, background-color 100ms ease-out;
+}
+.victory-next:hover,
+.victory-next:focus-visible {
+  background-color: #58402ae6;
+}
+.victory-next:active {
+  transform: scale(0.96);
+}
+.is-victory #pad,
+.is-victory #stickZone {
+  display: none;
+}
+.is-victory .arena-menu {
+  left: max(10px, env(safe-area-inset-left));
+  z-index: 6;
+}
+@media (prefers-reduced-motion: reduce) {
+  .victory-next {
+    transition: none;
+  }
+}

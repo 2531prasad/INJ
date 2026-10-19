@@ -426,6 +426,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   for (const [name, passed] of Object.entries(mechanics)) check(passed, `Combat: ${name}`);
 
   await require('./abilities.cjs')(page,check,root);
+  await require('./victory.cjs')(page,check,root);
 
   const difficulty=await page.evaluate(()=>{
     const t=__test,out={};
@@ -540,7 +541,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await page.locator('#btnSkipRoast').click();
   check(await page.locator('#roastModal').isHidden()&&await page.evaluate(()=>__test.game.round===3), 'Skip immediately starts the next round');
   await page.evaluate(()=>{__test.settle();__test.endRound(__test.player);__test.updateFlow(3.1);});
-  check(await page.locator('#roastModal').isHidden()&&await page.evaluate(()=>__test.game.state==='intro'), 'Winning a round bypasses the cat roast');
+  check(await page.locator('#roastModal').isHidden()&&await page.evaluate(()=>__test.game.state==='victory'), 'Winning a round opens the victory scene and bypasses the cat roast');
   await page.evaluate(()=>{__test.settle();__test.startRoast();});
   await page.keyboard.press('Enter');
   check(await page.evaluate(()=>__test.game.roastStep===1), 'Keyboard Enter advances the dialogue');
@@ -584,7 +585,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     engine.master.gain.value=.72;engine.music.gain.value=.58;
     const step=60/112/4;
     for(let i=0;i<256;i++)engine.sequence(i,.1+i*step);
-    const effects=['swing','jump','punch','kick','uppercut','jumpkick','block','toss','shadow','charge','gong','finish','fall','ui','catlaugh','engine','boost','rim','transform'];
+    const effects=['victory','swing','jump','punch','kick','uppercut','jumpkick','block','toss','shadow','charge','gong','finish','fall','ui','catlaugh','engine','boost','rim','transform'];
     // Effects are recorded in a separate offline pass below to preserve the score preview.
     const buffer=await offline.startRendering(), data=buffer.getChannelData(0);
     let peak=0,sum=0,invalid=0,clipped=0;

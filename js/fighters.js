@@ -9,6 +9,18 @@
     const image = new Image();
     spriteSheets[kind] = { image, meta: window.InjSpriteFrames[kind], ready: false };
     image.onload = () => {
+      if (kind === 'inj') {
+        // Cache a runtime recolor; source pixels and alpha remain untouched on disk.
+        const green = document.createElement('canvas');
+        green.width = image.naturalWidth;
+        green.height = image.naturalHeight;
+        const g = green.getContext('2d');
+        g.drawImage(image, 0, 0);
+        g.globalCompositeOperation = 'source-atop';
+        g.fillStyle = 'rgba(35,255,92,0.72)';
+        g.fillRect(0, 0, green.width, green.height);
+        spriteSheets[kind].nitroImage = green;
+      }
       spriteSheets[kind].ready = true;
     };
     image.src = 'assets/' + kind + '-sprites-v2.png';
@@ -104,7 +116,9 @@
       scale = App.FIGHTER_HEIGHT / sheet.meta.neutralHeight;
     App.ctx.save();
     App.ctx.drawImage(
-      sheet.image,
+      f.kind === 'inj' && (f.atk?.key === 'nitrokick' || f.nitroEcho)
+        ? sheet.nitroImage || sheet.image
+        : sheet.image,
       frame.x,
       frame.y,
       frame.w,
@@ -115,6 +129,34 @@
       frame.h * scale
     );
     App.ctx.restore();
+  }
+  function drawNitroBlaze(f) {
+    const { ctx } = App,
+      base = f.atk.low ? -25 : -48;
+    for (let i = 0; i < 4; i++) {
+      const y = base - 15 + i * 9,
+        length = 66 + i * 10 + Math.sin(f.atk.t * 100 + i * 2) * 9;
+      const flame = ctx.createLinearGradient(-length, y, 4, y);
+      flame.addColorStop(0, '#15ec5b00');
+      flame.addColorStop(0.45, '#20ed6799');
+      flame.addColorStop(1, '#d7ff9be6');
+      ctx.fillStyle = flame;
+      ctx.beginPath();
+      ctx.moveTo(4, y - 5);
+      ctx.quadraticCurveTo(-length * 0.35, y - 10, -length, y + 3);
+      ctx.lineTo(-length * 0.62, y + 4);
+      ctx.quadraticCurveTo(-length * 0.25, y + 11, 4, y + 5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.strokeStyle = '#ceff9ee6';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-100 - i * 5, base - 10 + i * 12);
+      ctx.lineTo(-45, base - 10 + i * 12);
+      ctx.stroke();
+    }
   }
   function drawFighter(f, ghost = false) {
     if (App.isR8(f)) {
@@ -172,18 +214,7 @@
       App.ctx.shadowColor = f.kind === 'inj' ? '#aa87eb' : '#ee8f4a';
       App.ctx.shadowBlur = f.backstage ? 2 : 4;
     }
-    if (pose.phaseKick && !ghost && !f.reflection && !App.reducedMotion) {
-      // Short trails describe the burst; the authored body stays fully opaque.
-      App.ctx.strokeStyle = '#ceb6f0bb';
-      App.ctx.lineWidth = 1.2;
-      const height = f.atk.low ? -24 : -46;
-      for (let i = 0; i < 3; i++) {
-        App.ctx.beginPath();
-        App.ctx.moveTo(-42 - i * 5, height + i * 7);
-        App.ctx.lineTo(-8 - i * 3, height + i * 7);
-        App.ctx.stroke();
-      }
-    }
+    if (pose.phaseKick && !ghost && !f.reflection && !App.reducedMotion) drawNitroBlaze(f);
     drawSpriteFrame(f, pose.frame, pose.atlas);
     App.ctx.shadowBlur = 0;
     if (f.flash > 0 && !ghost) {
