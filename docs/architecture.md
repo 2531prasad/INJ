@@ -18,11 +18,11 @@ INJ remains a build-free static game. `index.html` contains the interface markup
 | `js/arena.js` | Background bake/buffers, atmosphere and cosmetic distant duel | `paintArena`, `stageDuelAt`, `drawStageDuel`, `drawArenaAtmosphere` |
 | `js/effects.js` | Hit sparks, dust, blood, projectile and particle updates | `updateProjectiles`, `updateParticles`, `hitSpark`, `dust` |
 | `js/rounds.js` | KO, round reset, announcements, timeout and round progression | `endRound`, `resetRound`, `updateFlow` |
-| `js/combat.js` | Attack lifecycle, hit detection, damage, guard, charge and interrupts | `startAttack`, `stepAttack`, `hurtbox`, `tryHit`, `applyHit` |
+| `js/combat.js` | Attack lifecycle, slide/Nitro travel, hit detection, combo scaling, damage, guard, charge and interrupts | `startAttack`, `stepAttack`, `hurtbox`, `tryHit`, `applyHit`, `resetCombo` |
 | `js/controls.js` | Keyboard and captured touch input, jump cone, buffering, control labels | `input`, `queueAction`, `resetInput`, `initControls` |
-| `js/movement.js` | Player decisions, jump/landing physics and distance-based walking | `controlPlayer`, `physics`, `moveWalking` |
+| `js/movement.js` | Player actions in all stances, slide/Nitro/aerial Shadow dispatch, jump/landing physics and distance-based walking | `controlPlayer`, `physics`, `moveWalking` |
 | `js/opponent.js` | Warmup and awakened opponent behavior | `controlDummy`, `controlAwakenedDummy`, `dodgeDummy` |
-| `js/r8.js` | Car/robot decisions, boost physics, shield counters and low hurtbox | `controlR8`, `startR8Attack`, `stepR8Attack`, `r8Hurtbox` |
+| `js/r8.js` | Car/robot decisions, repeated-move recognition, recovery punishes, boost physics, shield counters and low hurtbox | `controlR8`, `startR8Attack`, `stepR8Attack`, `r8Hurtbox` |
 | `js/r8-renderer.js` | Sixteen hard-switched poses, single visible phase health bar and wheel projectiles | `r8Sheet`, `sampleR8Animation`, `drawR8`, `drawR8Health`, `drawRim` |
 | `js/fighters.js` | Atlas loading, hard pose changes, contact shadows and reflections | `sampleFighterAnimation`, `sampleAttackAnimation`, `drawFighter` |
 | `js/renderer.js` | Frame composition, projectiles/effects drawing, health bars and HUD | `render`, `text`, `drawBar` |
@@ -46,7 +46,13 @@ The namespace is an internal implementation API, not a saved-game or external pl
 
 ## Goldline encounter boundary
 
-`dummy` remains the live opponent object for all rounds; check `kind` / `isR8` rather than its variable name. Round two uses `LEVEL_TWO`; round three onward configures the R8. Combat delegates its hurtbox and attack physics, while shared damage/guard still decides outcomes. Empty car health enters `transform`, clears attacks/input/projectiles and freezes simulation until the robot is installed. The first form displays one turquoise bar and no reserve/phase label; transformation keeps that depleted bar until the robot reveals a new gold bar. The second form preserves INJ health and charge, refills only robot health, resets the phase clock to 99 and resumes with brief entry protection. Timer expiry loses to the boss in either form; both pools must be cleared. The engine freezes transformation when paused. Keep these rules in `encounters.js` and `rounds.js`, not in renderer callbacks.
+`dummy` remains the live opponent object for all rounds; check `kind` / `isR8` rather than its variable name. Round two uses `LEVEL_TWO`; round three onward configures the R8. Combat delegates its hurtbox and attack physics, while shared damage/guard still decides outcomes. Empty car health enters `transform`, clears attacks/input/projectiles and freezes simulation until the robot is installed. The first form displays one turquoise bar and no reserve/phase label; transformation keeps that depleted bar until the robot reveals a new gold bar. The second form refills both INJ and robot health, preserves INJ Shadow charge and Nitro meter, clears the hit chain, resets the phase clock to 99 and resumes with brief entry protection. The robot recognizes repeated low strikes, shields during its counter windup, closes against projectiles, punishes recovery, and uses a faster/reaching jet uppercut against jumps. Its 420–720 ms burst rests include a guaranteed 320 ms opening before defensive reactions resume. Timer expiry loses to the boss in either form; both pools must be cleared. The engine freezes transformation when paused. Keep these rules in `encounters.js` and `rounds.js`, not in renderer callbacks.
+
+## Player combo and ability boundary
+
+`state.js` owns the independent `player.charge` (0–3 Shadow charge) and `player.meter` (0–100 Nitro energy). Shared combat credits clean hits, applies the escalating combo multiplier before armor, and clears a chain on interruption/block/whiff. `game.hits` and its 1.4-second `hitTimer` drive the HUD. Invalid/invulnerable hits do not extend the chain. Round resets clear both resources; robot reveal restores health while carrying them forward.
+
+`controls.js` owns NITRO / Q and rejects that action below full meter; `movement.js` dispatches it standing, crouching and airborne. The kick costs 100 on attack start, travels forward during its active window and can be blocked or interrupted. Crouching selects a low hitbox/pose. Down + forward + Kick slides without spending meter; down + Kick remains the sweep. Airborne Shadow aims at the current opponent hurtbox when released, with no homing afterward. `fighters.js` reuses authored sweep/flying-kick frames, while `renderer.js` draws the Nitro bar and hit multiplier.
 
 ## Stylesheet order
 
@@ -66,6 +72,7 @@ These files preserve the previous cascade in exactly this order. Some later rule
 
 - `node tests/structure.cjs`: local resource links, classic-script syntax, defer/bootstrap order and absence of production test hooks; no package dependencies.
 - `node tests/browser.cjs`: broad integration runner. Its sections cover mobile geometry/input/display, animation, combat/opponent balance, dialogue, audio and desktop. Test-only inspection is appended to an intercepted `js/main.js`, while separate production smoke tests use untouched HTTP and `file://` sources.
+- `tests/abilities.cjs`: combo arithmetic/reset rules, meter earning/spending, all three Nitro stances, slide input and airborne projectile checks. Called by the main browser runner.
 - `tests/r8.cjs`: boss integration checks, isolated 100-fight phase benchmarks and car/robot previews. Called by the main browser runner. `tests/server.cjs` owns the concurrent local HTTP server.
 - `tools/inspect-sprites.py`, `tools/inspect-walk.py`, `tools/inspect-r8.py`: alpha-bound/anchor extraction. `tools/render-app-icons.cjs`: code-native app-mark PNG export. See `assets/README.md` for provenance.
 - `artifacts/validation.json`: latest browser outcome and scripted opponent benchmarks. `artifacts/r8-balance.md` describes current difficulty targets, phase rules and measurement limits. The older `opponent-balance.md` is historical. `artifacts/module-refactor.json`: one-time AST/DOM/CSS extraction comparison against the pre-split source. It supplements runtime checks and is not a continuously enforced test.

@@ -39,6 +39,7 @@
     App.player.hitstun = 0;
     App.player.crouching = false;
     App.player.flash = 0;
+    App.resetCombo();
     App.game.state = 'transform';
     App.game.t = 0;
     App.game.hitStop = 0;
@@ -73,6 +74,7 @@
       invuln: 0.35
     });
     const p = App.player;
+    p.hp = p.maxHp;
     p.atk = null;
     p.hitstun = 0;
     p.state = 'idle';
@@ -88,6 +90,8 @@
         45,
         App.world.width - 45
       );
+    App.resetCombo();
+    App.updateChargeUI();
     App.game.state = 'fight';
     // The surprise form reveals a fresh health bar and earns a fresh phase clock.
     App.game.roundTime = 99;

@@ -61,7 +61,9 @@
       f.state = 'hurt';
     } else if (canAct && f.grounded) {
       f.crouching = App.input.down > 0;
-      if (App.consume('special')) {
+      if (App.consume('nitro') && f.meter >= 100) {
+        App.startAttack(f, 'nitrokick');
+      } else if (App.consume('special')) {
         App.startAttack(f, 'toss');
       } else if (App.consume('upper')) {
         App.startAttack(f, 'uppercut');
@@ -70,7 +72,8 @@
         f.comboStep = f.comboStep === 1 ? 0 : 1;
         f.comboTimer = 0.55;
       } else if (App.consume('kick')) {
-        App.startAttack(f, f.crouching ? 'sweep' : 'roundhouse');
+        const forward = f.facing > 0 ? App.input.right : App.input.left;
+        App.startAttack(f, f.crouching ? (forward ? 'slide' : 'sweep') : 'roundhouse');
       } else if (App.consume('jump') || App.input.up) {
         App.Sfx.play('jump');
         f.vy = -395;
@@ -92,7 +95,11 @@
     } else if (canAct && !f.grounded) {
       // Full Aerial Combat (Jump Kick & Jump Punch!)
       f.x += (App.input.right - App.input.left) * 88 * dt;
-      if (App.consume('kick')) {
+      if (App.consume('nitro') && f.meter >= 100) {
+        App.startAttack(f, 'nitrokick');
+      } else if (App.consume('special')) {
+        App.startAttack(f, 'toss');
+      } else if (App.consume('kick')) {
         App.startAttack(f, 'jkick');
       } else if (App.consume('punch')) {
         App.startAttack(f, 'jpunch');

@@ -1,44 +1,49 @@
-# Current balance · v0.18 · 19 October 2026
+# Current balance · v0.19 · 19 October 2026
 
-The requested player-loss targets are 60% in level two, 65% against the car form, and 85% against the robot form. These guide attack timing, damage, armor and decisions; no probability selects a winner. Human loss rates remain unmeasured.
+The robot should feel almost unbeatable through its decisions, while leaving room to compete. The requested loss goals remain 60% in level two and 65% against the car; the robot goal is now roughly 90%. These guide playtesting. Combat resolves every outcome; no probability selects a winner.
 
 ## Encounter rules
 
-- Round one remains the gentle Dummy. Round two uses the softer awakened profile: 160-unit/s pursuit, 80% reaction chance to eligible threats, 850 ms dodge cooldown, 820–1220 ms burst rests and a 400 ms initial opening. Incoming damage is 47% of base, versus 40% in the older 85% build; outgoing damage is 115%, versus 125%. One/two-hit bursts and punishable evasions remain.
-- Round three introduces Goldline: cute turquoise Audi R8, gold rims, low/wide collision body. Car HP is 140. High jabs can miss; low punches and sweeps connect, and Shadow aims down without an additional input. Dash, thruster hop, rim disc and temporary rear-up strike use separate authored poses.
-- Empty car HP starts a protected 2.1-second transformation. Attacks, projectiles and held input clear; pause freezes the transition. Robot HP starts at 165. INJ keeps her remaining HP and charge, including charge earned by the phase-ending hit. Only the current life is visible in the HUD. The robot reserve and phase numbering stay concealed through the empty car bar; the reveal replaces it with a full gold bar and resets the clock to 99 seconds.
-- The robot uses piston punches, axle kicks, boosted crosses, jet uppercuts and orbital slams. It can wheel-shield predictable projectiles, sweeps and airborne approaches, then counter. The aerial threat can renew on subsequent leaps.
-- Mechanical attacks commit after 60 ms: light hits still deal damage, but cannot repeatedly reset the winding-up attack. Knockdown moves can interrupt. Both forms retain recovery windows.
-- Each boss phase has a 99-second active clock; expiry loses to the boss, so the second health pool cannot be bypassed by waiting. Real boss wins require clearing both pools. Later rounds repeat Goldline; Restart clears both forms and returns to round one.
+- Round one remains gentle. Round two uses 170-unit/s pursuit, 90% reaction chance to eligible threats, a 700 ms dodge cooldown, 750–1150 ms burst rests and a 350 ms initial opening. It takes 65% of incoming base damage, versus 47% before this change. Its health remains 130.
+- Goldline's car has 125 HP and takes 85% of incoming damage, versus 140 HP / 60% before. It keeps its low/wide body, dash, hop, rim disc and rear-up attacks. High jabs can miss; low strikes and downward-aimed Shadow reach it.
+- Empty car HP starts the protected 2.1-second transformation. Robot reveal refills **INJ to full health**, preserves Shadow charge and Nitro meter (including resources earned by the last car hit), clears the hit combo, reveals the fresh gold life bar and resets the timer to 99. Pause freezes the transition. The robot reserve stays hidden until reveal.
+- The robot has **140 HP** and takes **75% of incoming damage**, versus 165 HP / 40% before. Damage reduction is substantially lower. Outgoing damage is 135% of move base, versus 140% before.
+- The robot observes attacks with a 120 ms melee reaction delay, recognizes repeated low strikes, guards its rise against a repeated knockdown, uses a reaching jet uppercut against jumps, and closes with a boosted counter against projectiles. It chooses recovery punishes instead of relying entirely on a fixed attack rotation. Shield counters remain guarded during their visible preparation pose, then expose their active/recovery phases normally. Changing attack rhythm and punishing recovery still matter.
+- Robot burst rests last 420–720 ms, including a guaranteed first 320 ms opening before it can defend again. Mechanical attacks retain their existing light-hit commitment after 60 ms. Knockdown attacks interrupt outside the shielded counter windup. These pauses and vulnerabilities make the fight competitive without restoring the old health sponge.
+- Both phases use a 99-second active clock; expiry loses to the boss. Later rounds repeat Goldline. Restart returns to round one and clears both boss pools, combo and player resources.
+
+## INJ's new tools
+
+Clean consecutive hits within 1.4 seconds deal normal damage, then ×1.1, ×1.2, ×1.3 and onward. Whole-HP rounding occurs before opponent armor. The HUD shows the hit count and latest multiplier. Incoming damage (including chip), an attack being blocked, a melee whiff, timeout, restart or transformation clears the chain. Invalid/invulnerable contacts do not extend it.
+
+Down + forward + Kick slides without spending meter; down + Kick retains the sweep. Each clean hit adds 20 Nitro energy and each unblocked hit taken adds 6, capped at 100. NITRO / Q spends 100 on a forward Nitro Kick from standing, crouching or midair; crouching selects a low strike. It has startup and recovery, can miss or be blocked, and uses existing authored sweep/flying-kick art. Shadow's separate three-hit charge is preserved. Airborne Shadow aims at the opponent when released and does not home afterward.
 
 ## Latest scripted checks
 
-`node tests/structure.cjs` passes 24 classic scripts and seven stylesheets. `node tests/browser.cjs` passes **211 Chromium checks**, including genuine multitouch, gesture/fullscreen/restart flows, both forms, low-target collisions, one-hit attacks, engine commitment, shield counters, concealed/revealed health, a 12.3-to-99 timer reset, transformation/pause, retained health/charge, timeout, phone resize, hard pose changes and audio-node cleanup.
+`node tests/structure.cjs` passes 24 classic scripts and seven stylesheets. `node tests/browser.cjs` passes **238 Chromium checks**, including direct-file/HTTP production startup, genuine multitouch, smallest-phone control separation, combo arithmetic/reset rules, meter spending, all three Nitro stances, actual NITRO touch / Q input, airborne Shadow, both boss forms, health refill/resource retention, protected transformation, readable reaction delay, repeated-low defense, shield counters, recovery punishment and pauses.
 
-| Encounter | Intended loss target | Scripted opponent wins / 100 | INJ wins |
+| Encounter | Intended player-loss goal | Scripted opponent wins | INJ wins |
 | --- | ---: | ---: | ---: |
-| Level two · Dummy | 60 | 55 | 45 |
-| Goldline · car | 65 | 64 | 36 |
-| Goldline · robot | 85 | 86 | 14 |
-
-Each benchmark uses seven simple policies and runs to KO, phase clear or the actual 99-second timer. A five-minute simulation cap fails instead of choosing a winner early. Boss phases start with fresh INJ health for isolated comparison; the real two-phase encounter carries health and is therefore more demanding. The jumping-kick policy now waits until airborne to queue the kick, avoiding the old policy issue where kicking on the ground could prevent the jump. Old benchmark percentages are not directly comparable.
+| Level two · Dummy | 60% | 57/100 | 43/100 |
+| Goldline · car | 65% | 40/100 | 60/100 |
+| Goldline · robot | 90% | 85/100 | 15/100 |
 
 | Policy | Dummy wins | Car wins | Robot wins |
 | --- | ---: | ---: | ---: |
 | idle | 15/15 | 15/15 | 15/15 |
-| punch spam | 8/15 | 15/15 | 15/15 |
-| mixed attacks | 8/14 | 11/14 | 14/14 |
-| Shadow kiting | 2/14 | 9/14 | 14/14 |
-| jumping kicks | 0/14 | 0/14 | 0/14 |
-| guard/counter | 14/14 | 14/14 | 14/14 |
-| crouch/sweep | 8/14 | 0/14 | 14/14 |
+| punch spam | 12/15 | 11/15 | 15/15 |
+| mixed attacks | 7/14 | 0/14 | 14/14 |
+| Shadow kiting | 0/14 | 0/14 | 13/14 |
+| jumping kicks | 0/14 | 0/14 | 14/14 |
+| guard/counter | 14/14 | 14/14 | 0/14 |
+| crouch/sweep | 9/14 | 0/14 | 14/14 |
 
-These are regression probes, not calibrated human play. Policies have obvious weaknesses and do not adapt. Shared seeded randomness is also consumed by effects, so frame/setup cadence can change exact counts between runs. Physical phone ergonomics, Safari behavior and subjective audio listening are unverified. Use real playtesting before treating any target percentage as achieved. Raw results: [validation.json](validation.json).
+The robot's measured scripted result is close to, but below, the requested 90% goal. The car is easier than its earlier 65% goal after reducing its health and armor; no human rate is claimed for either form. These seven simple policies run to KO, phase clear or the actual 99-second timer, with a five-minute simulation cap that fails rather than choosing a winner. Each isolated boss test starts with fresh INJ health, now matching the real robot reveal. The policies do not use Nitro or aerial Shadow, and are not adaptive human opponents. Shared seeded randomness also serves effects, so frame/setup cadence changes exact counts. Raw results: [validation.json](validation.json).
 
-## Art and ownership
+## Art, ownership and limits
 
-The sixteen-pose atlas was generated first with built-in ImageGen, then used to implement the moves. [Current turquoise/cute asset and exact edit prompts](../assets/r8-generation-v2.md); [car preview](r8-car-phone.png), [robot preview](r8-robot-phone.png). Source PNG pixels, INJ/Dummy art and the stage plate are preserved.
+No source image pixels were edited. The existing sixteen-pose Goldline atlas, INJ/Dummy atlases, walking art and stage plate are preserved. [Current sprite provenance](../assets/r8-generation-v2.md). [Combo / Nitro HUD preview](combo-nitro-phone.png), [Nitro pose preview](nitro-kick-phone.png).
 
-Tuning lives in `js/r8-content.js`; form selection/transformation in `js/encounters.js`; car/robot decisions and move physics in `js/r8.js`; atlas rendering and the current-life bar in `js/r8-renderer.js`. Shared combat owns damage. `tests/r8.cjs` owns the boss checks.
+Move data/tuning lives in `js/content.js` and `js/r8-content.js`; shared damage, combos and Nitro travel in `js/combat.js`; player dispatch in `js/movement.js`; form rules in `js/encounters.js`; robot decisions in `js/r8.js`; pose selection in `js/fighters.js`. `tests/abilities.cjs` and `tests/r8.cjs` add targeted browser checks to the main runner. The source map and current game guide reflect these boundaries.
 
-The earlier [85% Dummy report](opponent-balance.md) is historical.
+Physical-phone ergonomics, Safari behavior and subjective audio listening remain unverified. Chromium emulation and scripted fights do not establish human win rates. Earlier balance reports and the original extraction comparison are historical.

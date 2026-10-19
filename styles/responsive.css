@@ -145,6 +145,10 @@
     font-size: 6px;
     border-radius: 10px;
   }
+  #pad [data-act='nitro'] {
+    grid-column: 1;
+    grid-row: 2;
+  }
   #pad [data-act='punch'] {
     grid-column: 2;
   }
@@ -203,4 +207,9 @@
 }
 #stickZone.active .stick-directions {
   opacity: 0;
+}
+
+#pad [data-act='nitro'][aria-disabled='true'] {
+  color: #a99aaf;
+  border-color: #b7a8bf66;
 }

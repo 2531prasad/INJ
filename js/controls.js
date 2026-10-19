@@ -5,7 +5,7 @@
   'use strict';
   const input = { left: 0, right: 0, up: 0, down: 0, block: 0 };
 
-  const pressBuf = { punch: 0, kick: 0, upper: 0, special: 0, jump: 0 };
+  const pressBuf = { punch: 0, kick: 0, upper: 0, special: 0, nitro: 0, jump: 0 };
 
   const heldKeys = new Set(),
     guardPointers = new Set(),
@@ -23,6 +23,7 @@
 
   function queueAction(act) {
     if (App.game.paused || App.game.state !== 'fight') return;
+    if (act === 'nitro' && App.player.meter < 100) return;
     pressBuf[act] = performance.now() + 220;
     if (
       !App.player.atk &&
@@ -53,6 +54,12 @@
   }
 
   function updateChargeUI() {
+    const nitroReady = App.player.meter >= 100;
+    document.querySelectorAll('[data-act="nitro"]').forEach((btn) => {
+      btn.classList.toggle('ready', nitroReady);
+      btn.setAttribute('aria-disabled', String(!nitroReady));
+      btn.setAttribute('aria-label', nitroReady ? 'Nitro kick ready' : 'Nitro kick: fill the ability bar');
+    });
     const ready = App.player.charge >= 3;
     document.querySelectorAll('[data-act="special"]').forEach((btn) => {
       btn.classList.toggle('ready', ready);
@@ -278,7 +285,8 @@
         j: 'punch',
         k: 'kick',
         u: 'upper',
-        l: 'special'
+        l: 'special',
+        q: 'nitro'
       }[k];
       if (action && !e.repeat) {
         e.preventDefault();

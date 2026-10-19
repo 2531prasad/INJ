@@ -117,6 +117,7 @@ module.exports = async function verifyR8(page, check, root) {
     a.game.roundTime = 12.3;
     a.player.hp = 77;
     a.player.charge = 2;
+    a.player.meter = 60;
     a.dummy.hp = 1;
     a.applyHit(a.dummy, a.player, a.MOVES.jab, 230, 180);
     out.firstHealthTransforms =
@@ -147,8 +148,10 @@ module.exports = async function verifyR8(page, check, root) {
       a.game.state === 'fight' &&
       a.dummy.form === 'robot' &&
       a.dummy.hp === a.R8_TUNING.robot.health &&
-      a.player.hp === 77 &&
+      a.player.hp === a.player.maxHp &&
       a.player.charge === 3 &&
+      a.player.meter === 80 &&
+      a.game.hits === 0 &&
       a.game.round === 3 &&
       a.game.roundTime === 99;
     const revealedHud = hud();
@@ -191,10 +194,10 @@ module.exports = async function verifyR8(page, check, root) {
     a.rnd = () => 0;
     try {
       a.controlR8(a.dummy, a.player, 0.01);
-      out.wheelShield = a.dummy.state === 'block' && a.dummy.counterMove === 'r8Dive';
+      out.wheelShield = a.dummy.state === 'block' && a.dummy.counterMove === 'r8Lunge';
       a.projectiles.length = 0;
       a.controlR8(a.dummy, a.player, 0.3);
-      out.shieldCounter = a.dummy.atk?.key === 'r8Dive';
+      out.shieldCounter = a.dummy.atk?.key === 'r8Lunge';
     } finally {
       a.rnd = random;
     }
@@ -224,6 +227,51 @@ module.exports = async function verifyR8(page, check, root) {
     } finally {
       a.rnd = airRandom;
     }
+    function robot() {
+      car();
+      a.completeR8Transform();
+      a.player.invuln = a.dummy.invuln = 0;
+      a.dummy.restT = a.dummy.openingT = a.dummy.aiT = 0;
+    }
+    robot();
+    out.lessSponge = a.dummy.maxHp < 165 && a.R8_TUNING.robot.armor > 0.4;
+    a.dummy.restT = 0.5;
+    a.startAttack(a.player, 'jab');
+    const savedRandom = a.rnd;
+    a.rnd = () => 0;
+    try {
+      a.controlR8(a.dummy, a.player, 0.01);
+      const waits = a.dummy.dodgeT === 0 && a.dummy.blockT === 0;
+      a.player.atk.t = 0.12;
+      a.controlR8(a.dummy, a.player, 0.13);
+      out.visibleReactionDelay = waits && a.dummy.dodgeT > 0;
+    } finally {
+      a.rnd = savedRandom;
+    }
+    robot();
+    a.dummy.repeatedMove = 'sweep';
+    a.dummy.repeatCount = 2;
+    a.player.state = 'crouch';
+    a.controlR8(a.dummy, a.player, 0.01);
+    out.recognizesLowSpam = a.dummy.state === 'block' && a.dummy.counterMove === 'r8Lunge';
+    a.controlR8(a.dummy, a.player, 0.17);
+    const shieldCounter = a.dummy.atk, shieldHp = a.dummy.hp;
+    a.applyHit(a.dummy, a.player, a.MOVES.sweep, a.dummy.x, 180);
+    out.shieldedCounterStartup = shieldCounter?.guardStartup && a.dummy.atk === shieldCounter &&
+      a.dummy.hp < shieldHp && a.dummy.hp >= shieldHp - 2;
+    robot();
+    a.dummy.restT = 0.4;
+    a.dummy.openingT = 0.25;
+    a.dummy.repeatedMove = 'sweep';
+    a.dummy.repeatCount = 3;
+    a.controlR8(a.dummy, a.player, 0.05);
+    out.stillPauses = a.dummy.restT > 0 && !a.dummy.atk && !a.dummy.blockT && !a.dummy.dodgeT;
+    robot();
+    a.dummy.x = a.player.x + 110;
+    a.startAttack(a.player, 'haymaker');
+    a.player.atk.t = a.player.atk.def.startup + a.player.atk.def.active + 0.01;
+    a.controlR8(a.dummy, a.player, 0.01);
+    out.punishesRecovery = a.dummy.atk?.key === 'r8Lunge';
     for (const form of ['car', 'robot']) {
       car();
       if (form === 'robot') a.completeR8Transform();
@@ -326,7 +374,7 @@ module.exports = async function verifyR8(page, check, root) {
         }
         results[form] = {
           trials: 100,
-          targetLossPercent: form === 'car' ? 65 : 85,
+          targetLossPercent: form === 'car' ? 65 : 90,
           bossWins,
           playerWins,
           policies,

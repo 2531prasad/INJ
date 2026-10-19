@@ -34,6 +34,7 @@
       counterMove: null,
       pose: null,
       charge: 0,
+      meter: 0,
       dodgeT: 0,
       dodgeCooldown: 0,
       dodgeFrom: 0,
@@ -43,6 +44,10 @@
       openingT: 0,
       burstLeft: 0,
       lastThreat: null,
+      observedMove: null,
+      repeatedMove: null,
+      repeatCount: 0,
+      reactionT: 0,
       lastMissile: null,
       evadeTextT: 0
     };

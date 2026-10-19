@@ -151,6 +151,15 @@
       App.ctx.fillRect(32 + i * 8, 37, 5, 2);
     }
     if (App.player.charge >= 3) text('SHADOW +', 60, 40, 4, '#edc878');
+    const meterWidth = Math.min(90, App.world.width / 2 - 66);
+    drawBar(32, 47, meterWidth, 4, App.player.meter / 100, false, '#624178', '#cfabe8');
+    text(
+      App.player.meter >= 100 ? 'NITRO READY' : 'NITRO',
+      32,
+      59,
+      4,
+      App.player.meter >= 100 ? '#edc878' : '#cfabe8'
+    );
     text(
       String(Math.ceil(App.game.roundTime)).padStart(2, '0'),
       App.world.width / 2,
@@ -159,8 +168,20 @@
       '#e8b24c',
       'center'
     );
-    if (App.game.hits > 1 && App.game.hitTimer > 0)
-      text(App.game.hits + ' HITS', App.world.width / 2, 42, 8, '#ff9c5a', 'center');
+    if (App.game.hits > 1 && App.game.hitTimer > 0) {
+      const x = App.world.width / 2;
+      App.ctx.fillStyle = '#17101ee6';
+      App.ctx.fillRect(x - 55, 34, 110, 32);
+      text(App.game.hits + ' HIT KOMBO', x, 46, 8, '#f4d59a', 'center');
+      text(
+        'x' + (1 + (App.game.hits - 1) / 10).toFixed(1) + ' DAMAGE',
+        x,
+        61,
+        9,
+        '#ffad75',
+        'center'
+      );
+    }
 
     if (App.game.msg) {
       text(

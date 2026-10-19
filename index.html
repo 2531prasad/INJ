@@ -70,13 +70,15 @@
               <div class="imove-row"><span>Anti-Air Uppercut</span> <b>U</b></div>
               <div class="imove-row"><span>Low Sweep Knockdown</span> <b>CROUCH + K</b></div>
               <div class="imove-row"><span>Shadow Toss Projectile</span> <b>L / SP</b></div>
+              <div class="imove-row"><span>Shadow Slide</span> <b>DOWN + FORWARD + K</b></div>
+              <div class="imove-row"><span>Nitro Kick · full bar</span> <b>Q / NITRO</b></div>
               <div class="imove-row"><span>Defensive Guard</span> <b>SHIFT / BLK</b></div>
             </div>
           </div>
           <div class="intro-quick">
             <b>LEFT THUMB</b> Move · up to jump · down to crouch.<br /><b>RIGHT THUMB</b> Punch,
             kick, uppercut. Hold guard to block.<br /><b>GOLD RING</b> Land 3 hits, then tap Shadow
-            for a charged toss.
+            for a charged toss. Fill the NITRO bar for a Nitro Kick; Shadow also works midair.
           </div>
         </div>
         <div class="intro-footer">
@@ -111,7 +113,9 @@
           <div class="key"><b>JUMP+K</b> FLYING KICK</div>
           <div class="key"><b>CROUCH+K</b> SWEEP</div>
           <div class="key"><b>U</b> UPPERCUT</div>
-          <div class="key"><b>L</b> SHADOW TOSS</div>
+          <div class="key"><b>L</b> SHADOW · GROUND / AIR</div>
+          <div class="key"><b>↓ + FORWARD + K</b> SLIDE</div>
+          <div class="key"><b>Q</b> NITRO KICK · FULL BAR</div>
           <div class="key"><b>SHIFT</b> BLOCK</div>
         </div>
       </div>
@@ -158,7 +162,15 @@
           <div id="stickKnob"></div>
         </div>
         <div id="pad">
-          <button class="abtn sp" data-act="special" aria-label="Shadow toss">SHADOW</button>
+          <div class="padrow">
+            <button class="abtn sp" data-act="special" aria-label="Shadow toss">SHADOW</button>
+            <button
+              class="abtn sp"
+              data-act="nitro"
+              aria-label="Nitro kick: fill the ability bar"
+              aria-disabled="true"
+            >NITRO</button>
+          </div>
           <div class="padrow">
             <button class="abtn" data-act="upper" aria-label="Uppercut">UPPER</button>
             <button class="abtn" data-act="block" aria-label="Hold to block">GUARD</button>

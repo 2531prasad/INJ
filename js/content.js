@@ -137,6 +137,33 @@
       type: 'high',
       name: 'SHADOW TOSS'
     },
+    slide: {
+      startup: 0.09,
+      active: 0.23,
+      recovery: 0.32,
+      dmg: 12,
+      box: [12, -18, 48, 18],
+      kb: 135,
+      heavy: true,
+      knockdown: true,
+      type: 'low',
+      drive: 245,
+      name: 'SHADOW SLIDE'
+    },
+    nitrokick: {
+      startup: 0.12,
+      active: 0.24,
+      recovery: 0.38,
+      dmg: 24,
+      box: [10, -70, 48, 64],
+      kb: 190,
+      heavy: true,
+      knockdown: true,
+      type: 'high',
+      meter: 100,
+      drive: 440,
+      name: 'NITRO KICK'
+    },
     haymaker: {
       startup: 0.28,
       active: 0.12,

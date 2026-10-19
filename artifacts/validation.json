@@ -1,11 +1,11 @@
 {
-  "checks": 211,
+  "checks": 238,
   "awakenedBenchmark": {
     "trials": 100,
     "roundSeconds": 99,
     "policies": 7,
-    "dummyWins": 55,
-    "playerWins": 45,
+    "dummyWins": 57,
+    "playerWins": 43,
     "policyResults": [
       {
         "policy": "idle",
@@ -16,20 +16,20 @@
       {
         "policy": "punch spam",
         "trials": 15,
-        "dummyWins": 8,
-        "playerWins": 7
+        "dummyWins": 12,
+        "playerWins": 3
       },
       {
         "policy": "mixed attacks",
         "trials": 14,
-        "dummyWins": 8,
-        "playerWins": 6
+        "dummyWins": 7,
+        "playerWins": 7
       },
       {
         "policy": "Shadow kiting",
         "trials": 14,
-        "dummyWins": 2,
-        "playerWins": 12
+        "dummyWins": 0,
+        "playerWins": 14
       },
       {
         "policy": "jumping kicks",
@@ -46,20 +46,20 @@
       {
         "policy": "crouch/sweep",
         "trials": 14,
-        "dummyWins": 8,
-        "playerWins": 6
+        "dummyWins": 9,
+        "playerWins": 5
       }
     ],
-    "attacks": 1977,
-    "dodges": 4849,
-    "restFraction": 0.5747028155905476
+    "attacks": 1498,
+    "dodges": 5897,
+    "restFraction": 0.5466058025243625
   },
   "r8Benchmarks": {
     "car": {
       "trials": 100,
       "targetLossPercent": 65,
-      "bossWins": 64,
-      "playerWins": 36,
+      "bossWins": 40,
+      "playerWins": 60,
       "policies": [
         {
           "policy": "idle",
@@ -70,20 +70,20 @@
         {
           "policy": "punch spam",
           "trials": 15,
-          "bossWins": 15,
-          "playerWins": 0
+          "bossWins": 11,
+          "playerWins": 4
         },
         {
           "policy": "mixed attacks",
           "trials": 14,
-          "bossWins": 11,
-          "playerWins": 3
+          "bossWins": 0,
+          "playerWins": 14
         },
         {
           "policy": "Shadow kiting",
           "trials": 14,
-          "bossWins": 9,
-          "playerWins": 5
+          "bossWins": 0,
+          "playerWins": 14
         },
         {
           "policy": "jumping kicks",
@@ -108,9 +108,9 @@
     },
     "robot": {
       "trials": 100,
-      "targetLossPercent": 85,
-      "bossWins": 86,
-      "playerWins": 14,
+      "targetLossPercent": 90,
+      "bossWins": 85,
+      "playerWins": 15,
       "policies": [
         {
           "policy": "idle",
@@ -133,20 +133,20 @@
         {
           "policy": "Shadow kiting",
           "trials": 14,
-          "bossWins": 14,
-          "playerWins": 0
+          "bossWins": 13,
+          "playerWins": 1
         },
         {
           "policy": "jumping kicks",
           "trials": 14,
-          "bossWins": 0,
-          "playerWins": 14
+          "bossWins": 14,
+          "playerWins": 0
         },
         {
           "policy": "guard/counter",
           "trials": 14,
-          "bossWins": 14,
-          "playerWins": 0
+          "bossWins": 0,
+          "playerWins": 14
         },
         {
           "policy": "crouch/sweep",
@@ -162,12 +162,12 @@
   "viewports": 9,
   "audio": {
     "peak": 0.5534541010856628,
-    "rms": 0.030126398531482433,
+    "rms": 0.03012639849179655,
     "clippedSamples": 0
   },
   "limitations": [
     "No physical phone or mobile Safari test",
     "No subjective speaker or headphone listening review",
-    "Scripted phase benchmarks do not measure human loss rates; a full R8 encounter carries INJ health between forms"
+    "Scripted phase benchmarks do not measure human loss rates; INJ now refills health at robot reveal; policies omit Nitro and aerial Shadow"
   ]
 }

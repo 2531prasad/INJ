@@ -425,6 +425,8 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   });
   for (const [name, passed] of Object.entries(mechanics)) check(passed, `Combat: ${name}`);
 
+  await require('./abilities.cjs')(page,check,root);
+
   const difficulty=await page.evaluate(()=>{
     const t=__test,out={};
     function roundTwo(){t.settle();t.resetRound();t.game.state='fight';t.game.paused=true;t.game.msg=null;t.dummy.aiT=0;}
@@ -435,7 +437,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     roundTwo();t.dummy.state='block';t.applyHit(t.dummy,t.player,t.MOVES.jab,200,140);out.chipDamage=t.dummy.hp===129;
     roundTwo();t.dummy.x=t.player.x+40;
     t.projectiles.push({x:t.dummy.x,y:t.dummy.y-46,vx:0,life:1,owner:t.player,charged:true});t.updateProjectiles(.01);
-    out.chargedHit=t.dummy.hp===122&&t.dummy.state==='knockdown';
+    out.chargedHit=t.dummy.hp===118&&t.dummy.state==='knockdown';
     roundTwo();t.startAttack(t.dummy,'roundhouse');
     out.readableHeavyAttack=t.dummy.atk.def.startup>=.07&&t.dummy.atk.def.recovery>=.18&&t.dummy.atk.def.dmg>t.MOVES.roundhouse.dmg&&t.dummy.atk.def.dmg<18;
     const committed=t.dummy.atk;committed.t=committed.def.startup+.01;t.startAttack(t.player,'jab');t.controlDummy(t.dummy,t.player,.01);
@@ -622,7 +624,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await pc.screenshot({path:path.join(root,'artifacts/background-duel-victory.png')});
   check(errors.length===0, `No browser runtime errors (${errors.join('; ')})`);
   check(resourceErrors.length===0, `All local split-script and stylesheet requests complete (${resourceErrors.join('; ')})`);
-  const report={checks,awakenedBenchmark:difficulty.benchmark,r8Benchmarks,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review','Scripted phase benchmarks do not measure human loss rates; a full R8 encounter carries INJ health between forms']};
+  const report={checks,awakenedBenchmark:difficulty.benchmark,r8Benchmarks,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review','Scripted phase benchmarks do not measure human loss rates; INJ now refills health at robot reveal; policies omit Nitro and aerial Shadow']};
   fs.writeFileSync(path.join(root,'artifacts/validation.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify(report,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();await server.close();});

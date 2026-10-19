@@ -4,9 +4,15 @@
 (function (App) {
   'use strict';
   /* ============================== combat ============================== */
+  function resetCombo() {
+    App.game.hits = 0;
+    App.game.hitTimer = 0;
+  }
   function hurtbox(f) {
     if (App.isR8(f)) return App.r8Hurtbox(f);
-    const low = f.state === 'crouch' || (f.atk && ['sweep', 'cpunch'].includes(f.atk.key));
+    const low =
+      f.state === 'crouch' ||
+      (f.atk && (['sweep', 'cpunch', 'slide'].includes(f.atk.key) || f.atk.low));
     return {
       x: f.x - 13 * App.FIGHTER_SCALE,
       y: f.y - (low ? 42 : 66) * App.FIGHTER_SCALE,
@@ -16,11 +22,22 @@
   }
   function startAttack(f, key) {
     if (f.atk) return;
+    const cost = App.MOVES[key]?.meter || 0;
+    if (cost && (f !== App.player || f.meter < cost)) return;
+    if (cost) {
+      f.meter -= cost;
+      App.updateChargeUI();
+    }
     if (App.isR8(f)) {
       App.startR8Attack(f, key);
       return;
     }
     f.atk = { key: key, def: App.MOVES[key], t: 0, hasHit: false, fired: false };
+    if (key === 'nitrokick') {
+      f.atk.low = f.grounded && !!App.input.down;
+      if (f.atk.low) f.atk.def = { ...f.atk.def, box: [10, -30, 48, 28], type: 'low' };
+      App.Sfx.play('boost');
+    }
     if (f === App.dummy && App.game.round >= 2) {
       const move = App.MOVES[key];
       f.atk.def = {
@@ -48,18 +65,28 @@
     const a = f.atk,
       d = a.def;
     a.t += dt;
+    if (d.drive && a.t >= d.startup && a.t < d.startup + d.active) {
+      f.x += f.facing * d.drive * dt;
+      if (
+        a.key === 'nitrokick' &&
+        !App.reducedMotion &&
+        Math.floor(a.t / 0.05) !== Math.floor((a.t - dt) / 0.05)
+      )
+        App.afterimages.push({ f: { ...f, atk: { ...a } }, life: 0.16, max: 0.16 });
+    }
     if (d.projectile) {
       if (!a.fired && a.t >= d.startup) {
         a.fired = true;
         const charged = !!a.charged;
         const originY = f.y - 46 * App.FIGHTER_SCALE,
-          lowTarget = App.isR8(opp) && opp.form === 'car';
+          aimAtTarget = !f.grounded || (App.isR8(opp) && opp.form === 'car'),
+          targetBox = hurtbox(opp);
         App.projectiles.push({
           x: f.x + f.facing * 18 * App.FIGHTER_SCALE,
           y: originY,
           vx: f.facing * (charged ? 265 : 235),
-          vy: lowTarget
-            ? ((opp.y - 20 - originY) * (charged ? 265 : 235)) /
+          vy: aimAtTarget
+            ? ((targetBox.y + targetBox.h / 2 - originY) * (charged ? 265 : 235)) /
               Math.max(16, Math.abs(opp.x - f.x) - 18 * App.FIGHTER_SCALE)
             : 0,
           life: 1.7,
@@ -77,6 +104,7 @@
       tryHit(f, opp);
     }
     if (f.atk === a && a.t >= d.startup + d.active + d.recovery) {
+      if (f === App.player && !d.projectile && !a.hasHit) resetCombo();
       f.atk = null;
       if (f.state === 'attack') f.state = f.grounded ? 'idle' : 'jump';
     }
@@ -113,6 +141,15 @@
       App.game.state !== 'fight'
     )
       return;
+    const guarding =
+      def.state === 'block' ||
+      (App.isR8(def) && def.atk?.guardStartup && def.atk.t < def.atk.def.startup);
+    const blocked = guarding && Math.sign(att.x - def.x) === def.facing;
+    if (def === App.player || (att === App.player && blocked)) resetCombo();
+    if (att === App.player && !blocked) {
+      if (App.game.hitTimer <= 0) resetCombo();
+      d = { ...d, dmg: Math.round(d.dmg * (1 + App.game.hits / 10)) };
+    }
     if (App.isAwakened(def))
       d = { ...d, dmg: Math.max(1, Math.round(d.dmg * App.LEVEL_TWO.armor)), kb: d.kb * 0.8 };
     if (App.isR8(def))
@@ -121,8 +158,7 @@
         dmg: Math.max(1, Math.round(d.dmg * App.R8_TUNING[def.form].armor)),
         kb: d.kb * 0.55
       };
-    const facingAttacker = Math.sign(att.x - def.x) === def.facing;
-    if (def.state === 'block' && facingAttacker) {
+    if (blocked) {
       def.hp = Math.max(0, def.hp - Math.max(1, Math.round(d.dmg * 0.2)));
       def.vx = att.facing * d.kb * 0.45;
       def.flash = 0.1;
@@ -167,6 +203,8 @@
     if (att === App.player) {
       App.game.hits++;
       App.game.hitTimer = 1.4;
+      App.player.meter = Math.min(100, App.player.meter + 20);
+      App.updateChargeUI();
       if (d.key !== 'shadow' && App.player.charge < 3) {
         App.player.charge++;
         App.updateChargeUI();
@@ -178,6 +216,10 @@
           life: 0.18,
           max: 0.18
         });
+    }
+    if (def === App.player) {
+      def.meter = Math.min(100, def.meter + 6);
+      App.updateChargeUI();
     }
     if (def.hp <= 0) {
       if (App.beginR8Transform(def)) return;
@@ -221,5 +263,5 @@
     }
   }
 
-  Object.assign(App, { hurtbox, startAttack, stepAttack, tryHit, applyHit });
+  Object.assign(App, { resetCombo, hurtbox, startAttack, stepAttack, tryHit, applyHit });
 })(window.INJ);

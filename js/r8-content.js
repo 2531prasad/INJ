@@ -88,17 +88,17 @@
       prepare: 9
     },
     r8Upper: {
-      startup: 0.26,
-      active: 0.2,
+      startup: 0.18,
+      active: 0.24,
       recovery: 0.48,
       dmg: 17,
-      box: [5, -114, 51, 74],
+      box: [5, -124, 70, 92],
       kb: 175,
       type: 'high',
       heavy: true,
       knockdown: true,
       name: 'JET UPPERCUT',
-      drive: 150,
+      drive: 240,
       jump: -270,
       frame: 12,
       prepare: 9
@@ -140,32 +140,32 @@
   // These are tuning parameters, not probabilities that select a winner.
   const LEVEL_TWO = {
     damage: 1.15,
-    armor: 0.47,
-    reaction: 0.8,
-    speed: 160,
-    rest: 0.82,
+    armor: 0.65,
+    reaction: 0.9,
+    speed: 170,
+    rest: 0.75,
     restRange: 0.4,
-    opening: 0.4,
-    dodgeCooldown: 0.85,
+    opening: 0.35,
+    dodgeCooldown: 0.7,
     dodgeRest: 0.36
   };
   const R8_TUNING = {
     car: {
-      health: 140,
-      armor: 0.6,
+      health: 125,
+      armor: 0.85,
       damage: 1.15,
       rest: 0.5,
       restRange: 0.4,
       dodge: 0.7
     },
     robot: {
-      health: 165,
-      armor: 0.4,
-      damage: 1.4,
+      health: 140,
+      armor: 0.75,
+      damage: 1.35,
       speed: 250,
-      rest: 0.35,
-      restRange: 0.32,
-      dodge: 0.9
+      rest: 0.42,
+      restRange: 0.3,
+      dodge: 0.92
     }
   };
   Object.assign(App, { R8_MOVES, R8_TUNING, LEVEL_TWO });

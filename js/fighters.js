@@ -31,6 +31,8 @@
     uppercut: 5,
     roundhouse: 6,
     sweep: 7,
+    slide: 7,
+    nitrokick: 8,
     jkick: 8,
     jpunch: 4,
     toss: 4,
@@ -39,8 +41,8 @@
   function sampleAttackAnimation(f) {
     const a = f.atk,
       d = a.def,
-      strike = ATTACK_FRAMES[a.key] ?? 4;
-    const prepare = ['uppercut', 'sweep', 'cpunch'].includes(a.key)
+      strike = a.key === 'nitrokick' && a.low ? 7 : ATTACK_FRAMES[a.key] ?? 4;
+    const prepare = ['uppercut', 'sweep', 'cpunch', 'slide'].includes(a.key)
       ? 9
       : ['roundhouse', 'jkick'].includes(a.key)
         ? 2

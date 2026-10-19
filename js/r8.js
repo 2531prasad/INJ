@@ -82,10 +82,11 @@
   function restR8(f) {
     const p = App.R8_TUNING[f.form];
     f.restT = p.rest + App.rnd() * p.restRange;
-    f.openingT = f.form === 'car' ? 0.4 : 0.28;
+    f.openingT = f.form === 'car' ? 0.4 : 0.32;
   }
   function controlR8(f, op, dt) {
-    for (const key of ['dodgeCooldown', 'openingT', 'aiT']) f[key] = Math.max(0, f[key] - dt);
+    for (const key of ['dodgeCooldown', 'openingT', 'aiT', 'reactionT'])
+      f[key] = Math.max(0, f[key] - dt);
     if (App.game.state !== 'fight' || f.state === 'ko') {
       App.physics(f, dt);
       return;
@@ -97,6 +98,18 @@
         f.invuln = 0.22;
         f.restT = 0.12;
         f.openingT = 0.12;
+        if (f.form === 'robot' && (op.atk || !op.grounded)) {
+          // A guarded rise prevents the same knockdown timing from looping forever.
+          f.facing = op.x > f.x ? 1 : -1;
+          f.state = 'block';
+          f.blockT = 0.2;
+          f.counterMove = !op.grounded
+            ? 'r8Upper'
+            : Math.abs(op.x - f.x) > 85
+              ? 'r8Lunge'
+              : 'r8Piston';
+          f.restT = f.openingT = 0;
+        }
       }
       App.physics(f, dt);
       return;
@@ -110,6 +123,12 @@
     const p = App.R8_TUNING[f.form],
       gap = Math.abs(op.x - f.x),
       dir = Math.sign(op.x - f.x) || f.facing;
+    if (f.form === 'robot' && op.atk && op.atk !== f.observedMove) {
+      f.observedMove = op.atk;
+      f.repeatCount = f.repeatedMove === op.atk.key ? f.repeatCount + 1 : 1;
+      f.repeatedMove = op.atk.key;
+      f.reactionT = 0.12;
+    }
     const airborneThreat = !op.grounded && gap < 125 && op.y < App.GROUND - 25;
     // A new leap is a new threat, even when jump is held continuously.
     if (!airborneThreat && f.lastThreat === op) f.lastThreat = null;
@@ -120,7 +139,25 @@
       missile ||
       (airborneThreat ? op : null) ||
       (op.atk && !op.atk.hasHit && gap < 115 ? op.atk : null);
-    if (threat && threat !== f.lastThreat && !f.atk && f.dodgeT === 0) {
+    const repeatedLow =
+      f.form === 'robot' && f.repeatCount >= 2 && op.grounded &&
+      ['sweep', 'slide', 'cpunch'].includes(f.repeatedMove);
+    if (
+      repeatedLow && gap < 145 && !f.atk && !f.blockT && !f.dodgeT &&
+      f.openingT === 0 && f.dodgeCooldown === 0 && f.reactionT === 0
+    ) {
+      // Recognized low spam is met with a visible shield, then a closing counter.
+      f.facing = dir;
+      f.state = 'block';
+      f.blockT = 0.16;
+      f.counterMove = gap > 80 ? 'r8Lunge' : 'r8Piston';
+      f.restT = 0;
+      f.dodgeCooldown = 0.8;
+    }
+    if (
+      threat && threat !== f.lastThreat && !f.atk && !f.blockT &&
+      f.dodgeT === 0 && f.reactionT === 0
+    ) {
       f.lastThreat = threat;
       if (
         !f.atk &&
@@ -132,9 +169,9 @@
         if (f.form === 'robot' && (missile || airborneThreat || op.atk?.def.knockdown)) {
           f.facing = dir;
           f.state = 'block';
-          f.blockT = 0.24;
+          f.blockT = airborneThreat ? 0.12 : 0.2;
           f.restT = 0;
-          f.counterMove = airborneThreat ? 'r8Upper' : 'r8Dive';
+          f.counterMove = airborneThreat ? 'r8Upper' : missile ? 'r8Lunge' : 'r8Piston';
           f.dodgeCooldown = 0.9;
         } else if (missile) {
           f.vy = -320;
@@ -160,20 +197,32 @@
     } else if (f.blockT > 0) {
       f.state = 'block';
       f.blockT = Math.max(0, f.blockT - dt);
-      if (f.blockT === 0) {
+      if (f.blockT === 0 && (!op.atk || op.atk.t >= op.atk.def.startup + op.atk.def.active)) {
         const counter = f.counterMove;
         f.counterMove = null;
         if (counter) {
           f.burstLeft = 0;
           App.startAttack(f, counter);
+          if (f.form === 'robot' && f.atk) f.atk.guardStartup = true;
         } else restR8(f);
-      }
+      } else if (f.blockT === 0) f.blockT = 0.04;
     } else if (f.restT > 0) {
       f.restT = Math.max(0, f.restT - dt);
       f.state = f.grounded ? 'idle' : 'jump';
     } else if (f.aiT === 0) {
       f.facing = dir;
-      if (f.form === 'car') {
+      const recovering = op.atk && op.atk.t >= op.atk.def.startup + op.atk.def.active;
+      if (f.form === 'robot' && airborneThreat && f.grounded) {
+        f.burstLeft = 0;
+        App.startAttack(f, 'r8Upper');
+      } else if (f.form === 'robot' && recovering && gap < 145) {
+        // Punish an actual whiff/recovery instead of pursuing a fixed rotation.
+        f.burstLeft = 0;
+        App.startAttack(f, gap > 75 ? 'r8Lunge' : 'r8Piston');
+      } else if (repeatedLow && gap < 105) {
+        f.burstLeft = 0;
+        App.startAttack(f, 'r8Dive');
+      } else if (f.form === 'car') {
         const sequence = ['r8Dash', 'r8Jump', 'r8Rear', 'r8Wheel'];
         const move =
           !op.grounded && gap < 120
@@ -195,7 +244,13 @@
       } else {
         if (f.burstLeft === 0) f.burstLeft = App.rnd() < 0.55 ? 2 : 1;
         const sequence = ['r8Piston', 'r8Axle', 'r8Piston', 'r8Upper', 'r8Dive'];
-        const move = !op.grounded ? 'r8Upper' : sequence[f.rushStep++ % sequence.length];
+        const move = !op.grounded
+          ? 'r8Upper'
+          : op.state === 'block' || op.crouching
+            ? 'r8Dive'
+            : gap > 70
+              ? 'r8Axle'
+              : sequence[f.rushStep++ % sequence.length];
         f.burstLeft--;
         App.startAttack(f, move);
       }
