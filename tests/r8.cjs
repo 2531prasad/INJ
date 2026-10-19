@@ -15,6 +15,21 @@ module.exports = async function verifyR8(page, check, root) {
       a.dummy.x = 230;
       a.dummy.facing = -1;
     }
+    function hud() {
+      const bars = [],
+        labels = [],
+        draw = a.drawBar,
+        text = a.text;
+      a.drawBar = (...args) => bars.push(args);
+      a.text = (label) => labels.push(label);
+      try {
+        a.drawR8Health();
+      } finally {
+        a.drawBar = draw;
+        a.text = text;
+      }
+      return { bars, labels };
+    }
     const sheet = a.r8Sheet;
     out.atlas =
       sheet.meta.frames.length === 16 &&
@@ -34,6 +49,9 @@ module.exports = async function verifyR8(page, check, root) {
       a.dummy.form === 'car' &&
       a.dummy.hp === a.R8_TUNING.car.health &&
       a.dummy.robotMaxHp === a.R8_TUNING.robot.health;
+    const initialHud = hud();
+    out.initialLifeOnly =
+      initialHud.bars.length === 1 && initialHud.bars[0][4] === 1 && initialHud.labels.length === 0;
     out.shortCar =
       a.hurtbox(a.dummy).h < a.hurtbox(a.player).h * 0.5 &&
       a.hurtbox(a.dummy).w > a.hurtbox(a.player).w * 2;
@@ -96,6 +114,7 @@ module.exports = async function verifyR8(page, check, root) {
       a.hurtbox(a.dummy).h > 100 &&
       a.dummy.form === 'car';
     car();
+    a.game.roundTime = 12.3;
     a.player.hp = 77;
     a.player.charge = 2;
     a.dummy.hp = 1;
@@ -106,11 +125,15 @@ module.exports = async function verifyR8(page, check, root) {
       a.dummy.form === 'car' &&
       a.game.round === 3 &&
       !a.game.lost;
+    const emptyHud = hud();
+    out.reserveStaysHidden =
+      emptyHud.bars.length === 1 && emptyHud.bars[0][4] === 0 && emptyHud.labels.length === 0;
     a.game.paused = false;
     const clock = a.game.roundTime;
     a.update(0.5);
     out.transitionSafe =
       a.game.state === 'transform' &&
+      clock === 12.3 &&
       a.game.roundTime === clock &&
       a.player.hp === 77 &&
       !a.player.atk &&
@@ -128,6 +151,12 @@ module.exports = async function verifyR8(page, check, root) {
       a.player.charge === 3 &&
       a.game.round === 3 &&
       a.game.roundTime === 99;
+    const revealedHud = hud();
+    out.surpriseLife =
+      revealedHud.bars.length === 1 &&
+      revealedHud.bars[0][4] === 1 &&
+      revealedHud.bars[0][6] !== initialHud.bars[0][6] &&
+      revealedHud.labels.length === 0;
     a.dummy.invuln = 0;
     a.dummy.hp = 1;
     a.applyHit(a.dummy, a.player, a.MOVES.jab, 230, 140);

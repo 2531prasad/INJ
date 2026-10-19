@@ -89,6 +89,7 @@
         App.world.width - 45
       );
     App.game.state = 'fight';
+    // The surprise form reveals a fresh health bar and earns a fresh phase clock.
     App.game.roundTime = 99;
     App.game.msg = null;
     App.game.t = 0;

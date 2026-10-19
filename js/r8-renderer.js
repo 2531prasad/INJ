@@ -5,7 +5,7 @@
   r8Sheet.image.onload = () => {
     r8Sheet.ready = true;
   };
-  r8Sheet.image.src = 'assets/r8-sprites-v1.png';
+  r8Sheet.image.src = 'assets/r8-sprites-v2.png';
   function sampleR8Animation(f) {
     if (App.game.state === 'transform' && f === App.dummy) {
       return { frame: App.game.t < 0.55 ? 4 : App.game.t < 1.05 ? 6 : App.game.t < 1.6 ? 7 : 8 };
@@ -85,7 +85,7 @@
       x = App.world.width / 2 + 34;
     const { ctx } = App,
       portrait = r8Sheet.meta.frames[f.form === 'car' ? 0 : 8];
-    ctx.fillStyle = '#122138';
+    ctx.fillStyle = '#102b30';
     ctx.fillRect(App.world.width - 27, 9, 18, 18);
     if (r8Sheet.ready) {
       const s = 16 / Math.max(portrait.w, portrait.h);
@@ -101,17 +101,17 @@
         portrait.h * s
       );
     }
-    const car = f.form === 'car' ? f.hp / f.carMaxHp : 0;
-    const robot = f.form === 'robot' ? f.hp / f.robotMaxHp : 1;
-    App.drawBar(x, 11, w, 6, car, true, '#185389', '#77c5e8');
-    App.drawBar(x, 21, w, 6, robot, true, '#9f7326', '#f2d382');
-    App.text(
-      f.form === 'car' ? 'I · CAR' : 'II · ASCENDANT',
-      App.world.width - 32,
-      43,
-      4,
-      '#edca86',
-      'right'
+    // One apparent life: the reserve stays completely undisclosed until reveal.
+    const car = f.form === 'car';
+    App.drawBar(
+      x,
+      12,
+      w,
+      9,
+      f.hp / f.maxHp,
+      true,
+      car ? '#087a80' : '#9f7326',
+      car ? '#79e8df' : '#f2d382'
     );
   }
   function drawRim(p, now) {

@@ -5,7 +5,7 @@ import json
 from PIL import Image
 
 root = Path(__file__).resolve().parents[1]
-image = Image.open(root / 'assets/r8-sprites-v1.png').convert('RGBA')
+image = Image.open(root / 'assets/r8-sprites-v2.png').convert('RGBA')
 w, h = image.size
 alpha = image.getchannel('A').tobytes()
 seen = bytearray(w * h)
@@ -46,7 +46,7 @@ for i, frame in enumerate(frames):
     del frame['footX']
 # Flying art includes exhaust beyond the tires/boots. Explicit source-space roots
 # keep jets from moving the collision body's floor anchor.
-for i, sx, sy in [(3, 1105, 154), (12, 151, 1130), (13, 485, 1150)]:
+for i, sx, sy in [(3, 1102, 194), (12, 153, 1144), (13, 485, 1150)]:
     frames[i]['anchorX'] = sx-frames[i]['x']
     frames[i]['anchorY'] = sy-frames[i]['y']
 data = dict(width=w, height=h, neutralHeight=frames[8]['h'], frames=frames)

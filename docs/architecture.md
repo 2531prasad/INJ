@@ -23,7 +23,7 @@ INJ remains a build-free static game. `index.html` contains the interface markup
 | `js/movement.js` | Player decisions, jump/landing physics and distance-based walking | `controlPlayer`, `physics`, `moveWalking` |
 | `js/opponent.js` | Warmup and awakened opponent behavior | `controlDummy`, `controlAwakenedDummy`, `dodgeDummy` |
 | `js/r8.js` | Car/robot decisions, boost physics, shield counters and low hurtbox | `controlR8`, `startR8Attack`, `stepR8Attack`, `r8Hurtbox` |
-| `js/r8-renderer.js` | Sixteen hard-switched poses, two health bars and wheel projectiles | `r8Sheet`, `sampleR8Animation`, `drawR8`, `drawR8Health`, `drawRim` |
+| `js/r8-renderer.js` | Sixteen hard-switched poses, single visible phase health bar and wheel projectiles | `r8Sheet`, `sampleR8Animation`, `drawR8`, `drawR8Health`, `drawRim` |
 | `js/fighters.js` | Atlas loading, hard pose changes, contact shadows and reflections | `sampleFighterAnimation`, `sampleAttackAnimation`, `drawFighter` |
 | `js/renderer.js` | Frame composition, projectiles/effects drawing, health bars and HUD | `render`, `text`, `drawBar` |
 | `js/menus.js` | Profile, pause, restart, audio controls, MiMi dialogue and page lifecycle | `pauseGame`, `resumeGame`, `restartGame`, `startRoast`, `initMenus` |
@@ -46,7 +46,7 @@ The namespace is an internal implementation API, not a saved-game or external pl
 
 ## Goldline encounter boundary
 
-`dummy` remains the live opponent object for all rounds; check `kind` / `isR8` rather than its variable name. Round two uses `LEVEL_TWO`; round three onward configures the R8. Combat delegates its hurtbox and attack physics, while shared damage/guard still decides outcomes. Empty car health enters `transform`, clears attacks/input/projectiles and freezes simulation until the robot is installed. The second form preserves INJ health and charge, refills only robot health, resets the phase clock and resumes with brief entry protection. Timer expiry loses to the boss in either form; both pools must be cleared. The engine freezes transformation when paused. Keep these rules in `encounters.js` and `rounds.js`, not in renderer callbacks.
+`dummy` remains the live opponent object for all rounds; check `kind` / `isR8` rather than its variable name. Round two uses `LEVEL_TWO`; round three onward configures the R8. Combat delegates its hurtbox and attack physics, while shared damage/guard still decides outcomes. Empty car health enters `transform`, clears attacks/input/projectiles and freezes simulation until the robot is installed. The first form displays one turquoise bar and no reserve/phase label; transformation keeps that depleted bar until the robot reveals a new gold bar. The second form preserves INJ health and charge, refills only robot health, resets the phase clock to 99 and resumes with brief entry protection. Timer expiry loses to the boss in either form; both pools must be cleared. The engine freezes transformation when paused. Keep these rules in `encounters.js` and `rounds.js`, not in renderer callbacks.
 
 ## Stylesheet order
 
