@@ -35,9 +35,6 @@
   #stickZone {
     width: 34%;
   }
-  .arena-menu {
-    left: calc(42% - 22px);
-  }
 }
 #fullscreenStatus {
   display: block;

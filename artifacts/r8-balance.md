@@ -1,4 +1,4 @@
-# Current balance · v0.19 · 19 October 2026
+# Current balance · v0.20 · 19 October 2026
 
 The robot should feel almost unbeatable through its decisions, while leaving room to compete. The requested loss goals remain 60% in level two and 65% against the car; the robot goal is now roughly 90%. These guide playtesting. Combat resolves every outcome; no probability selects a winner.
 
@@ -16,33 +16,33 @@ The robot should feel almost unbeatable through its decisions, while leaving roo
 
 Clean consecutive hits within 1.4 seconds deal normal damage, then ×1.1, ×1.2, ×1.3 and onward. Whole-HP rounding occurs before opponent armor. The HUD shows the hit count and latest multiplier. Incoming damage (including chip), an attack being blocked, a melee whiff, timeout, restart or transformation clears the chain. Invalid/invulnerable contacts do not extend it.
 
-Down + forward + Kick slides without spending meter; down + Kick retains the sweep. Each clean hit adds 20 Nitro energy and each unblocked hit taken adds 6, capped at 100. NITRO / Q spends 100 on a forward Nitro Kick from standing, crouching or midair; crouching selects a low strike. It has startup and recovery, can miss or be blocked, and uses existing authored sweep/flying-kick art. Shadow's separate three-hit charge is preserved. Airborne Shadow aims at the opponent when released and does not home afterward.
+Down + forward + Kick slides without spending meter; down + Kick retains the sweep. Each clean hit adds 20 Nitro energy and each unblocked hit taken adds 6, capped at 100. NITRO / Q spends 100 on a fast phase-style forward Nitro Kick from standing, crouching or midair; crouching selects a low strike. Its 60 ms startup, 160 ms active burst at 660 units/s and 260 ms recovery retain 105.6 units of travel. It can miss or be blocked, and uses existing authored sweep/flying-kick art with sharp coil/strike/recoil changes and short echoes/streaks. Reduced motion removes the decoration. The Nitro button appears only at full meter, in a reserved slot above the larger primary strikes; supporting icon-and-label controls stay fixed. The combo graphic has no background panel. Shadow's separate three-hit charge is preserved. Airborne Shadow aims at the opponent when released and does not home afterward.
 
 ## Latest scripted checks
 
-`node tests/structure.cjs` passes 24 classic scripts and seven stylesheets. `node tests/browser.cjs` passes **238 Chromium checks**, including direct-file/HTTP production startup, genuine multitouch, smallest-phone control separation, combo arithmetic/reset rules, meter spending, all three Nitro stances, actual NITRO touch / Q input, airborne Shadow, both boss forms, health refill/resource retention, protected transformation, readable reaction delay, repeated-low defense, shield counters, recovery punishment and pauses.
+`node tests/structure.cjs` passes 24 classic scripts and seven stylesheets. `node tests/browser.cjs` passes **253 Chromium checks**, including direct-file/HTTP production startup, genuine multitouch, smallest-phone control separation, combo arithmetic/reset rules, meter spending, all three Nitro stances, actual NITRO touch / Q input, airborne Shadow, both boss forms, health refill/resource retention, protected transformation, readable reaction delay, repeated-low defense, shield counters, recovery punishment and pauses.
 
 | Encounter | Intended player-loss goal | Scripted opponent wins | INJ wins |
 | --- | ---: | ---: | ---: |
-| Level two · Dummy | 60% | 57/100 | 43/100 |
-| Goldline · car | 65% | 40/100 | 60/100 |
-| Goldline · robot | 90% | 85/100 | 15/100 |
+| Level two · Dummy | 60% | 56/100 | 44/100 |
+| Goldline · car | 65% | 42/100 | 58/100 |
+| Goldline · robot | 90% | 82/100 | 18/100 |
 
 | Policy | Dummy wins | Car wins | Robot wins |
 | --- | ---: | ---: | ---: |
 | idle | 15/15 | 15/15 | 15/15 |
-| punch spam | 12/15 | 11/15 | 15/15 |
-| mixed attacks | 7/14 | 0/14 | 14/14 |
-| Shadow kiting | 0/14 | 0/14 | 13/14 |
+| punch spam | 7/15 | 13/15 | 15/15 |
+| mixed attacks | 9/14 | 0/14 | 14/14 |
+| Shadow kiting | 0/14 | 0/14 | 10/14 |
 | jumping kicks | 0/14 | 0/14 | 14/14 |
 | guard/counter | 14/14 | 14/14 | 0/14 |
-| crouch/sweep | 9/14 | 0/14 | 14/14 |
+| crouch/sweep | 11/14 | 0/14 | 14/14 |
 
-The robot's measured scripted result is close to, but below, the requested 90% goal. The car is easier than its earlier 65% goal after reducing its health and armor; no human rate is claimed for either form. These seven simple policies run to KO, phase clear or the actual 99-second timer, with a five-minute simulation cap that fails rather than choosing a winner. Each isolated boss test starts with fresh INJ health, now matching the real robot reveal. The policies do not use Nitro or aerial Shadow, and are not adaptive human opponents. Shared seeded randomness also serves effects, so frame/setup cadence changes exact counts. Raw results: [validation.json](validation.json).
+The robot's measured scripted result remains below the requested 90% goal; this UI/animation change does not retune its AI. The car is easier than its earlier 65% goal after reducing its health and armor; no human rate is claimed for either form. These seven simple policies run to KO, phase clear or the actual 99-second timer, with a five-minute simulation cap that fails rather than choosing a winner. Each isolated boss test starts with fresh INJ health, now matching the real robot reveal. The policies do not use Nitro or aerial Shadow, and are not adaptive human opponents. Shared seeded randomness also serves effects, so frame/setup cadence changes exact counts. Raw results: [validation.json](validation.json).
 
 ## Art, ownership and limits
 
-No source image pixels were edited. The existing sixteen-pose Goldline atlas, INJ/Dummy atlases, walking art and stage plate are preserved. [Current sprite provenance](../assets/r8-generation-v2.md). [Combo / Nitro HUD preview](combo-nitro-phone.png), [Nitro pose preview](nitro-kick-phone.png).
+No source image pixels were edited. The existing sixteen-pose Goldline atlas, INJ/Dummy atlases, walking art and stage plate are preserved. [Current sprite provenance](../assets/r8-generation-v2.md). [Combo / Nitro HUD preview](combo-nitro-phone.png), [Nitro pose preview](nitro-kick-phone.png), [phase sequence](nitro-phase-sequence.png), [interface review](ui-polish-review.md).
 
 Move data/tuning lives in `js/content.js` and `js/r8-content.js`; shared damage, combos and Nitro travel in `js/combat.js`; player dispatch in `js/movement.js`; form rules in `js/encounters.js`; robot decisions in `js/r8.js`; pose selection in `js/fighters.js`. `tests/abilities.cjs` and `tests/r8.cjs` add targeted browser checks to the main runner. The source map and current game guide reflect these boundaries.
 

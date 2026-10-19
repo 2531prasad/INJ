@@ -151,9 +151,9 @@
       name: 'SHADOW SLIDE'
     },
     nitrokick: {
-      startup: 0.12,
-      active: 0.24,
-      recovery: 0.38,
+      startup: 0.06,
+      active: 0.16,
+      recovery: 0.26,
       dmg: 24,
       box: [10, -70, 48, 64],
       kb: 190,
@@ -161,7 +161,7 @@
       knockdown: true,
       type: 'high',
       meter: 100,
-      drive: 440,
+      drive: 660,
       name: 'NITRO KICK'
     },
     haymaker: {

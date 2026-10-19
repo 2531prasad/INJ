@@ -1,5 +1,5 @@
 /* fighters.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: core.js.
+ * Cross-module dependencies: core.js, encounters.js, r8-renderer.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -53,6 +53,17 @@
       : a.key === 'roundhouse'
         ? 10
         : 4;
+    if (a.key === 'nitrokick') {
+      const coil = a.low ? 9 : f.grounded ? 2 : 1;
+      if (a.t < 0.025) return { frame: coil, offset: -3 };
+      if (a.t < d.startup + d.active)
+        return { frame: strike, offset: 6, phaseKick: a.t >= d.startup };
+      const p = App.clamp((a.t - d.startup - d.active) / d.recovery, 0, 1);
+      return {
+        frame: p < 0.18 ? strike : p < 0.5 ? coil : rest,
+        offset: 6 * (1 - easeOut(p))
+      };
+    }
     if (a.t < d.startup) {
       const p = App.clamp(a.t / d.startup, 0, 1);
       return { frame: p < 0.32 ? prepare : strike, offset: App.lerp(-1.2, reach, easeOut(p)) };
@@ -143,7 +154,7 @@
     App.ctx.save();
     App.ctx.translate(f.x, f.y);
     if (f.facing < 0) App.ctx.scale(-1, 1);
-    if (ghost) App.ctx.globalAlpha *= 0.28;
+    if (ghost) App.ctx.globalAlpha *= f.nitroEcho ? 0.7 : 0.28;
     if (f.invuln > 0) App.ctx.globalAlpha *= 0.75;
     if (f.state === 'ko' || f.state === 'knockdown') {
       const p = f.grounded
@@ -160,6 +171,18 @@
       // A restrained rim glow distinguishes awakened actors without changing their bodies.
       App.ctx.shadowColor = f.kind === 'inj' ? '#aa87eb' : '#ee8f4a';
       App.ctx.shadowBlur = f.backstage ? 2 : 4;
+    }
+    if (pose.phaseKick && !ghost && !f.reflection && !App.reducedMotion) {
+      // Short trails describe the burst; the authored body stays fully opaque.
+      App.ctx.strokeStyle = '#ceb6f0bb';
+      App.ctx.lineWidth = 1.2;
+      const height = f.atk.low ? -24 : -46;
+      for (let i = 0; i < 3; i++) {
+        App.ctx.beginPath();
+        App.ctx.moveTo(-42 - i * 5, height + i * 7);
+        App.ctx.lineTo(-8 - i * 3, height + i * 7);
+        App.ctx.stroke();
+      }
     }
     drawSpriteFrame(f, pose.frame, pose.atlas);
     App.ctx.shadowBlur = 0;

@@ -48,42 +48,114 @@
     display: none;
   }
 }
+/* Fixed thumb positions: supporting actions above the larger primary strikes. */
 #pad {
+  --aux-size: 52px;
+  --main-size: 68px;
+  --deck-gap: 8px;
+  position: absolute;
+  display: none;
   z-index: 3;
-  right: 12px;
+  right: 14px;
   bottom: 12px;
-  gap: 10px;
-}
-#pad .padrow {
-  gap: 10px;
+  width: calc(var(--aux-size) * 4 + var(--deck-gap) * 3);
+  height: calc(var(--aux-size) + var(--main-size) + var(--deck-gap));
 }
 #pad .abtn {
-  width: 64px;
-  height: 60px;
-  background: #17131b8c;
-  box-shadow: inset 0 1px 0 #ffffff17;
-  font-size: 8px;
-  border-color: #e8dcc270;
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: var(--aux-size);
+  height: var(--aux-size);
+  padding: 3px;
+  border: 1px solid #e8dcc254;
+  border-radius: 11px;
+  background: #17131b94;
+  box-shadow: inset 0 1px 0 #ffffff12;
+  color: #f1e6d0;
+  font: 700 10px/1 'Chakra Petch', sans-serif;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-shadow: 0 1px 2px #09060b;
+  transition: transform 80ms ease-out, background-color 100ms ease-out;
+}
+#pad .abtn[hidden] {
+  display: none;
+}
+#pad .abtn svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+#pad .button-label {
+  pointer-events: none;
+  white-space: nowrap;
+}
+#pad [data-act='nitro'] {
+  left: 0;
+  color: #f5d797;
+  border-color: #edc878c2;
+  background: #432d57c9;
+}
+#pad [data-act='special'] {
+  left: calc(var(--aux-size) + var(--deck-gap));
+  color: #decbf5;
+}
+#pad [data-act='upper'] {
+  left: calc((var(--aux-size) + var(--deck-gap)) * 2);
+}
+#pad [data-act='block'] {
+  right: 0;
+  color: #bbd9e1;
 }
 #pad .abtn.big {
-  width: 72px;
-  height: 72px;
+  top: auto;
+  bottom: 0;
+  width: var(--main-size);
+  height: var(--main-size);
   border-radius: 50%;
-  font-size: 8px;
+  border-color: #edcf987a;
+  background: #2b1e24b3;
+  font-size: 11px;
 }
-#pad .abtn.sp {
-  width: 64px;
-  height: 48px;
-  font-size: 7px;
-  color: #edc77e;
+#pad .abtn.big svg {
+  width: 25px;
+  height: 25px;
 }
-#pad .abtn.down {
-  background: #9f2834c9;
-  border-color: var(--gold);
+#pad [data-act='punch'] {
+  right: calc(var(--main-size) + var(--deck-gap));
+}
+#pad [data-act='kick'] {
+  right: 0;
+}
+#pad .abtn.down,
+#pad .abtn:active {
+  transform: scale(0.96);
+  background-color: #8c343dcc;
+  border-color: #f1cd8b;
 }
 #pad .abtn.ready {
   border-color: #ffd681;
-  box-shadow: none;
+}
+@media (pointer: coarse), (max-width: 680px), (max-height: 550px) {
+  #pad {
+    display: block;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #pad .abtn {
+    transition: none;
+  }
 }
 #stickZone {
   z-index: 2;
@@ -127,33 +199,27 @@
 }
 @media (max-width: 680px) and (orientation: portrait) {
   #pad {
-    --touch-size: clamp(44px, 13vw, 56px);
-    display: grid;
-    grid-template-columns: repeat(3, var(--touch-size));
-    gap: 5px;
+    --aux-size: 44px;
+    --main-size: clamp(52px, 14vw, 60px);
+    --deck-gap: 4px;
     right: 6px;
     bottom: 7px;
   }
-  #pad .padrow {
-    display: contents;
-  }
-  #pad .abtn,
-  #pad .abtn.big,
-  #pad .abtn.sp {
-    width: var(--touch-size);
-    height: var(--touch-size);
-    font-size: 6px;
+  #pad .abtn {
+    font-size: 8px;
     border-radius: 10px;
   }
-  #pad [data-act='nitro'] {
-    grid-column: 1;
-    grid-row: 2;
+  #pad .abtn.big {
+    border-radius: 50%;
+    font-size: 9px;
   }
-  #pad [data-act='punch'] {
-    grid-column: 2;
+  #pad .abtn svg {
+    width: 18px;
+    height: 18px;
   }
-  #pad [data-act='kick'] {
-    grid-column: 3;
+  #pad .abtn.big svg {
+    width: 22px;
+    height: 22px;
   }
   #stickZone::before {
     width: 76px;
@@ -207,9 +273,4 @@
 }
 #stickZone.active .stick-directions {
   opacity: 0;
-}
-
-#pad [data-act='nitro'][aria-disabled='true'] {
-  color: #a99aaf;
-  border-color: #b7a8bf66;
 }

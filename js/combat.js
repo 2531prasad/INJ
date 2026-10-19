@@ -65,14 +65,20 @@
     const a = f.atk,
       d = a.def;
     a.t += dt;
-    if (d.drive && a.t >= d.startup && a.t < d.startup + d.active) {
-      f.x += f.facing * d.drive * dt;
+    const driveTime = Math.max(
+      0,
+      Math.min(a.t, d.startup + d.active) - Math.max(a.t - dt, d.startup)
+    );
+    if (d.drive && driveTime > 0) {
+      f.x += f.facing * d.drive * driveTime;
       if (
         a.key === 'nitrokick' &&
         !App.reducedMotion &&
-        Math.floor(a.t / 0.05) !== Math.floor((a.t - dt) / 0.05)
+        Math.floor(a.t / 0.035) !== Math.floor((a.t - dt) / 0.035)
       )
-        App.afterimages.push({ f: { ...f, atk: { ...a } }, life: 0.16, max: 0.16 });
+        App.afterimages.push({
+          f: { ...f, nitroEcho: true, atk: { ...a } }, life: 0.12, max: 0.12
+        });
     }
     if (d.projectile) {
       if (!a.fired && a.t >= d.startup) {

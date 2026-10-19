@@ -56,14 +56,15 @@
   function updateChargeUI() {
     const nitroReady = App.player.meter >= 100;
     document.querySelectorAll('[data-act="nitro"]').forEach((btn) => {
+      btn.hidden = !nitroReady;
       btn.classList.toggle('ready', nitroReady);
       btn.setAttribute('aria-disabled', String(!nitroReady));
-      btn.setAttribute('aria-label', nitroReady ? 'Nitro kick ready' : 'Nitro kick: fill the ability bar');
+      btn.setAttribute('aria-label', 'Nitro kick ready');
     });
     const ready = App.player.charge >= 3;
     document.querySelectorAll('[data-act="special"]').forEach((btn) => {
       btn.classList.toggle('ready', ready);
-      btn.textContent = ready ? 'SHADOW +' : 'SHADOW';
+      btn.querySelector('.button-label').textContent = ready ? 'SHADOW +' : 'SHADOW';
       btn.setAttribute('aria-label', ready ? 'Charged shadow toss ready' : 'Shadow toss');
     });
   }

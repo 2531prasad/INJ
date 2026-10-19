@@ -170,8 +170,6 @@
     );
     if (App.game.hits > 1 && App.game.hitTimer > 0) {
       const x = App.world.width / 2;
-      App.ctx.fillStyle = '#17101ee6';
-      App.ctx.fillRect(x - 55, 34, 110, 32);
       text(App.game.hits + ' HIT KOMBO', x, 46, 8, '#f4d59a', 'center');
       text(
         'x' + (1 + (App.game.hits - 1) / 10).toFixed(1) + ' DAMAGE',

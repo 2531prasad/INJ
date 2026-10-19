@@ -1,11 +1,11 @@
 {
-  "checks": 238,
+  "checks": 253,
   "awakenedBenchmark": {
     "trials": 100,
     "roundSeconds": 99,
     "policies": 7,
-    "dummyWins": 57,
-    "playerWins": 43,
+    "dummyWins": 56,
+    "playerWins": 44,
     "policyResults": [
       {
         "policy": "idle",
@@ -16,14 +16,14 @@
       {
         "policy": "punch spam",
         "trials": 15,
-        "dummyWins": 12,
-        "playerWins": 3
+        "dummyWins": 7,
+        "playerWins": 8
       },
       {
         "policy": "mixed attacks",
         "trials": 14,
-        "dummyWins": 7,
-        "playerWins": 7
+        "dummyWins": 9,
+        "playerWins": 5
       },
       {
         "policy": "Shadow kiting",
@@ -46,20 +46,20 @@
       {
         "policy": "crouch/sweep",
         "trials": 14,
-        "dummyWins": 9,
-        "playerWins": 5
+        "dummyWins": 11,
+        "playerWins": 3
       }
     ],
-    "attacks": 1498,
-    "dodges": 5897,
-    "restFraction": 0.5466058025243625
+    "attacks": 1462,
+    "dodges": 5896,
+    "restFraction": 0.5493939281610261
   },
   "r8Benchmarks": {
     "car": {
       "trials": 100,
       "targetLossPercent": 65,
-      "bossWins": 40,
-      "playerWins": 60,
+      "bossWins": 42,
+      "playerWins": 58,
       "policies": [
         {
           "policy": "idle",
@@ -70,8 +70,8 @@
         {
           "policy": "punch spam",
           "trials": 15,
-          "bossWins": 11,
-          "playerWins": 4
+          "bossWins": 13,
+          "playerWins": 2
         },
         {
           "policy": "mixed attacks",
@@ -109,8 +109,8 @@
     "robot": {
       "trials": 100,
       "targetLossPercent": 90,
-      "bossWins": 85,
-      "playerWins": 15,
+      "bossWins": 82,
+      "playerWins": 18,
       "policies": [
         {
           "policy": "idle",
@@ -133,8 +133,8 @@
         {
           "policy": "Shadow kiting",
           "trials": 14,
-          "bossWins": 13,
-          "playerWins": 1
+          "bossWins": 10,
+          "playerWins": 4
         },
         {
           "policy": "jumping kicks",
@@ -162,7 +162,7 @@
   "viewports": 9,
   "audio": {
     "peak": 0.5534541010856628,
-    "rms": 0.03012639849179655,
+    "rms": 0.030126398412820565,
     "clippedSamples": 0
   },
   "limitations": [

@@ -12,6 +12,51 @@ module.exports = async function verifyAbilities(page, check, root) {
       a.dummy.x = 205;
     }
     setup();
+    a.player.meter = 99;
+    a.updateChargeUI();
+    const nitroButton = document.querySelector('[data-act="nitro"]');
+    out.nitroHiddenUntilFull = nitroButton.hidden && nitroButton.getClientRects().length === 0;
+    a.player.meter = 100;
+    a.player.charge = 3;
+    a.updateChargeUI();
+    out.readyKeepsIcons = !nitroButton.hidden &&
+      document.querySelector('[data-act="special"] svg') &&
+      document.querySelector('[data-act="special"] .button-label').textContent === 'SHADOW +';
+    setup();
+    a.player.meter = 100;
+    a.startAttack(a.player, 'nitrokick');
+    const frames = [0.01, 0.04, 0.1, 0.29, 0.42].map((time) => {
+      a.player.atk.t = time;
+      return a.sampleFighterAnimation(a.player).frame;
+    });
+    out.phasePoseSequence = frames.join(',') === '2,8,8,2,0';
+    out.fastPhaseTiming = a.player.atk.def.startup <= 0.06 &&
+      a.player.atk.def.startup + a.player.atk.def.active + a.player.atk.def.recovery < 0.5;
+    function travel(step) {
+      setup(); a.player.meter = 100; a.startAttack(a.player, 'nitrokick');
+      for (let i = 0; i < Math.round(0.3 / step); i++) a.stepAttack(a.player, step, a.dummy);
+      return a.player.x - 140;
+    }
+    const fineTravel = travel(0.005), coarseTravel = travel(0.3);
+    out.burstTravelIndependentOfStep = Math.abs(fineTravel - coarseTravel) < 0.001 &&
+      Math.abs(coarseTravel - 105.6) < 0.001;
+    setup(); a.player.meter = 100; a.startAttack(a.player, 'nitrokick');
+    const motion = a.reducedMotion;
+    try {
+      a.reducedMotion = true;
+      a.stepAttack(a.player, 0.1, a.dummy);
+      out.reducedMotionNoEcho = a.afterimages.length === 0;
+    } finally {
+      a.reducedMotion = motion;
+    }
+    setup();
+    const sample = () => Array.from(a.ctx.getImageData(
+      (a.world.width / 2 - 54) * a.RENDER_SCALE, 35 * a.RENDER_SCALE, 4, 4
+    ).data);
+    a.render(0); const arenaPixels = sample();
+    a.game.hits = 5; a.game.hitTimer = 1; a.render(0);
+    out.comboHasNoPanel = sample().every((pixel, index) => pixel === arenaPixels[index]);
+    setup();
     const damage = [];
     for (let i = 0; i < 5; i++) {
       const before = a.dummy.hp;
@@ -101,6 +146,33 @@ module.exports = async function verifyAbilities(page, check, root) {
     return out;
   });
   for (const [name, passed] of Object.entries(results)) check(passed, `Abilities: ${name}`);
+  for (const [width, height] of [[320, 568], [390, 844], [667, 375], [844, 390]]) {
+    await page.setViewportSize({ width, height });
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const layout = await page.evaluate(() => {
+      const a = INJ, nitro = document.querySelector('[data-act="nitro"]');
+      const positions = () => [...document.querySelectorAll('#pad .abtn:not([data-act="nitro"])')]
+        .map(el => { const r = el.getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; });
+      a.player.meter = 0; a.updateChargeUI();
+      const before = positions();
+      a.player.meter = 100; a.updateChargeUI();
+      const buttons = [...document.querySelectorAll('#pad .abtn'),
+        document.querySelector('#stickZone'), document.querySelector('#btnArenaMenu')];
+      const rects = buttons.filter(el => el.getClientRects().length).map(el => el.getBoundingClientRect());
+      const collides = rects.some((r, i) => rects.slice(i + 1).some(s =>
+        r.left < s.right && r.right > s.left && r.top < s.bottom && r.bottom > s.top));
+      const arena = document.querySelector('#screen').getBoundingClientRect();
+      const fits = rects.every(r => r.width >= 44 && r.height >= 44 &&
+        r.left >= arena.left && r.right <= arena.right && r.top >= arena.top && r.bottom <= arena.bottom);
+      const stable = JSON.stringify(before) === JSON.stringify(positions());
+      const ready = !nitro.hidden && nitro.getClientRects().length > 0;
+      a.player.meter = 0; a.updateChargeUI();
+      return stable && ready && nitro.hidden && !collides && fits;
+    });
+    check(layout, `Abilities: ${width}×${height} ready/hidden controls stay fixed, separated and ≥44px`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
     INJ.game.round = 0; INJ.resetRound(); INJ.game.state = 'fight';
     INJ.game.paused = false; INJ.game.msg = null; INJ.dummy.aiT = 999;
@@ -109,6 +181,39 @@ module.exports = async function verifyAbilities(page, check, root) {
   await page.locator('[data-act="nitro"]').tap();
   check(await page.evaluate(() => INJ.player.atk?.key === 'nitrokick' && INJ.player.meter < 100),
     'Abilities: real touch starts Nitro and spends the bar');
+  check(await page.locator('[data-act="nitro"]').isHidden(),
+    'Abilities: spending the bar hides the touch ability immediately');
+  await page.evaluate(() => {
+    INJ.resetInput(); INJ.player.atk = null; INJ.player.state = 'idle';
+    INJ.player.hitstun = INJ.game.hitStop = 0; INJ.player.meter = 100;
+    INJ.updateChargeUI();
+  });
+  const touch = await page.context().newCDPSession(page);
+  const zone = await page.locator('#stickZone').boundingBox();
+  const ability = await page.locator('[data-act="nitro"]').boundingBox();
+  const contact = (id, x, y) => ({ id, x, y, radiusX: 5, radiusY: 5, force: 1 });
+  let left = contact(41, zone.x + zone.width / 2, zone.y + zone.height / 2);
+  const right = contact(42, ability.x + ability.width / 2, ability.y + ability.height / 2);
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [left] });
+  left = { ...left, x: left.x + 35 };
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [left] });
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [left, right] });
+  check(await page.evaluate(() => INJ.input.right === 1 &&
+    INJ.player.atk?.key === 'nitrokick' && document.querySelector('[data-act="nitro"]').hidden),
+    'Abilities: hiding Nitro after activation preserves the movement thumb');
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [left] });
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  check(await page.evaluate(() => !Object.values(INJ.input).some(Boolean) &&
+    !document.querySelector('#pad .abtn.down')),
+    'Abilities: hidden ability releases its captured touch without stuck inputs');
+  await touch.detach();
+  await page.evaluate(() => {
+    INJ.player.atk = null; INJ.player.state = 'idle'; INJ.player.meter = 100;
+    INJ.player.hitstun = INJ.game.hitStop = 0; INJ.updateChargeUI();
+  });
+  await page.locator('[data-act="nitro"]').tap();
+  check(await page.evaluate(() => INJ.player.atk?.key === 'nitrokick' && INJ.player.meter < 100),
+    'Abilities: refilled Nitro can be revealed and tapped again');
   await page.evaluate(() => {
     INJ.player.atk = null; INJ.player.state = 'idle'; INJ.player.meter = 100;
     INJ.updateChargeUI();
