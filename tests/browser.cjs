@@ -34,7 +34,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   actual.on('requestfailed',request=>{if(/(?:127\.0\.0\.1|^file:)/.test(request.url())&&/\.(?:js|css)(?:$|\?)/.test(request.url()))productionErrors.push(request.url()+': '+request.failure()?.errorText);});
   for(const url of ['http://127.0.0.1:8879/index.html',pathToFileURL(path.join(root,'index.html')).href]){
     await actual.goto(url);
-    await actual.waitForFunction(()=>window.InjAudio&&window.INJ&&INJ.r8Sheet.ready&&Object.values(INJ.teddySheets).every(s=>s.ready)&&Object.values(INJ.spriteSheets).every(s=>s.ready)&&Object.values(INJ.walkSheets).every(s=>s.ready)&&INJ.arenaImg.naturalWidth>0);
+    await actual.waitForFunction(()=>window.InjAudio&&window.INJ&&INJ.r8Sheet.ready&&Object.values(INJ.teddySheets).every(s=>s.ready)&&Object.values(INJ.spriteSheets).every(s=>s.ready)&&Object.values(INJ.walkSheets).every(s=>s.ready)&&INJ.arenaStages.every(s=>s.image.naturalWidth>0));
     check(await actual.evaluate(()=>!window.__test&&INJ.game.paused&&InjAudio.ctx===null&&document.styleSheets.length>=7&&document.querySelector('#screen').clientHeight>100),`Uninstrumented ${url.startsWith('file:')?'direct file':'HTTP'} launch loads modules, art and styles without test hooks`);
     await actual.locator('#btnStartFight').tap();await actual.locator('#btnArenaMenu').tap();
     await actual.evaluate(()=>{INJ.game.round=4;INJ.player.hp=1;});
@@ -57,7 +57,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await page.goto('http://127.0.0.1:8879/index.html');
   await page.bringToFront();
   await page.waitForTimeout(500);
-  await page.waitForFunction(()=>__test.arenaImg.complete&&__test.arenaImg.naturalWidth>0&&[...Object.values(__test.spriteSheets),...Object.values(__test.walkSheets)].every(s=>s.ready));
+  await page.waitForFunction(()=>__test.arenaStages.every(s=>s.image.complete&&s.image.naturalWidth>0)&&[...Object.values(__test.spriteSheets),...Object.values(__test.walkSheets)].every(s=>s.ready));
   check(await page.evaluate(()=>!document.querySelector('.notes')&&!document.body.textContent.includes('/html/body/')), 'Bottom prose panels and selector-like text are absent');
   check(await page.evaluate(()=>__test.hurtbox(__test.player).h>=225*.4), 'Fighter hurtboxes grow with the larger on-screen proportions');
   check(await page.evaluate(() => __test.game.t === 0 && InjAudio.ctx === null), 'Initial profile freezes combat and does not autoplay');
@@ -360,7 +360,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   for(const [name,passed] of Object.entries(animationChecks))check(passed,`Fighter animation: ${name}`);
 
   const stageChecks=await page.evaluate(()=>{
-    const t=__test,out={};t.settle();
+    const t=__test,out={};t.settle();t.resetRound();t.game.state='fight';
     const phases=[2,4.2,6,8.4,10,11.8,13,15.2].map(time=>t.stageDuelAt(time,false).phase);
     out.choreography=phases.join(',')==='guard,dodge,counter,aerial,shadow,finisher,launch,victory';
     const win=t.stageDuelAt(15.2,false);
@@ -375,8 +375,8 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     for(let i=0;i<180;i++)t.drawStageDuel(i*100);
     out.isolated=before===JSON.stringify({player:t.player,dummy:t.dummy,game:t.game,projectiles:t.projectiles,afterimages:t.afterimages});
     out.finite=Array.from({length:180},(_,i)=>t.stageDuelAt(i/10,false)).every(s=>[s.inj,s.dummy].every(f=>Number.isFinite(f.x)&&Number.isFinite(f.y)&&f.backstage&&f.awakenedLook));
-    t.render(6000);const first=t.ctx.getImageData(138*t.W/400*t.RENDER_SCALE,(198+(98-198)*t.W/400)*t.RENDER_SCALE,126*t.W/400*t.RENDER_SCALE,68*t.W/400*t.RENDER_SCALE).data;
-    t.render(15200);const second=t.ctx.getImageData(138*t.W/400*t.RENDER_SCALE,(198+(98-198)*t.W/400)*t.RENDER_SCALE,126*t.W/400*t.RENDER_SCALE,68*t.W/400*t.RENDER_SCALE).data;
+    t.render(6000);const first=t.ctx.getImageData(138*t.W/400*t.RENDER_SCALE,(198+(66-198)*t.W/400)*t.RENDER_SCALE,126*t.W/400*t.RENDER_SCALE,46*t.W/400*t.RENDER_SCALE).data;
+    t.render(15200);const second=t.ctx.getImageData(138*t.W/400*t.RENDER_SCALE,(198+(66-198)*t.W/400)*t.RENDER_SCALE,126*t.W/400*t.RENDER_SCALE,46*t.W/400*t.RENDER_SCALE).data;
     out.renderedMotion=first.some((value,i)=>value!==second[i]);
     return out;
   });
@@ -428,6 +428,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
 
   await require('./abilities.cjs')(page,check,root);
   await require('./victory.cjs')(page,check,root);
+  await require('./stages.cjs')(page,check,root);
   const teddyBenchmark=await require('./teddy-teleport.cjs')(page,check,root);
 
   const difficulty=await page.evaluate(()=>{
@@ -537,11 +538,11 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   check(await page.locator('.roast-card').evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}), 'Cat dialogue fits a landscape phone without clipping');
   await page.screenshot({path:path.join(root,'artifacts/cat-roast-landscape.png'),animations:'disabled'});
   await page.locator('#btnNextRoast').click();
-  check(await page.locator('#roastModal').isHidden()&&await page.evaluate(()=>__test.game.round===2&&!__test.game.paused&&__test.game.state==='intro'), 'Fight Again starts the next round exactly once');
+  check(await page.locator('#roastModal').isHidden()&&await page.evaluate(()=>__test.game.round===1&&!__test.game.paused&&__test.game.state==='intro'), 'Fight Again retries the same round exactly once');
   await page.evaluate(()=>{__test.endRound(__test.dummy);__test.updateFlow(3.1);});
   check(await page.locator('#roastConversation').innerText()!==line, 'Repeated losses rotate through different roast exchanges');
   await page.locator('#btnSkipRoast').click();
-  check(await page.locator('#roastModal').isHidden()&&await page.evaluate(()=>__test.game.round===3), 'Skip immediately starts the next round');
+  check(await page.locator('#roastModal').isHidden()&&await page.evaluate(()=>__test.game.round===1), 'Skip immediately retries the same round');
   await page.evaluate(()=>{__test.settle();__test.endRound(__test.player);__test.updateFlow(3.1);});
   check(await page.locator('#roastModal').isHidden()&&await page.evaluate(()=>__test.game.state==='victory'), 'Winning a round opens the victory scene and bypasses the cat roast');
   await page.evaluate(()=>{__test.settle();__test.startRoast();});
@@ -619,7 +620,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await pc.keyboard.press('Escape');check(await pc.locator('#pauseOverlay').isVisible(),'Escape pauses on desktop');
   await pc.keyboard.press('Escape');check(await pc.locator('#pauseOverlay').isHidden(),'Escape resumes on desktop');
   await pc.screenshot({path:path.join(root,'artifacts/desktop.png')});
-  await pc.evaluate(()=>{__test.settle();__test.game.elapsed=6.25;});
+  await pc.evaluate(()=>{__test.settle();__test.resetRound();__test.game.state='fight';__test.game.msg=null;__test.game.elapsed=6.25;});
   await pc.waitForTimeout(100);
   await pc.screenshot({path:path.join(root,'artifacts/background-duel-fight.png')});
   await pc.evaluate(()=>{__test.game.elapsed=15.2;});
@@ -627,7 +628,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await pc.screenshot({path:path.join(root,'artifacts/background-duel-victory.png')});
   check(errors.length===0, `No browser runtime errors (${errors.join('; ')})`);
   check(resourceErrors.length===0, `All local split-script and stylesheet requests complete (${resourceErrors.join('; ')})`);
-  const report={checks,awakenedBenchmark:difficulty.benchmark,r8Benchmarks,teddyBenchmark,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review','Scripted benchmarks do not measure human win rates. Dummy/R8 use seven basic policies without Nitro, Blink or aerial Shadow; Teddy uses four policies including Nitro and Blink.']};
+  const report={checks,awakenedBenchmark:difficulty.benchmark,r8Benchmarks,teddyBenchmark,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review','Scripted benchmarks do not measure human win rates. Dummy/R8 use seven basic policies without Nitro, Blink or aerial Shadow; Teddy uses four full-encounter policies including Nitro and Blink, plus twenty isolated tiny-phase repeated-kick trials.']};
   fs.writeFileSync(path.join(root,'artifacts/validation.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify(report,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();await server.close();});

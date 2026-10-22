@@ -53,6 +53,7 @@
       observedMove: null,
       repeatedMove: null,
       repeatCount: 0,
+      lowMemoryT: 0,
       reactionT: 0,
       lastMissile: null,
       evadeTextT: 0

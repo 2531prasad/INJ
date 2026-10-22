@@ -53,7 +53,7 @@
     resetRound();
     App.Sfx.play('ui');
   }
-  function resetRound() {
+  function resetRound({ advance = true } = {}) {
     document.getElementById('roastModal').hidden = true;
     App.hideVictory();
     App.game.victory = null;
@@ -76,8 +76,9 @@
     App.afterimages.length = 0;
     App.bctx.clearRect(0, 0, App.world.width, App.H);
     App.game.roundTime = 99;
-    App.game.round++;
+    if (advance) App.game.round++;
     App.configureOpponent(App.game.round);
+    App.paintArena();
     App.game.state = 'intro';
     App.game.t = 0;
     App.game.msg = null;

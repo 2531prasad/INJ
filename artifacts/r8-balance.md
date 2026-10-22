@@ -1,4 +1,4 @@
-# Current balance · v0.22 · 22 October 2026
+# Current balance · v0.23 · 23 October 2026
 
 The robot target is now roughly **20% INJ wins / 80% player losses**. Every result comes from combat; no probability selects the winner. The other existing loss goals remain 60% for awakened Dummy and 65% for the car. Blue Velvet has no requested win-rate target.
 
@@ -11,11 +11,11 @@ The robot target is now roughly **20% INJ wins / 80% player losses**. Every resu
 
 ## Latest scripted results
 
-`node tests/structure.cjs` passes **28 classic scripts / seven stylesheets**. `node tests/browser.cjs` passes **345 Chromium checks**.
+`node tests/structure.cjs` passes **28 classic scripts / seven stylesheets**. `node tests/browser.cjs` passes **381 Chromium checks**.
 
 | Encounter | Intended player-loss goal | Opponent wins | INJ wins |
 | --- | ---: | ---: | ---: |
-| Awakened Dummy | 60% | 52/100 | 48/100 |
+| Awakened Dummy | 60% | 53/100 | 47/100 |
 | Goldline car | 65% | 39/100 | 61/100 |
 | Goldline robot | 80% | 79/100 | 21/100 |
 | Blue Velvet, full encounter | Unspecified | 11/40 | 29/40 |
@@ -34,16 +34,18 @@ The isolated R8 benchmarks use a fresh INJ life for each form and seven simple p
 
 ## Blue Velvet and Blink
 
-Blue Velvet has one 140 HP pool with no armor multiplier. Its neutral sprite is 123.2 world units tall, 10% taller than INJ. At ≤67% HP it samples one 0.45–1.5-second delay, then Doraemon arrives and fires the shrink ray. The protected 2.35-second scene preserves remaining HP, INJ resources, fight time and cooldown. It ends at 34% of normal height, without a new life. Tiny attacks use quick low punching chains, leaping punches, anti-air and spinning slams, with reaction-delayed defense and punishable pauses.
+Blue Velvet has one 140 HP pool with no armor multiplier. Its neutral sprite is 123.2 world units tall, 10% taller than INJ. At ≤67% HP it samples one 0.45–1.5-second delay, then Doraemon arrives and fires the shrink ray. The protected 2.35-second scene preserves remaining HP, INJ resources, fight time and cooldown. It ends at 34% of normal height, without a new life. Tiny attacks use quick low punching chains, early leaping punches, anti-air and spinning slams. The AI learns low patterns even while hurt/down, physically hops over sweeps, mixes slide guards/counters, escapes corners and can hop during punch recovery after recognizing crouched follow-ups. Pursuit is faster and pauses are shorter, retaining a 220 ms initial tiny opening. High/aerial attacks and Shadow can hit the hop. Health, damage and armor values are unchanged. The shrink scene clears interrupted defensive actions while preserving learned low pressure.
 
-The forty full Teddy fights produced 30 shrink events, 74 tiny attacks, 8 Blinks and 20 Nitro kicks. Their four policies include idle, low pressure, Shadow kiting plus Blink, and mixed attacks plus Nitro/Blink. Thirty encounters reached the shrink scene; no scripted winner selection was used.
+The forty full Teddy fights produced 30 shrink events, 205 tiny attacks, 20 Blinks and 20 Nitro kicks. Their four policies include idle, low pressure, Shadow kiting plus Blink, and mixed attacks plus Nitro/Blink. Thirty encounters reached the shrink scene; no scripted winner selection was used. A separate twenty-fight tiny-phase benchmark starts Teddy at 93 HP against full-health INJ: ten repeated crouched-Kick policies and ten repeated forward+crouched-Kick slide policies. Those policies win **0/20** trials, with 149 physical dodges and 17 guards. The full encounter still allows varied strategies to win; these fixed policies are regression checks, not human balance estimates.
 
 BLINK / E is available standing, crouching or airborne while free to act. The 460 ms disappearance/reappearance relocates at 190 ms and creates rear space at a wall without damage. Enemies keep their last seen facing during Blink. Its ten-second cooldown starts on activation, advances in active fight time, freezes in pause/hit-stop/cutscenes, survives transformations, and resets each round/restart. Phone controls keep a visible numbered cooldown in a fixed slot; Nitro still appears only when ready.
 
 ## Art and verification boundary
 
-New assets and exact built-in ImageGen prompts are recorded in [teddy-generation.md](../assets/teddy-generation.md). Existing source artwork is unchanged. New modules are `js/teddy.js`, `js/teddy-renderer.js` and `js/teleport.js`; the current [architecture guide](../docs/architecture.md) describes their APIs and dependencies.
+Teddy sprites and exact built-in ImageGen prompts are recorded in [teddy-generation.md](../assets/teddy-generation.md); the four new opponent-themed plates have [separate stage provenance](../assets/stage-generation.md). Existing source artwork remains unchanged. The current changes stay in the owning arena, Teddy and round/menu modules; the current [architecture guide](../docs/architecture.md) describes their APIs and dependencies.
 
-[Normal teddy](teddy-normal-844.png), [shrink ray](teddy-shrink-2.png), [tiny form](teddy-shrink-4.png), [teleport reappearance](teleport-phase-3.png), [interface review](teddy-teleport-review.md), [raw validation](validation.json).
+[Stage/defense review](stages-and-defense-review.md), [normal teddy](teddy-normal-844.png), [shrink ray](teddy-shrink-2.png), [tiny form](teddy-shrink-4.png), [teleport reappearance](teleport-phase-3.png), [interface review](teddy-teleport-review.md), [raw validation](validation.json).
 
-The suite checks untouched HTTP/file startup, real Chromium multitouch, all opponent forms at both walls, actual sprite-height/anchor pixels, eight move hit/recovery windows, three real barrage hits, cooldown/phase retention, player-paced victory, reduced-motion decoration, and ten-percent-speed staged animation replay. Chrome emulation does not establish physical iPhone/Safari behavior. Subjective speaker/headphone listening remains unverified. Earlier reports are historical.
+Losses now retry the current level; robot losses restart the car and tiny Teddy losses restart full-size Teddy. Only victory confirmation advances.
+
+The suite checks untouched HTTP/file startup, same-level KO/timeout retries, four distinct stage images and fallback/late-load handling, learned low-pressure physics, real Chromium multitouch, all opponent forms at both walls, actual sprite-height/anchor pixels, eight move hit/recovery windows, three real barrage hits, cooldown/phase retention, player-paced victory, reduced-motion decoration, and ten-percent-speed staged animation replay. Chrome emulation does not establish physical iPhone/Safari behavior. Subjective speaker/headphone listening remains unverified. Earlier reports are historical.

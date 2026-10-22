@@ -9,9 +9,69 @@
   bg.height = App.H * App.RENDER_SCALE;
   const bgx = bg.getContext('2d');
   bgx.scale(App.RENDER_SCALE, App.RENDER_SCALE);
-  // Bake the supplied arena plate once. Gameplay and ambient motion stay on Canvas.
+  // Each encounter owns a plate. Selection derives from the round, never combat RNG.
+  const arenaStages = [
+    {
+      id: 'training',
+      name: 'CEDAR COURTYARD',
+      sky: '#685044',
+      floor: '#514335',
+      accent: '#f2cd85',
+      glows: [
+        [60, 76, 14],
+        [282, 109, 11],
+        [332, 76, 14]
+      ]
+    },
+    {
+      id: 'awakened',
+      name: 'STORM SANCTUM',
+      sky: '#282344',
+      floor: '#272538',
+      accent: '#bf9fda',
+      glows: [
+        [31, 88, 13],
+        [195, 96, 9],
+        [365, 86, 13]
+      ],
+      duel: true
+    },
+    {
+      id: 'goldline',
+      name: 'GOLDLINE FOUNDRY',
+      sky: '#12303d',
+      floor: '#162b32',
+      accent: '#78e0df',
+      glows: [
+        [30, 85, 12],
+        [200, 42, 18],
+        [370, 85, 12]
+      ]
+    },
+    {
+      id: 'velvet',
+      name: 'TOYBOX OPERA',
+      sky: '#29203c',
+      floor: '#67412e',
+      accent: '#f5c888',
+      glows: [
+        [131, 35, 10],
+        [166, 30, 10],
+        [202, 28, 10],
+        [237, 30, 10],
+        [271, 35, 10]
+      ]
+    }
+  ];
+  function arenaStage(round = App.game.round) {
+    return arenaStages[App.clamp(Math.floor(round) - 1, 0, arenaStages.length - 1)];
+  }
+  // Bake only on load, encounter change or resize. The source plates stay intact.
   function paintArena() {
-    const g = bgx;
+    const g = bgx,
+      stage = arenaStage(),
+      arenaImg = stage.image;
+    g.clearRect(0, 0, App.world.width, App.H);
     if (arenaImg.complete && arenaImg.naturalWidth) {
       const scale = App.world.width / 400;
       g.drawImage(arenaImg, 0, App.GROUND * (1 - scale), App.world.width, App.H * scale);
@@ -26,9 +86,9 @@
     }
     // Immediate local fallback also covers a missing or unavailable art asset.
     const sky = g.createLinearGradient(0, 0, 0, App.H);
-    sky.addColorStop(0, '#17233d');
-    sky.addColorStop(0.65, '#263745');
-    sky.addColorStop(1, '#17161f');
+    sky.addColorStop(0, stage.sky);
+    sky.addColorStop(0.65, stage.sky);
+    sky.addColorStop(1, stage.floor);
     g.fillStyle = sky;
     g.fillRect(0, 0, App.world.width, App.H);
     g.fillStyle = '#111622';
@@ -39,7 +99,7 @@
     g.beginPath();
     g.ellipse(200, 84, 13, 24, 0, 0, Math.PI * 2);
     g.fill();
-    g.fillStyle = '#343440';
+    g.fillStyle = stage.floor;
     g.fillRect(0, 155, App.world.width, App.H - 155);
     g.strokeStyle = '#79717a55';
     g.lineWidth = 1;
@@ -56,10 +116,13 @@
       g.stroke();
     }
   }
-  const arenaImg = new Image();
-  arenaImg.onload = paintArena;
-  arenaImg.onerror = paintArena;
-  arenaImg.src = 'assets/hollow-courtyard.png';
+  for (const stage of arenaStages) {
+    stage.image = new Image();
+    stage.image.onload = paintArena;
+    stage.image.onerror = paintArena;
+    stage.image.src = 'assets/stage-' + stage.id + '-v1.png';
+  }
+  const arenaImg = arenaStages[0].image; // Initial-plate compatibility API.
   paintArena();
 
   const injAvatarImg = new Image();
@@ -211,14 +274,15 @@
     return scene;
   }
   function drawStageDuel(now) {
+    if (!arenaStage().duel) return;
     const scene = stageDuelAt(now * 0.001);
     App.ctx.save();
     App.ctx.beginPath();
-    App.ctx.rect(138, 70, 126, 96);
+    App.ctx.rect(163, 66, 76, 46);
     App.ctx.clip();
     App.ctx.globalAlpha *= scene.alpha * 0.85;
-    App.ctx.translate(200, 151);
-    App.ctx.scale(0.4, 0.4);
+    App.ctx.translate(200, 109);
+    App.ctx.scale(0.3, 0.3);
     App.ctx.translate(-200, -App.GROUND);
     if (scene.phase === 'dodge' || scene.phase === 'finisher') {
       App.ctx.save();
@@ -255,59 +319,32 @@
     App.ctx.restore();
   }
   function drawArenaAtmosphere(now) {
-    const time = now * 0.001;
-    App.ctx.save();
-    // Match the painted lanterns, rather than floating fire in front of the scenery.
-    for (const [x, y, r] of [
-      [43, 41, 16],
-      [66, 71, 13],
-      [178, 72, 10],
-      [219, 71, 9],
-      [328, 78, 14],
-      [352, 48, 16],
-      [44, 131, 15],
-      [354, 131, 16]
-    ]) {
-      const glow = App.ctx.createRadialGradient(x, y, 1, x, y, r);
-      const alpha = App.reducedMotion ? 0.075 : 0.075 + Math.sin(time * 3 + x) * 0.025;
-      glow.addColorStop(0, 'rgba(255,181,73,' + alpha + ')');
-      glow.addColorStop(1, '#ffae4500');
-      App.ctx.fillStyle = glow;
-      App.ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    const time = now * 0.001,
+      stage = arenaStage(),
+      { ctx } = App;
+    ctx.save();
+    for (const [x, y, r] of stage.glows) {
+      const glow = ctx.createRadialGradient(x, y, 1, x, y, r);
+      ctx.globalAlpha = App.reducedMotion ? 0.07 : 0.07 + Math.sin(time * 2 + x) * 0.02;
+      glow.addColorStop(0, stage.accent);
+      glow.addColorStop(1, stage.accent + '00');
+      ctx.fillStyle = glow;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
     if (!App.reducedMotion) {
-      // Water glints below the far arch, slow ground mist, and drifting red petals.
-      App.ctx.fillStyle = '#bdd9ed';
-      for (let i = 0; i < 18; i++) {
-        const x = 147 + ((i * 19.7) % 101),
-          y = 130 + (i % 4) * 1.8;
-        App.ctx.globalAlpha = 0.06 + 0.06 * Math.sin(time * 1.7 + i);
-        App.ctx.fillRect(x + Math.sin(time * 0.4 + i) * 3, y, 2 + (i % 3), 0.5);
-      }
-      for (let i = 0; i < 5; i++) {
-        const x = ((time * 3 + i * 94) % 520) - 60,
-          y = 154 + (i % 2) * 2;
-        const mist = App.ctx.createRadialGradient(x, y, 0, x, y, 60);
-        mist.addColorStop(0, '#aec7dc0c');
-        mist.addColorStop(1, '#aec7dc00');
-        App.ctx.globalAlpha = 1;
-        App.ctx.fillStyle = mist;
-        App.ctx.fillRect(x - 60, y - 18, 120, 36);
-      }
-      for (let i = 0; i < 18; i++) {
-        const phase = (time * 0.025 + i * 0.137) % 1;
-        const x = (i * 53 + phase * 68 + Math.sin(phase * 7 + i) * 11) % 400,
-          y = 25 + phase * 175;
-        App.ctx.globalAlpha = Math.sin(phase * Math.PI) * 0.6;
-        App.ctx.fillStyle = i % 3 ? '#bf596e' : '#e6a1a4';
-        App.ctx.save();
-        App.ctx.translate(x, y);
-        App.ctx.rotate(phase * 5 + i);
-        App.ctx.fillRect(-1, -0.5, 2, 1);
-        App.ctx.restore();
+      // Quiet, deterministic motes: leaves, rain, ion sparks or theatre dust.
+      for (let i = 0; i < 20; i++) {
+        const rain = stage.id === 'awakened';
+        const phase = (time * (rain ? 0.27 : 0.022) + i * 0.137) % 1;
+        const x = (i * 53 + phase * (rain ? -25 : 44) + 400) % 400;
+        const y = 26 + phase * 150;
+        ctx.globalAlpha = Math.sin(phase * Math.PI) * (rain ? 0.18 : 0.25);
+        ctx.fillStyle = stage.accent;
+        if (rain) ctx.fillRect(x, y, 0.35, 5);
+        else ctx.fillRect(x + Math.sin(phase * 6 + i) * 6, y, 0.7, 0.7);
       }
     }
-    App.ctx.restore();
+    ctx.restore();
   }
 
   Object.assign(App, {
@@ -315,6 +352,8 @@
     bgx,
     paintArena,
     arenaImg,
+    arenaStages,
+    arenaStage,
     injAvatarImg,
     bloodCv,
     bctx,

@@ -1,11 +1,11 @@
 {
-  "checks": 345,
+  "checks": 381,
   "awakenedBenchmark": {
     "trials": 100,
     "roundSeconds": 99,
     "policies": 7,
-    "dummyWins": 52,
-    "playerWins": 48,
+    "dummyWins": 53,
+    "playerWins": 47,
     "policyResults": [
       {
         "policy": "idle",
@@ -16,14 +16,14 @@
       {
         "policy": "punch spam",
         "trials": 15,
-        "dummyWins": 7,
-        "playerWins": 8
+        "dummyWins": 6,
+        "playerWins": 9
       },
       {
         "policy": "mixed attacks",
         "trials": 14,
-        "dummyWins": 12,
-        "playerWins": 2
+        "dummyWins": 9,
+        "playerWins": 5
       },
       {
         "policy": "Shadow kiting",
@@ -40,19 +40,19 @@
       {
         "policy": "guard/counter",
         "trials": 14,
-        "dummyWins": 12,
-        "playerWins": 2
+        "dummyWins": 14,
+        "playerWins": 0
       },
       {
         "policy": "crouch/sweep",
         "trials": 14,
-        "dummyWins": 6,
-        "playerWins": 8
+        "dummyWins": 9,
+        "playerWins": 5
       }
     ],
-    "attacks": 1514,
-    "dodges": 5905,
-    "restFraction": 0.5486920137543351
+    "attacks": 1447,
+    "dodges": 5861,
+    "restFraction": 0.5500703994923304
   },
   "r8Benchmarks": {
     "car": {
@@ -163,8 +163,8 @@
     "playerWins": 29,
     "teddyWins": 11,
     "shrinkEvents": 30,
-    "tinyAttacks": 74,
-    "teleports": 8,
+    "tinyAttacks": 205,
+    "teleports": 20,
     "nitroKicks": 20,
     "policies": [
       {
@@ -191,18 +191,37 @@
         "playerWins": 10,
         "teddyWins": 0
       }
-    ]
+    ],
+    "lowKickPressure": {
+      "trials": 20,
+      "playerWins": 0,
+      "teddyWins": 20,
+      "dodges": 149,
+      "blocks": 17,
+      "policies": [
+        {
+          "name": "crouched Kick",
+          "playerWins": 0,
+          "trials": 10
+        },
+        {
+          "name": "forward + crouched Kick",
+          "playerWins": 0,
+          "trials": 10
+        }
+      ]
+    }
   },
   "engine": "Chrome / Chromium",
   "viewports": 9,
   "audio": {
     "peak": 0.5534541010856628,
-    "rms": 0.03012639851672639,
+    "rms": 0.030126398310341005,
     "clippedSamples": 0
   },
   "limitations": [
     "No physical phone or mobile Safari test",
     "No subjective speaker or headphone listening review",
-    "Scripted benchmarks do not measure human win rates. Dummy/R8 use seven basic policies without Nitro, Blink or aerial Shadow; Teddy uses four policies including Nitro and Blink."
+    "Scripted benchmarks do not measure human win rates. Dummy/R8 use seven basic policies without Nitro, Blink or aerial Shadow; Teddy uses four full-encounter policies including Nitro and Blink, plus twenty isolated tiny-phase repeated-kick trials."
   ]
 }

@@ -76,7 +76,7 @@
 
   function finishRoast() {
     if (App.game.state !== 'roast') return;
-    App.resetRound();
+    App.resetRound({ advance: false });
     App.game.paused = false;
     App.clock.last = performance.now();
     App.Sfx.start();

@@ -142,7 +142,7 @@
       d = a.def;
     const before = a.t;
     a.t += dt;
-    if (a.t >= d.startup && !a.launched) {
+    if (a.t >= (d.jump ? Math.min(0.05, d.startup) : d.startup) && !a.launched) {
       a.launched = true;
       if (d.jump && f.grounded) {
         f.vy = d.jump;
@@ -167,96 +167,216 @@
       }
       if (!a.hasHit) App.tryHit(f, op);
     }
+    // A learned crouch loop is answered by a visible recovery hop after the
+    // punching burst, not extra armor or canceling a committed attack. High/air
+    // attacks and Shadow can still catch this retreat.
+    if (
+      f.tiny &&
+      d.pulses &&
+      a.hasHit &&
+      a.t >= d.startup + d.active &&
+      f.repeatCount >= 2 &&
+      op.crouching &&
+      f.grounded &&
+      !f.dodgeCooldown &&
+      !a.recoveryHop
+    ) {
+      a.recoveryHop = true;
+      f.grounded = false;
+      f.vy = f.repeatedMove === 'slide' ? -350 : -295;
+      f.vx = -f.facing * 130;
+      f.dodgeCooldown = 1.05;
+      App.Sfx.play('jump');
+    }
     if (f.atk === a && a.t >= d.startup + d.active + d.recovery) {
       f.atk = null;
       f.state = f.grounded ? 'idle' : 'jump';
     }
   }
   function restTeddy(f) {
-    f.restT = (f.tiny ? 0.48 : 0.65) + App.rnd() * 0.35;
-    f.openingT = f.tiny ? 0.3 : 0.42;
+    f.restT = (f.tiny ? 0.34 : 0.5) + App.rnd() * 0.28;
+    f.openingT = f.tiny ? 0.22 : 0.32;
     f.burstLeft = 0;
   }
+  function evadeTeddy(f, op, leap) {
+    const dir = Math.sign(op.x - f.x) || f.facing,
+      margin = App.fighterMargin(f);
+    f.dodgeFrom = f.x;
+    const low = f.repeatCount >= 2 && op.grounded && op.crouching;
+    const approach = low && f.tiny && Math.abs(op.x - f.x) > 48;
+    f.dodgeTo = App.clamp(
+      approach ? op.x - dir * 32 : f.x - dir * (f.tiny ? 48 : 42),
+      margin,
+      App.world.width - margin
+    );
+    // At the ropes, visibly hop across the attacker instead of retreating into a wall.
+    if (Math.abs(f.dodgeTo - f.x) < 22)
+      f.dodgeTo = App.clamp(op.x + dir * 54, margin, App.world.width - margin);
+    f.dodgeT = 0.24;
+    f.dodgeCooldown = (f.tiny ? 0.7 : 1) + App.rnd() * 0.25;
+    f.state = 'dodge';
+    f.facing = dir;
+    f.vx = 0;
+    f.blockT = f.restT = f.openingT = 0;
+    f.burstLeft = 0;
+    f.counterMove = f.tiny ? 'tinyFury' : 'royalSweep';
+    if (leap && f.grounded) {
+      f.grounded = false;
+      f.vy = f.tiny ? -345 : -310;
+      App.Sfx.play('jump');
+    }
+    // This is physical evasion, not an invulnerability window.
+  }
+  function guardTeddy(f, op) {
+    f.facing = Math.sign(op.x - f.x) || f.facing;
+    f.state = 'block';
+    f.blockT = 0.16 + App.rnd() * 0.08;
+    f.counterMove = f.tiny ? 'tinyFury' : 'royalSweep';
+    f.dodgeCooldown = 0.7;
+    f.restT = f.openingT = 0;
+  }
   function controlTeddy(f, op, dt) {
-    for (const key of ['aiT', 'openingT', 'dodgeCooldown', 'reactionT'])
+    for (const key of ['aiT', 'openingT', 'dodgeCooldown', 'reactionT', 'lowMemoryT'])
       f[key] = Math.max(0, f[key] - dt);
     if (App.game.state !== 'fight' || f.state === 'ko') {
       App.physics(f, dt);
       return;
     }
+    const gap = Math.abs(op.x - f.x),
+      dir = Math.sign(op.x - f.x) || f.facing;
+    if (!f.lowMemoryT) f.repeatCount = 0;
+    // Observe distinct attacks even while down. A landed sweep must teach the AI,
+    // rather than erasing its memory before it gets a turn to respond.
+    if (op.atk && op.atk !== f.observedMove && gap < 170) {
+      f.observedMove = op.atk;
+      const low = op.atk.def.type === 'low' || op.atk.low;
+      if (low) {
+        f.repeatCount = Math.min(5, f.repeatCount + 1);
+        f.lowMemoryT = 4;
+        f.repeatedMove = op.atk.key;
+      } else f.repeatCount = Math.max(0, f.repeatCount - 1);
+      f.reactionT = f.tiny ? 0.12 : 0.2;
+    }
+    const learnedLow =
+      f.repeatCount >= 2 &&
+      op.grounded &&
+      (op.crouching || op.atk?.def.type === 'low' || op.atk?.low);
     if (f.state === 'knockdown') {
+      f.counterMove = null;
+      f.burstLeft = 0;
       f.knockT += dt;
       if (f.grounded && f.knockT >= (f.tiny ? 0.65 : 0.9)) {
         f.state = 'idle';
         f.invuln = 0.25;
-        restTeddy(f);
+        if (learnedLow && !f.dodgeCooldown) {
+          if (f.repeatedMove !== 'sweep' && App.rnd() < 0.45) guardTeddy(f, op);
+          else evadeTeddy(f, op, true);
+        } else {
+          f.restT = 0.14;
+          f.openingT = 0.14;
+        }
       }
       App.physics(f, dt);
       return;
     }
     if (f.hitstun > 0) {
       f.hitstun = Math.max(0, f.hitstun - dt);
+      f.counterMove = null;
       f.state = 'hurt';
+      if (!f.hitstun && learnedLow && !f.dodgeCooldown && f.grounded) {
+        if (f.repeatedMove === 'cpunch') guardTeddy(f, op);
+        else evadeTeddy(f, op, true);
+      }
       App.physics(f, dt);
       return;
     }
-    const gap = Math.abs(op.x - f.x),
-      dir = Math.sign(op.x - f.x) || f.facing;
     const missile = App.projectiles.find(
-      (p) => p.owner === op && (f.x - p.x) * p.vx > 0 && Math.abs(f.x - p.x) < 110
+      (p) => p.owner === op && (f.x - p.x) * p.vx > 0 && Math.abs(f.x - p.x) < 125
     );
-    const threat = missile || (op.atk && !op.atk.hasHit && gap < 115 ? op.atk : null);
-    if (threat && threat !== f.observedMove) {
-      f.observedMove = threat;
-      f.reactionT = f.tiny ? 0.16 : 0.23;
+    const threat = missile || (op.atk && !op.atk.hasHit && gap < 120 ? op.atk : null);
+    if (missile && missile !== f.lastMissile) {
+      f.lastMissile = missile;
+      f.reactionT = f.tiny ? 0.12 : 0.2;
     }
     if (f.atk) {
       stepTeddyAttack(f, dt, op);
       if (!f.atk) {
         if (f.burstLeft > 0) {
           f.burstLeft--;
-          f.aiT = 0.16;
+          f.aiT = 0.1;
         } else restTeddy(f);
+      }
+    } else if (f.dodgeT > 0) {
+      f.dodgeT = Math.max(0, f.dodgeT - dt);
+      f.x = App.lerp(f.dodgeFrom, f.dodgeTo, App.smooth(1 - f.dodgeT / 0.24));
+      f.state = 'dodge';
+      if (!f.dodgeT) {
+        f.state = f.grounded ? 'idle' : 'jump';
+        f.openingT = 0.08;
       }
     } else if (f.blockT > 0) {
       f.state = 'block';
       f.blockT = Math.max(0, f.blockT - dt);
-      if (!f.blockT) restTeddy(f);
+      if (!f.blockT && !f.counterMove) restTeddy(f);
+    } else if (f.counterMove && !f.openingT) {
+      const key = !op.grounded
+        ? f.tiny
+          ? 'tinyUpper'
+          : 'curtainCall'
+        : f.tiny && gap > 70
+          ? 'tinyRocket'
+          : f.counterMove;
+      f.counterMove = null;
+      f.facing = dir;
+      if (f.tiny && f.repeatedMove === 'cpunch' && learnedLow && f.grounded) {
+        f.grounded = false;
+        f.vy = -345;
+        App.Sfx.play('jump');
+      }
+      App.startAttack(f, key);
     } else if (
-      threat &&
-      threat !== f.lastThreat &&
       !f.openingT &&
       !f.dodgeCooldown &&
       !f.reactionT &&
-      f.grounded
+      f.grounded &&
+      ((learnedLow && gap < 145) || (threat && threat !== f.lastThreat))
     ) {
       f.lastThreat = threat;
-      f.dodgeCooldown = 1.2;
-      if (App.rnd() < 0.65) {
+      if (learnedLow) {
+        if (f.repeatedMove !== 'sweep' && App.rnd() < 0.3) guardTeddy(f, op);
+        else evadeTeddy(f, op, true);
+      } else if (missile && f.tiny && App.rnd() < 0.6) evadeTeddy(f, op, true);
+      else {
+        f.dodgeCooldown = f.tiny ? 0.8 : 1.1;
         f.facing = dir;
         f.blockT = 0.24;
         f.state = 'block';
-      } else restTeddy(f);
-    } else if (f.restT > 0) {
+        f.counterMove = f.tiny ? 'tinyRocket' : 'velvetCross';
+      }
+    } else if (f.restT > 0 || f.openingT > 0) {
       f.restT = Math.max(0, f.restT - dt);
       f.state = f.grounded ? 'idle' : 'jump';
     } else if (!f.aiT) {
       f.facing = dir;
-      if (gap > (f.tiny ? 65 : 88)) {
-        if (gap > 145 && f.rushStep % 3 === 0) {
+      if (gap > (f.tiny ? 52 : 82)) {
+        if (gap > (f.tiny ? 100 : 145) && (f.tiny || f.rushStep % 3 === 0)) {
           f.rushStep++;
           App.startAttack(f, f.tiny ? 'tinyRocket' : 'dramaBomb');
-        } else App.moveWalking(f, dir * Math.min((f.tiny ? 230 : 110) * dt, gap - 48));
+        } else App.moveWalking(f, dir * Math.min((f.tiny ? 260 : 125) * dt, gap - 36));
       } else {
         const normal = ['velvetCross', 'curtainCall', 'royalSweep', 'dramaBomb'];
-        const tiny = ['tinyFury', 'tinyRocket', 'tinyFury', 'micDrop'];
+        const tiny = ['tinyFury', 'tinyUpper', 'tinyFury', 'micDrop'];
         const key = !op.grounded
           ? f.tiny
             ? 'tinyUpper'
             : 'curtainCall'
-          : op.state === 'block' && !f.tiny
-            ? 'royalSweep'
-            : (f.tiny ? tiny : normal)[f.rushStep++ % 4];
+          : learnedLow
+            ? f.tiny
+              ? 'tinyRocket'
+              : 'dramaBomb'
+            : op.state === 'block' && !f.tiny
+              ? 'royalSweep'
+              : (f.tiny ? tiny : normal)[f.rushStep++ % 4];
         if (f.tiny && !f.burstLeft && key === 'tinyFury') f.burstLeft = 1;
         App.startAttack(f, key);
       }
@@ -282,6 +402,10 @@
         y: App.GROUND,
         hitstun: 0,
         flash: 0,
+        dodgeT: 0,
+        blockT: 0,
+        counterMove: null,
+        burstLeft: 0,
         crouching: false,
         state: 'idle'
       });

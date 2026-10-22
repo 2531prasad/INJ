@@ -52,6 +52,23 @@ module.exports = async function verifyVictory(page, check, root) {
       setup(); a.endRound(a.dummy); a.updateFlow(3.1);
       out.lossKeepsMiMi = a.game.state === 'roast' && panel.hidden &&
         !document.querySelector('#roastModal').hidden;
+      for (const round of [1, 2, 3, 4]) {
+        setup(round);
+        if (round === 3) a.completeR8Transform();
+        if (round === 4) { a.dummy.tiny = true; a.dummy.teddyScale = 0.34; }
+        a.player.hp = 0;
+        a.player.teleportCooldown = 7;
+        a.endRound(a.dummy); a.updateFlow(3.1);
+        a.finishRoast(); a.finishRoast();
+        out['lossRetriesSameLevel' + round] = a.game.round === round &&
+          a.game.state === 'intro' && !a.game.paused && a.player.hp === a.player.maxHp &&
+          a.dummy.hp === a.dummy.maxHp && !a.player.teleportCooldown &&
+          (round !== 3 || (a.dummy.form === 'car' && a.dummy.robotMaxHp === 140)) &&
+          (round !== 4 || (!a.dummy.tiny && !a.dummy.shrinkUsed));
+        setup(round); a.player.hp = 1; a.game.roundTime = 0.01;
+        a.updateFlow(0.02); a.updateFlow(3.1); a.finishRoast();
+        out['timeoutRetriesSameLevel' + round] = a.game.round === round && a.game.state === 'intro';
+      }
       setup();
     } finally { a.Sfx.play = play; }
     return out;

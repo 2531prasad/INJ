@@ -53,3 +53,7 @@ The blue plush opponent uses sixteen authored poses in `teddy-sprites-v1.png`; D
 ### Teddy walking correction
 
 `teddy-walk-left-v1.png` replaces only the incorrect left-leg step at runtime. The far left leg reaches forward behind the planted near/right thigh; the original right-leg-forward pose remains atlas frame 3. The original sixteen-pose PNG is unchanged. `tools/inspect-teddy.py` writes `walkLeft` bounds, a matched display height and a torso-aligned root to `teddy-frames.js`. Both sizes and facings share this correction. [Edit prompts/provenance](teddy-generation.md#walking-correction), [registered-pose preview](../artifacts/teddy-walk-review.png).
+
+## Encounter stages (v0.23)
+
+Four new 1672×941 ImageGen background plates now replace the shared temple in live play: `stage-training-v1.png` (Cedar Courtyard), `stage-awakened-v1.png` (Storm Sanctum), `stage-goldline-v1.png` (Goldline Foundry, car and robot), and `stage-velvet-v1.png` (Toybox Opera, both Teddy sizes). Each PNG is copied unchanged. The original `hollow-courtyard.png` is retained as historical source art. `js/arena.js` owns selection, loading, fallbacks, baking, themed atmosphere and sanctum-only terrace duel; `js/rounds.js` repaints on encounter reset. [Exact prompts, hashes and review captures](stage-generation.md).

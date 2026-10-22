@@ -132,9 +132,20 @@ module.exports = async function verifyTeddyTeleport(page, check, root) {
       a.game.hits = 3;
       a.projectiles.push({ x: 200 });
       a.input.right = 1;
+      a.dummy.dodgeT = 0.1;
+      a.dummy.blockT = 0.1;
+      a.dummy.counterMove = 'royalSweep';
+      a.dummy.repeatCount = 3;
+      a.dummy.lowMemoryT = 3;
       a.stepTeddyShrink(0.02);
       out.cameoProtectedEntry =
         a.game.state === 'shrink' && !a.projectiles.length && !a.input.right && !a.game.hits;
+      out.shrinkClearsInterruptedDefense =
+        !a.dummy.dodgeT &&
+        !a.dummy.blockT &&
+        !a.dummy.counterMove &&
+        a.dummy.repeatCount === 3 &&
+        a.dummy.lowMemoryT === 3;
       const hp = a.dummy.hp;
       a.applyHit(a.dummy, a.player, { ...a.MOVES.jab, dmg: 999 }, 240, 180);
       a.applyHit(a.player, a.dummy, { ...a.MOVES.jab, dmg: 999 }, 140, 180);
@@ -220,6 +231,103 @@ module.exports = async function verifyTeddyTeleport(page, check, root) {
       a.dummy.atk = null;
       a.controlTeddy(a.dummy, a.player, 0.24);
       out.reactiveGuardHasDelay = noInstant && a.dummy.blockT > 0;
+      a.rnd = () => 0.8;
+      setup();
+      Object.assign(a.dummy, { tiny: true, teddyScale: 0.34, x: 195, aiT: 9 });
+      a.player.crouching = true;
+      a.startAttack(a.player, 'sweep');
+      a.controlTeddy(a.dummy, a.player, 0.01);
+      out.firstLowIsNotPerfectlyRead =
+        a.dummy.repeatCount === 1 && !a.dummy.dodgeT && !a.dummy.blockT && a.dummy.grounded;
+      a.dummy.state = 'knockdown';
+      a.dummy.knockT = 0;
+      a.player.atk = null;
+      a.startAttack(a.player, 'slide');
+      a.controlTeddy(a.dummy, a.player, 0.01);
+      out.learnsDistinctLowsWhileDown = a.dummy.repeatCount === 2 && a.dummy.lowMemoryT === 4;
+      a.dummy.knockT = 0.65;
+      a.controlTeddy(a.dummy, a.player, 0.01);
+      out.adaptiveWakeupHop =
+        a.dummy.dodgeT > 0 &&
+        !a.dummy.grounded &&
+        a.dummy.vy < 0 &&
+        a.dummy.dodgeTo !== a.dummy.dodgeFrom;
+      for (let i = 0; i < 30; i++) a.controlTeddy(a.dummy, a.player, 1 / 120);
+      out.dodgeActuallyMovesAndExposesRecovery =
+        a.dummy.x !== a.dummy.dodgeFrom &&
+        a.dummy.y < a.GROUND - 20 &&
+        a.dummy.dodgeT === 0 &&
+        a.dummy.openingT > 0;
+      a.dummy.repeatCount = 0;
+      a.dummy.lowMemoryT = 0;
+      setup();
+      Object.assign(a.dummy, {
+        tiny: true,
+        teddyScale: 0.34,
+        x: a.world.width - 16,
+        repeatCount: 3,
+        lowMemoryT: 4,
+        aiT: 9
+      });
+      a.player.x = a.dummy.x - 35;
+      a.player.crouching = true;
+      a.controlTeddy(a.dummy, a.player, 0.01);
+      out.cornerEscapeIsPhysical = a.dummy.dodgeTo < a.player.x && a.dummy.invuln === 0;
+      setup();
+      Object.assign(a.dummy, {
+        tiny: true,
+        teddyScale: 0.34,
+        x: 180,
+        repeatCount: 3,
+        repeatedMove: 'sweep',
+        lowMemoryT: 4,
+        aiT: 9
+      });
+      a.player.crouching = true;
+      a.startAttack(a.dummy, 'tinyFury');
+      a.dummy.atk.t = 0.47;
+      a.dummy.atk.hasHit = true;
+      a.stepAttack(a.dummy, 0.02, a.player);
+      out.learnedLowRecoveryHop =
+        a.dummy.atk.recoveryHop &&
+        !a.dummy.grounded &&
+        a.dummy.vy < 0 &&
+        a.dummy.invuln === 0 &&
+        a.sampleTeddyAnimation(a.dummy).frame === 8;
+      setup();
+      a.dummy.repeatCount = 3;
+      a.dummy.lowMemoryT = 0.01;
+      a.dummy.aiT = 9;
+      a.controlTeddy(a.dummy, a.player, 0.02);
+      out.lowMemoryExpires = a.dummy.repeatCount === 0 && a.dummy.lowMemoryT === 0;
+      setup();
+      a.dummy.repeatCount = 3;
+      a.dummy.lowMemoryT = 3;
+      a.dummy.aiT = 9;
+      a.dummy.x = 190;
+      a.startAttack(a.player, 'jab');
+      a.controlTeddy(a.dummy, a.player, 0.01);
+      out.variedHighAttacksDisruptLowRead = a.dummy.repeatCount === 2;
+      setup();
+      Object.assign(a.dummy, {
+        tiny: true,
+        teddyScale: 0.34,
+        x: 190,
+        y: 145,
+        grounded: false,
+        state: 'jump',
+        invuln: 0
+      });
+      a.player.x = 140;
+      a.startAttack(a.player, 'roundhouse');
+      a.stepAttack(a.player, 0.09, a.dummy);
+      out.highKickCanPunishTheHop = a.dummy.hp === 129 && a.dummy.state === 'knockdown';
+      setup();
+      Object.assign(a.dummy, { tiny: true, teddyScale: 0.34, x: 180, aiT: 9 });
+      a.player.x = 140;
+      const tinyHP = a.dummy.hp;
+      a.applyHit(a.dummy, a.player, a.MOVES.sweep, 180, 190);
+      out.smarterWithoutMoreHPOrArmor = tinyHP === 140 && a.dummy.hp === 131;
       a.rnd = random;
       for (const stance of ['standing', 'crouching', 'airborne']) {
         setup();
@@ -525,6 +633,82 @@ module.exports = async function verifyTeddyTeleport(page, check, root) {
       benchmark.teleports > 0 &&
       benchmark.nitroKicks > 0,
     'Full Teddy fights exercise shrink, tiny attacks, Blink and Nitro through the real engine'
+  );
+  benchmark.lowKickPressure = await page.evaluate(() => {
+    const a = INJ,
+      random = a.rnd,
+      sound = a.Sfx.play;
+    const result = {
+      trials: 20,
+      playerWins: 0,
+      teddyWins: 0,
+      dodges: 0,
+      blocks: 0,
+      policies: [
+        { name: 'crouched Kick', playerWins: 0, trials: 10 },
+        { name: 'forward + crouched Kick', playerWins: 0, trials: 10 }
+      ]
+    };
+    a.Sfx.play = () => {};
+    try {
+      for (let trial = 0; trial < result.trials; trial++) {
+        a.rnd = a.mulberry32(7200 + trial);
+        a.game.round = 3;
+        a.resetRound();
+        a.game.state = 'fight';
+        a.game.paused = false;
+        a.game.msg = null;
+        // Isolate the tiny phase with at most the HP it retains after the ray.
+        Object.assign(a.dummy, {
+          tiny: true,
+          teddyScale: 0.34,
+          shrinkUsed: true,
+          shrinkDelay: -1,
+          hp: 93,
+          aiT: 0
+        });
+        a.player.x = 180;
+        a.dummy.x = 235;
+        const policy = trial % 2;
+        let lastState = '';
+        for (let frame = 0; frame < 12000 && a.game.state === 'fight'; frame++) {
+          const p = a.player,
+            op = a.dummy,
+            gap = Math.abs(p.x - op.x),
+            dir = Math.sign(op.x - p.x);
+          a.input.left = +(policy && dir < 0 && gap > 34);
+          a.input.right = +(policy && dir > 0 && gap > 34);
+          a.input.up = a.input.block = 0;
+          a.input.down = 1;
+          if (!p.atk && p.hitstun <= 0) a.pressBuf.kick = performance.now() + 220;
+          a.update(1 / 60);
+          if (op.state !== lastState) {
+            if (op.state === 'dodge') result.dodges++;
+            if (op.state === 'block') result.blocks++;
+          }
+          lastState = op.state;
+        }
+        if (a.game.state === 'fight') throw Error('Low-kick trial did not finish');
+        if (a.game.lost) result.teddyWins++;
+        else {
+          result.playerWins++;
+          result.policies[policy].playerWins++;
+        }
+      }
+    } finally {
+      a.rnd = random;
+      a.Sfx.play = sound;
+      a.game.round = 0;
+      a.resetRound();
+      a.game.paused = true;
+    }
+    return result;
+  });
+  check(
+    benchmark.lowKickPressure.playerWins <= 8 &&
+      benchmark.lowKickPressure.dodges > 20 &&
+      benchmark.lowKickPressure.blocks > 0,
+    `Tiny Teddy: repeated crouched Kick wins ${benchmark.lowKickPressure.playerWins}/20 trials; physical dodges and guards counter the loop`
   );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForFunction(() => INJ.world.width === 450);

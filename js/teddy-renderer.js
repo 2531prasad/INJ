@@ -43,13 +43,14 @@
     if (f.atk) {
       const a = f.atk,
         d = a.def;
+      if (a.recoveryHop) return { frame: 8 };
       if (a.t < d.startup) return { frame: d.prepare };
       if (a.t < d.startup + d.active) return { frame: d.pulses && a.pulse % 2 ? 13 : d.frame };
       return { frame: a.t < d.startup + d.active + d.recovery * 0.5 ? d.prepare : 0 };
     }
     if (f.state === 'walk')
       return { frame: 2 + (Math.abs(Math.floor(f.walkPhase / (f.tiny ? 5 : 14))) % 2) };
-    return { frame: { block: 1, crouch: 9, jump: 8, victory: 11 }[f.state] ?? 0 };
+    return { frame: { block: 1, crouch: 9, dodge: 8, jump: 8, victory: 11 }[f.state] ?? 0 };
   }
   function drawTeddy(f, ghost = false) {
     const { ctx } = App,
