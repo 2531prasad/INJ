@@ -360,7 +360,7 @@ module.exports = async function verifyR8(page, check, root, options = {}) {
                             ? 'punch'
                             : null
                           : 'kick';
-              if (act) a.pressBuf[act] = performance.now() + 220;
+              if (act) a.pressBuf[act] = a.game.inputTime + 220;
             }
             a.update(1 / 60);
           }

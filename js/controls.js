@@ -6,6 +6,8 @@
   const input = { left: 0, right: 0, up: 0, down: 0, block: 0 };
 
   const pressBuf = { punch: 0, kick: 0, upper: 0, special: 0, nitro: 0, teleport: 0, jump: 0 };
+  const commandDirections = {};
+  const INPUT_BUFFER_MS = 220;
 
   const heldKeys = new Set(),
     guardPointers = new Set(),
@@ -14,18 +16,42 @@
   const resetSticks = [];
 
   function syncInput() {
-    input.left = +(stickInput.left || heldKeys.has('a') || heldKeys.has('arrowleft'));
-    input.right = +(stickInput.right || heldKeys.has('d') || heldKeys.has('arrowright'));
-    input.down = +(stickInput.down || heldKeys.has('s') || heldKeys.has('arrowdown'));
-    input.up = +(stickInput.up || heldKeys.has('w') || heldKeys.has('arrowup'));
+    const left = stickInput.left || heldKeys.has('a') || heldKeys.has('arrowleft');
+    const right = stickInput.right || heldKeys.has('d') || heldKeys.has('arrowright');
+    const down = stickInput.down || heldKeys.has('s') || heldKeys.has('arrowdown');
+    const up = stickInput.up || heldKeys.has('w') || heldKeys.has('arrowup') || heldKeys.has(' ');
+    input.left = +(left && !right);
+    input.right = +(right && !left);
+    input.down = +(down && !up);
+    input.up = +(up && !down);
+    if (up && down) {
+      pressBuf.jump = 0;
+      delete commandDirections.jump;
+    }
     input.block = +(guardPointers.size > 0 || heldKeys.has('shift') || heldKeys.has('i'));
   }
 
   function queueAction(act) {
     if (App.game.paused || App.game.state !== 'fight') return;
+    if (!Object.hasOwn(pressBuf, act)) return;
     if (act === 'nitro' && App.player.meter < 100) return;
     if (act === 'teleport' && (App.player.teleportCooldown > 0 || App.player.teleport)) return;
-    pressBuf[act] = performance.now() + 220;
+    // One next action plus an independent jump request. New attacks replace
+    // older queued attacks instead of surfacing later in an arbitrary order.
+    if (act !== 'jump') {
+      for (const key in pressBuf) {
+        if (key !== 'jump') {
+          pressBuf[key] = 0;
+          delete commandDirections[key];
+        }
+      }
+    }
+    pressBuf[act] = App.game.inputTime + INPUT_BUFFER_MS;
+    commandDirections[act] = {
+      down: input.down,
+      horizontal: input.right - input.left,
+      forward: App.player.facing > 0 ? input.right : input.left
+    };
     if (
       !App.player.atk &&
       App.player.hitstun <= 0 &&
@@ -39,14 +65,22 @@
   }
 
   function consume(act) {
-    const live = pressBuf[act] > performance.now();
+    const live = pressBuf[act] > App.game.inputTime;
+    const direction = commandDirections[act] || {
+      down: input.down,
+      horizontal: input.right - input.left,
+      forward: App.player.facing > 0 ? input.right : input.left
+    };
     pressBuf[act] = 0;
-    return live;
+    delete commandDirections[act];
+    return live ? direction : null;
   }
 
   function resetInput() {
     heldKeys.clear();
     guardPointers.clear();
+    App.game.inputTime = 0;
+    for (const key in commandDirections) delete commandDirections[key];
     for (const k in pressBuf) pressBuf[k] = 0;
     for (const k in stickInput) stickInput[k] = 0;
     for (const reset of resetSticks) reset();
@@ -159,7 +193,7 @@
       stickInput.down = +(dy > dead);
       stickInput.up = +(dy < -jumpAt && inJumpCone);
       syncInput();
-      if (stickInput.up && !wasUp) {
+      if (stickInput.up && !wasUp && input.up) {
         queueAction('jump');
         wasUp = true;
       }
@@ -302,7 +336,7 @@
         q: 'nitro',
         e: 'teleport'
       }[k];
-      if (action && !e.repeat) {
+      if (action && !e.repeat && (action !== 'jump' || input.up)) {
         e.preventDefault();
         App.Sfx.init();
         queueAction(action);

@@ -1,29 +1,47 @@
 {
   "mode": "functional",
-  "recordedAt": "2026-10-22T21:29:32.823Z",
+  "recordedAt": "2026-10-22T21:49:16.649Z",
   "selected": [
-    "menus"
+    "input",
+    "combat",
+    "targeting"
   ],
-  "checks": 40,
-  "seconds": 10.47,
+  "checks": 138,
+  "seconds": 18.09,
   "suites": [
     {
       "suite": "smoke.cjs",
       "checks": 19,
-      "seconds": 5.86
+      "seconds": 7.71
     },
     {
-      "suite": "menus.cjs",
+      "suite": "input.cjs",
+      "checks": 29,
+      "seconds": 3.01
+    },
+    {
+      "suite": "abilities.cjs",
+      "checks": 41,
+      "seconds": 1.89
+    },
+    {
+      "suite": "victory.cjs",
+      "checks": 28,
+      "seconds": 1.46
+    },
+    {
+      "suite": "giant-targeting.cjs",
       "checks": 21,
-      "seconds": 2.7
+      "seconds": 1.21
     }
   ],
-  "artifacts": true,
+  "artifacts": false,
   "skipped": [
     "balance simulations",
     "offline audio renders",
     "slow reveal replay",
-    "legacy full suite"
+    "legacy full suite",
+    "preview screenshots"
   ],
   "limitations": [
     "Chromium emulation; no physical iPhone/Safari validation",

@@ -146,7 +146,7 @@ module.exports = async function verifyAbilities(page, check, root, options = { a
     out.invulnerableHitsDoNotCount = a.game.hits === hits;
     setup();
     a.input.down = a.input.right = 1;
-    a.pressBuf.kick = performance.now() + 220;
+    a.pressBuf.kick = a.game.inputTime + 220;
     a.controlPlayer(a.player, a.dummy, 0);
     const start = a.player.x;
     a.controlPlayer(a.player, a.dummy, 0.1);
@@ -161,7 +161,7 @@ module.exports = async function verifyAbilities(page, check, root, options = { a
         a.player.vy = -80;
       }
       const initialX = a.player.x;
-      a.pressBuf.nitro = performance.now() + 220;
+      a.pressBuf.nitro = a.game.inputTime + 220;
       a.controlPlayer(a.player, a.dummy, 0);
       const x = a.player.x, y = a.player.y;
       const initial = a.player.atk?.key === 'nitrokick' && a.player.meter === 0 && a.player.x === initialX;
@@ -183,7 +183,7 @@ module.exports = async function verifyAbilities(page, check, root, options = { a
     setup();
     a.player.grounded = false;
     a.player.y -= 40;
-    a.pressBuf.special = performance.now() + 220;
+    a.pressBuf.special = a.game.inputTime + 220;
     a.controlPlayer(a.player, a.dummy, 0);
     a.controlPlayer(a.player, a.dummy, 0.11);
     out.airShadowInput = a.player.atk?.key === 'toss' && a.projectiles.length === 1 &&

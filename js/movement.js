@@ -39,6 +39,15 @@
     f.x = App.clamp(f.x, margin, App.fightWidth() - margin);
     f.flash = Math.max(0, f.flash - dt);
   }
+  function steerPlayerInAir(f, dt, drive = f.atk?.def.drive) {
+    // Ordinary aerial attacks retain the same steering as an empty jump.
+    // Slide/Nitro travel stays authored; directional input cannot stack drive.
+    if (!f.grounded && !drive)
+      f.x += (App.input.right - App.input.left) * 88 * dt;
+  }
+  function advancePlayerInput(dt) {
+    if (App.game.state === 'fight') App.game.inputTime += dt * 1000;
+  }
   function controlPlayer(f, op, dt) {
     f.anim += dt;
     if (f.comboTimer > 0) {
@@ -46,103 +55,106 @@
       if (f.comboTimer <= 0) f.comboStep = 0;
     }
     const canAct = App.game.state === 'fight';
+    // Engine calls stop during hit-stop/pause/cutscenes, so input windows use
+    // simulation time and cannot expire merely because rendering stalled.
     if (f.teleport) {
+      advancePlayerInput(dt);
       App.stepTeleport(f, op, dt);
       return;
     }
-    // Combat and Blink share the nearest living enemy, including the echo.
     op = App.playerTarget(f);
-    if (
-      App.giantEncounter.minion?.hp > 0 &&
-      !f.atk &&
-      f.hitstun <= 0 &&
-      !['ko', 'knockdown'].includes(f.state) &&
-      Math.abs(op.x - f.x) > 3
-    )
-      f.facing = op.x > f.x ? 1 : -1;
-    if (
-      canAct &&
-      !f.atk &&
-      f.hitstun <= 0 &&
-      !['ko', 'knockdown'].includes(f.state) &&
-      App.consume('teleport') &&
-      App.startTeleport(f)
-    )
-      return;
+    let remaining = dt;
     if (f.atk) {
-      App.stepAttack(f, dt, op);
-    } else if (f.state === 'ko') {
-      /*falling*/
-    } else if (f.state === 'knockdown') {
-      f.knockT += dt;
-      if (f.knockT > 1.5) {
-        f.state = 'idle';
-        f.invuln = 0.5;
-      }
-    } else if (f.hitstun > 0) {
-      f.hitstun -= dt;
+      const d = f.atk.def;
+      const busy = Math.min(remaining, Math.max(0, d.startup + d.active + d.recovery - f.atk.t));
+      advancePlayerInput(busy);
+      App.stepAttack(f, busy, op);
+      steerPlayerInAir(f, busy, d.drive);
+      physics(f, busy);
+      remaining -= busy;
+      if (f.atk || App.game.state !== 'fight') return;
+    }
+    if (f.state === 'ko') {
+      physics(f, remaining);
+      return;
+    }
+    if (f.state === 'knockdown') {
+      const busy = Math.min(remaining, Math.max(0, 1.5 - f.knockT));
+      advancePlayerInput(busy);
+      f.knockT += busy;
+      physics(f, busy);
+      remaining -= busy;
+      if (f.knockT + 1e-9 < 1.5) return;
+      f.state = f.grounded ? 'idle' : 'jump';
+      f.invuln = 0.5;
+    }
+    if (f.hitstun > 0) {
+      const busy = Math.min(remaining, f.hitstun);
+      advancePlayerInput(busy);
+      f.hitstun = Math.max(0, f.hitstun - busy);
       f.state = 'hurt';
-    } else if (canAct && f.grounded) {
-      f.crouching = App.input.down > 0;
-      if (App.consume('nitro') && f.meter >= 100) {
-        App.startAttack(f, 'nitrokick');
-      } else if (App.consume('special')) {
-        App.startAttack(f, 'toss');
-      } else if (App.consume('upper')) {
-        App.startAttack(f, 'uppercut');
-      } else if (App.consume('punch')) {
-        App.startAttack(f, f.crouching ? 'cpunch' : f.comboStep === 1 ? 'straight' : 'jab');
-        f.comboStep = f.comboStep === 1 ? 0 : 1;
-        f.comboTimer = 0.55;
-      } else if (App.consume('kick')) {
-        const forward = f.facing > 0 ? App.input.right : App.input.left;
-        App.startAttack(f, f.crouching ? (forward ? 'slide' : 'sweep') : 'roundhouse');
-      } else if (App.consume('jump') || App.input.up) {
+      physics(f, busy);
+      remaining -= busy;
+      if (f.hitstun > 1e-9) return;
+      f.hitstun = 0;
+      f.state = f.grounded ? 'idle' : 'jump';
+    }
+    if (canAct) {
+      if (f.grounded && Math.abs(op.x - f.x) > 3) f.facing = op.x > f.x ? 1 : -1;
+      if (App.consume('teleport') && App.startTeleport(f)) {
+        advancePlayerInput(remaining);
+        return;
+      }
+      f.crouching = f.grounded && App.input.down > 0;
+      // Resolve a jump before an attack so up+Kick means an aerial kick.
+      // Grounded attacks still finish their recovery before either can start.
+      const jump = f.grounded ? App.consume('jump') : null;
+      if (f.grounded && (jump || App.input.up)) {
         App.Sfx.play('jump');
         f.vy = -395;
         f.grounded = false;
+        f.crouching = false;
         f.state = 'jump';
-        f.vx = (App.input.right - App.input.left) * 115; // horizontal leap momentum
-      } else {
-        if (f.crouching) {
-          f.state = 'crouch';
-        } else if (App.input.block) {
-          f.state = 'block';
-        } else {
-          const mv = App.input.right - App.input.left;
-          if (mv !== 0) {
-            moveWalking(f, mv * 96 * dt);
-          } else f.state = 'idle';
-        }
+        f.vx = (App.input.right - App.input.left || jump?.horizontal || 0) * 115;
       }
-    } else if (canAct && !f.grounded) {
-      // Full Aerial Combat (Jump Kick & Jump Punch!)
-      f.x += (App.input.right - App.input.left) * 88 * dt;
-      if (App.consume('nitro') && f.meter >= 100) {
-        App.startAttack(f, 'nitrokick');
-      } else if (App.consume('special')) {
+      let command;
+      if ((command = App.consume('nitro')) && f.meter >= 100) {
+        App.startAttack(f, 'nitrokick', command);
+      } else if ((command = App.consume('special'))) {
         App.startAttack(f, 'toss');
-      } else if (App.consume('kick')) {
-        App.startAttack(f, 'jkick');
-      } else if (App.consume('punch')) {
-        App.startAttack(f, 'jpunch');
-      } else if (f.state !== 'hurt' && f.state !== 'knockdown') {
-        f.state = 'jump';
+      } else if (f.grounded && (command = App.consume('upper'))) {
+        App.startAttack(f, 'uppercut');
+      } else if ((command = App.consume('punch'))) {
+        f.crouching = f.grounded && !!command.down;
+        const key = !f.grounded
+          ? 'jpunch'
+          : f.crouching ? 'cpunch' : f.comboStep === 1 ? 'straight' : 'jab';
+        App.startAttack(f, key);
+        if (f.grounded) {
+          f.comboStep = f.comboStep === 1 ? 0 : 1;
+          f.comboTimer = 0.55;
+        }
+      } else if ((command = App.consume('kick'))) {
+        f.crouching = f.grounded && !!command.down;
+        const key = !f.grounded
+          ? 'jkick'
+          : f.crouching ? (command.forward ? 'slide' : 'sweep') : 'roundhouse';
+        App.startAttack(f, key);
       }
-    } else {
-      if (f.state !== 'hurt' && f.state !== 'knockdown') f.state = f.grounded ? 'idle' : 'jump';
+      if (!f.atk) {
+        if (!f.grounded) f.state = 'jump';
+        else if (App.input.block) f.state = 'block';
+        else if (f.crouching) f.state = 'crouch';
+        else moveWalking(f, (App.input.right - App.input.left) * 96 * remaining);
+      }
+      steerPlayerInAir(f, remaining);
+    } else if (!['hurt', 'knockdown'].includes(f.state)) {
+      f.state = f.grounded ? 'idle' : 'jump';
     }
-    physics(f, dt);
-    if (
-      !f.atk &&
-      f.grounded &&
-      f.state !== 'ko' &&
-      f.state !== 'hurt' &&
-      f.state !== 'knockdown' &&
-      Math.abs(op.x - f.x) > 3
-    ) {
+    advancePlayerInput(remaining);
+    physics(f, remaining);
+    if (!f.atk && f.grounded && canAct && Math.abs(op.x - f.x) > 3)
       f.facing = op.x > f.x ? 1 : -1;
-    }
   }
 
   Object.assign(App, { moveWalking, physics, controlPlayer });

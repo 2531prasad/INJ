@@ -6,13 +6,14 @@ Use one command for routine work:
 node tests/browser.cjs
 ```
 
-It runs the dependency-free structure check, untouched HTTP and direct-file startup, every level through the real cheat menu, pause/cheat keyboard and phone-layout regressions, and focused Colossus targeting/Blink checks. It prints one summary per group and elapsed seconds. One browser is shared; every module gets a fresh context so menu state, input, random seeds and audio preferences cannot leak between groups. Local servers use an OS-assigned port.
+It runs the dependency-free structure check, untouched HTTP and direct-file startup, every level through the real cheat menu, pause/cheat keyboard and phone-layout regressions, keyboard/touch input coordination, and focused Colossus targeting/Blink checks. It prints one summary per group and elapsed seconds. One browser is shared; every module gets a fresh context so menu state, input, random seeds and audio preferences cannot leak between groups. Local servers use an OS-assigned port.
 
 Choose the relevant group instead of rerunning every subsystem:
 
 | Change | Command after `node tests/browser.cjs` |
 | --- | --- |
 | Pause, cheat field, level selection, keyboard focus | `--suite menus` |
+| Held directions, jump/attack arbitration and input buffering | `--suite input` |
 | Combo, attacks, Nitro, touch abilities, victory and retries | `--suite combat` |
 | Boss AI, enlargement, attacks, summons or Blink targeting | `--suite giant` |
 | Only multi-enemy targeting / Blink | `--suite targeting` |

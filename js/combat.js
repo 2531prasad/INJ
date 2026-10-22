@@ -24,6 +24,7 @@
     if (App.isTeddy(f)) return App.teddyHurtbox(f);
     const low =
       f.state === 'crouch' ||
+      (f.state === 'block' && f.crouching) ||
       (f.atk && (['sweep', 'cpunch', 'slide'].includes(f.atk.key) || f.atk.low));
     return {
       x: f.x - 13 * App.FIGHTER_SCALE,
@@ -32,7 +33,7 @@
       h: (low ? 42 : 66) * App.FIGHTER_SCALE
     };
   }
-  function startAttack(f, key) {
+  function startAttack(f, key, command) {
     if (f.atk || f.teleport) return;
     if (App.isGiant(f)) {
       App.startGiantAttack(f, key);
@@ -54,7 +55,7 @@
     }
     f.atk = { key: key, def: App.MOVES[key], t: 0, hasHit: false, fired: false };
     if (key === 'nitrokick') {
-      f.atk.low = f.grounded && !!App.input.down;
+      f.atk.low = f.grounded && !!(command?.down ?? App.input.down);
       if (f.atk.low) f.atk.def = { ...f.atk.def, box: [10, -30, 48, 28], type: 'low' };
       App.Sfx.play('boost');
     }
@@ -140,7 +141,7 @@
     } else if (!a.hasHit && a.t >= d.startup && a.t < d.startup + d.active) {
       tryHit(f, opp);
     }
-    if (f.atk === a && a.t >= d.startup + d.active + d.recovery) {
+    if (f.atk === a && a.t + 1e-9 >= d.startup + d.active + d.recovery) {
       if (f === App.player && !d.projectile && !a.hasHit) resetCombo();
       f.atk = null;
       if (f.state === 'attack') f.state = f.grounded ? 'idle' : 'jump';

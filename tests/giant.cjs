@@ -357,7 +357,7 @@ module.exports = async function verifyGiant(page, check, root, options = {}) {
               !p.atk &&
               !p.hitstun
             )
-              a.pressBuf.teleport = performance.now() + 220;
+              a.pressBuf.teleport = a.game.inputTime + 220;
             const wave = a.giantEncounter.hazards.some(
               (h) => h.type === 'wave' && Math.abs(h.x - p.x) < 90
             );
@@ -381,7 +381,7 @@ module.exports = async function verifyGiant(page, check, root, options = {}) {
                     : frame % 90 < 50
                       ? 'punch'
                       : 'kick';
-              a.pressBuf[action] = performance.now() + 220;
+              a.pressBuf[action] = a.game.inputTime + 220;
             }
           }
           a.update(1 / 60);

@@ -104,6 +104,7 @@
     paused: true,
     started: false,
     elapsed: 0,
+    inputTime: 0,
     lost: false,
     roastCount: 0,
     roastStep: 0,

@@ -11,7 +11,7 @@ module.exports = async function verifyVictory(page, check, root, options = { art
     try {
       setup();
       a.player.hp = 83; a.game.bestCombo = 7; a.dummy.hp = 1;
-      a.input.right = 1; a.pressBuf.kick = performance.now() + 220;
+      a.input.right = 1; a.pressBuf.kick = a.game.inputTime + 220;
       a.applyHit(a.dummy, a.player, a.MOVES.jab, a.dummy.x, 140);
       out.knockoutBeat = a.game.state === 'ko' && a.game.koTimer === 1.1 &&
         !Object.values(a.input).some(Boolean) && !Object.values(a.pressBuf).some(Boolean);

@@ -584,7 +584,7 @@ module.exports = async function verifyTeddyTeleport(page, check, root, options =
                         : !p.grounded
                           ? 'kick'
                           : ['punch', 'kick', 'special'][Math.floor(frame / 36) % 3];
-              a.pressBuf[action] = performance.now() + 220;
+              a.pressBuf[action] = a.game.inputTime + 220;
             }
           }
           a.update(1 / 60);
@@ -681,7 +681,7 @@ module.exports = async function verifyTeddyTeleport(page, check, root, options =
           a.input.right = +(policy && dir > 0 && gap > 34);
           a.input.up = a.input.block = 0;
           a.input.down = 1;
-          if (!p.atk && p.hitstun <= 0) a.pressBuf.kick = performance.now() + 220;
+          if (!p.atk && p.hitstun <= 0) a.pressBuf.kick = a.game.inputTime + 220;
           a.update(1 / 60);
           if (op.state !== lastState) {
             if (op.state === 'dodge') result.dodges++;

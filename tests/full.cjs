@@ -245,7 +245,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await page.evaluate(()=>{
     const t=__test;t.game.round=7;t.game.roundTime=12;t.game.elapsed=99;t.game.hits=8;t.game.roastCount=4;
     t.player.hp=9;t.dummy.hp=17;t.player.charge=3;t.startAttack(t.player,'jab');
-    t.input.right=1;t.pressBuf.kick=performance.now()+220;
+    t.input.right=1;t.pressBuf.kick=t.game.inputTime+220;
   });
   const restartPrefs=await page.evaluate(()=>({muted:InjAudio.muted,music:InjAudio.musicEnabled}));
   await page.locator('#btnRestart').tap();
@@ -429,6 +429,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   });
   for (const [name, passed] of Object.entries(mechanics)) check(passed, `Combat: ${name}`);
 
+  await require('./input.cjs')(page,check,root);
   await require('./abilities.cjs')(page,check,root);
   await require('./victory.cjs')(page,check,root);
   await require('./stages.cjs')(page,check,root);
@@ -491,7 +492,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
           }
           if(policy&&!p.atk&&p.hitstun<=0){
             const act=policy===1?'punch':policy===2?['punch','kick','upper'][Math.floor(frame/24)%3]:policy===3?'special':policy===4?(p.grounded?null:'kick'):policy===5?(frame%80<8?'punch':null):'kick';
-            if(act)t.pressBuf[act]=performance.now()+220;
+            if(act)t.pressBuf[act]=t.game.inputTime+220;
           }
           const attack=op.atk,dodge=op.dodgeT;
           t.update(1/60);frames++;if(op.restT>0)restFrames++;

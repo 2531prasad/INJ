@@ -9,14 +9,15 @@ const suites = {
   smoke: ['smoke.cjs'],
   menus: ['menus.cjs'],
   targeting: ['giant-targeting.cjs'],
-  combat: ['abilities.cjs', 'victory.cjs'],
+  input: ['input.cjs'],
+  combat: ['input.cjs', 'abilities.cjs', 'victory.cjs'],
   giant: ['giant.cjs', 'giant-targeting.cjs'],
   teddy: ['teddy-teleport.cjs'],
   r8: ['r8.cjs'],
   stages: ['stages.cjs']
 };
 const args = process.argv.slice(2);
-let selected = ['smoke', 'menus', 'targeting'];
+let selected = ['smoke', 'menus', 'input', 'targeting'];
 let full = false, list = false, artifacts = false, verbose = false;
 try {
   for (let i = 0; i < args.length; i++) {
@@ -33,7 +34,7 @@ try {
   assert.ok(selected.length && selected.every(s => suites[s]), 'Choose suites: ' + Object.keys(suites).join(', '));
 } catch (error) { console.error(error.message); process.exitCode = 1; }
 if (list) {
-  console.log('Default: smoke, menus, targeting.\n--suite ' + Object.keys(suites).join(',') +
+  console.log('Default: smoke, menus, input, targeting.\n--suite ' + Object.keys(suites).join(',') +
     '\n--all: all functional suites, no balance simulations/audio renders/replays.\n--full: legacy exhaustive suite, balance simulations, audio renders and captures.\n--artifacts: capture previews in supported functional suites.\n--verbose: print every assertion.');
 } else if (!process.exitCode) {
   const started = performance.now();
