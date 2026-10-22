@@ -13,7 +13,7 @@
       ['ko', 'knockdown'].includes(f.state)
     )
       return false;
-    f.teleport = { t: 0, moved: false, fromX: f.x, fromY: f.y };
+    f.teleport = { t: 0, moved: false, fromX: f.x, fromY: f.y, target: App.playerTarget(f) };
     f.teleportCooldown = TELEPORT.cooldown;
     f.vx = f.vy = 0;
     f.state = 'teleport';
@@ -26,6 +26,9 @@
     const blink = f.teleport;
     blink.t += dt;
     if (!blink.moved && blink.t >= TELEPORT.relocateAt) {
+      // Keep the combat target chosen on activation through disappearance.
+      // If an echo expires before arrival, reacquire the remaining opponent.
+      op = blink.target?.hp > 0 && blink.target.state !== 'ko' ? blink.target : App.playerTarget(f);
       const margin = App.fighterMargin(f);
       const opponentMargin = App.fighterMargin(op);
       const distance = (App.hurtbox(f).w + App.hurtbox(op).w) / 2 + 8;

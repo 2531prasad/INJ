@@ -50,8 +50,7 @@
       App.stepTeleport(f, op, dt);
       return;
     }
-    // Blink deliberately keeps the boss as its destination; normal combat
-    // faces and aims toward the nearest living enemy, including the echo.
+    // Combat and Blink share the nearest living enemy, including the echo.
     op = App.playerTarget(f);
     if (
       App.giantEncounter.minion?.hp > 0 &&
