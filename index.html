@@ -72,13 +72,15 @@
               <div class="imove-row"><span>Shadow Toss Projectile</span> <b>L / SP</b></div>
               <div class="imove-row"><span>Shadow Slide</span> <b>DOWN + FORWARD + K</b></div>
               <div class="imove-row"><span>Nitro Kick · full bar</span> <b>Q / NITRO</b></div>
+              <div class="imove-row"><span>Teleport behind · 10s cooldown</span> <b>E / BLINK</b></div>
               <div class="imove-row"><span>Defensive Guard</span> <b>SHIFT / BLK</b></div>
             </div>
           </div>
           <div class="intro-quick">
             <b>LEFT THUMB</b> Move · up to jump · down to crouch.<br /><b>RIGHT THUMB</b> Punch,
             kick, uppercut. Hold guard to block.<br /><b>GOLD RING</b> Land 3 hits, then tap Shadow
-            for a charged toss. Fill the NITRO bar for a Nitro Kick; Shadow also works midair.
+            for a charged toss. Fill NITRO for a Nitro Kick; Shadow also works midair.
+            BLINK teleports behind your opponent, then recharges for 10 seconds.
           </div>
         </div>
         <div class="intro-footer">
@@ -116,6 +118,7 @@
           <div class="key"><b>L</b> SHADOW · GROUND / AIR</div>
           <div class="key"><b>↓ + FORWARD + K</b> SLIDE</div>
           <div class="key"><b>Q</b> NITRO KICK · FULL BAR</div>
+          <div class="key"><b>E</b> BLINK · 10s COOLDOWN</div>
           <div class="key"><b>SHIFT</b> BLOCK</div>
         </div>
       </div>
@@ -174,6 +177,12 @@
           <div id="stickKnob"></div>
         </div>
         <div id="pad" role="group" aria-label="Combat controls">
+          <button class="abtn" data-act="teleport" aria-label="Teleport behind opponent, ready (E)">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M8 3H4v18h4m8-18h4v18h-4M8 12h8m-3-3 3 3-3 3"/>
+            </svg>
+            <span class="button-label">BLINK</span>
+          </button>
           <button class="abtn sp" data-act="nitro" aria-label="Nitro kick ready" hidden aria-disabled="true">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M13 3 6 13h6l-1 8 7-11h-6l1-7Z"/>
@@ -254,6 +263,7 @@
     <script defer src="assets/fighter-frames.js"></script>
     <script defer src="assets/walk-frames.js"></script>
     <script defer src="assets/r8-frames.js"></script>
+    <script defer src="assets/teddy-frames.js"></script>
     <script defer src="audio.js"></script>
     <script defer src="js/core.js"></script>
     <script defer src="js/content.js"></script>
@@ -268,7 +278,10 @@
     <script defer src="js/movement.js"></script>
     <script defer src="js/opponent.js"></script>
     <script defer src="js/r8.js"></script>
+    <script defer src="js/teddy.js"></script>
+    <script defer src="js/teleport.js"></script>
     <script defer src="js/r8-renderer.js"></script>
+    <script defer src="js/teddy-renderer.js"></script>
     <script defer src="js/fighters.js"></script>
     <script defer src="js/renderer.js"></script>
     <script defer src="js/menus.js"></script>

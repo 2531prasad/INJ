@@ -1,5 +1,5 @@
 /* renderer.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: arena.js, core.js, fighters.js, state.js.
+ * Cross-module dependencies: arena.js, core.js, fighters.js, state.js, teddy-renderer.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -33,13 +33,20 @@
     ctx.fillStyle = '#0c0914b8';
     ctx.fillRect(0, 0, App.world.width, App.H);
     ctx.globalAlpha = 0.24;
-    App.drawFighter({ ...App.dummy, x: App.world.width * 0.78, y: App.GROUND,
-      state: 'ko', atk: null, grounded: true, flash: 0 });
+    App.drawFighter({
+      ...App.dummy,
+      x: App.world.width * 0.78,
+      y: App.GROUND,
+      state: 'ko',
+      atk: null,
+      grounded: true,
+      flash: 0
+    });
     ctx.globalAlpha = 1;
     if (!App.reducedMotion) {
       for (let i = 0; i < 16; i++) {
         const x = (i * 53 + 23) % App.world.width,
-          y = (i * 31 + game.t * (13 + i % 4)) % App.H;
+          y = (i * 31 + game.t * (13 + (i % 4))) % App.H;
         ctx.fillStyle = i % 3 ? '#eacb7b88' : '#fff1c388';
         ctx.fillRect(x, y, i % 2 ? 1 : 2, 2);
       }
@@ -50,8 +57,17 @@
     ctx.translate(x, App.GROUND);
     ctx.scale(zoom, zoom);
     ctx.translate(-x, -App.GROUND);
-    App.drawFighter({ ...App.player, x, y: App.GROUND, facing: 1, state: 'victory',
-      atk: null, grounded: true, flash: 0, invuln: 0 });
+    App.drawFighter({
+      ...App.player,
+      x,
+      y: App.GROUND,
+      facing: 1,
+      state: 'victory',
+      atk: null,
+      grounded: true,
+      flash: 0,
+      invuln: 0
+    });
     ctx.restore();
     ctx.fillStyle = '#08060dcc';
     ctx.fillRect(0, 0, App.world.width, 8);
@@ -87,6 +103,7 @@
 
     App.drawFighter(App.dummy);
     App.drawFighter(App.player);
+    App.drawTeddyCameo();
 
     for (const p of App.projectiles) {
       if (p.style === 'rim') {
@@ -167,6 +184,7 @@
       '#e8b24c'
     );
     if (App.isR8(App.dummy)) App.drawR8Health();
+    else if (App.isTeddy(App.dummy)) App.drawTeddyHealth();
     else
       drawBar(
         App.world.width / 2 + 34,
@@ -203,6 +221,15 @@
       13,
       '#e8b24c',
       'center'
+    );
+    text(
+      App.player.teleportCooldown > 0
+        ? 'BLINK ' + Math.ceil(App.player.teleportCooldown) + 's'
+        : 'BLINK E · READY',
+      32,
+      68,
+      4,
+      '#c4b0f3'
     );
     if (App.game.hits > 1 && App.game.hitTimer > 0) {
       const x = App.world.width / 2;

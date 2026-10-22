@@ -1,5 +1,5 @@
 /* fighters.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: core.js, encounters.js, r8-renderer.js.
+ * Cross-module dependencies: core.js, encounters.js, r8-renderer.js, teddy-renderer.js, teleport.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -53,7 +53,7 @@
   function sampleAttackAnimation(f) {
     const a = f.atk,
       d = a.def,
-      strike = a.key === 'nitrokick' && a.low ? 7 : ATTACK_FRAMES[a.key] ?? 4;
+      strike = a.key === 'nitrokick' && a.low ? 7 : (ATTACK_FRAMES[a.key] ?? 4);
     const prepare = ['uppercut', 'sweep', 'cpunch', 'slide'].includes(a.key)
       ? 9
       : ['roundhouse', 'jkick'].includes(a.key)
@@ -91,6 +91,7 @@
   }
   function sampleFighterAnimation(f) {
     if (App.isR8(f)) return App.sampleR8Animation(f);
+    if (App.isTeddy(f)) return App.sampleTeddyAnimation(f);
     if (f.atk) return sampleAttackAnimation(f);
     const frames = {
       idle: 0,
@@ -159,6 +160,10 @@
     }
   }
   function drawFighter(f, ghost = false) {
+    if (App.isTeddy(f)) {
+      App.drawTeddy(f, ghost);
+      return;
+    }
     if (App.isR8(f)) {
       App.drawR8(f, ghost);
       return;
@@ -180,6 +185,7 @@
     if (!ghost && !f.reflection) {
       App.ctx.save();
       App.ctx.fillStyle = '#05081170';
+      if (f.teleport) App.ctx.globalAlpha *= App.teleportVisibility(f);
       const contact = App.clamp(1 - (App.GROUND - f.y) / 200, 0.55, 1);
       App.ctx.beginPath();
       App.ctx.ellipse(f.x, App.GROUND + 1, 23 * contact, 3.2, 0, 0, Math.PI * 2);
@@ -193,8 +199,15 @@
       }
       App.ctx.restore();
     }
+    if (f.teleport && !ghost && !f.reflection) App.drawTeleportEffect(f);
     App.ctx.save();
     App.ctx.translate(f.x, f.y);
+    if (f.teleport) {
+      const visible = App.teleportVisibility(f);
+      App.ctx.beginPath();
+      App.ctx.rect(-70 * visible, -150, 140 * visible, 170);
+      App.ctx.clip();
+    }
     if (f.facing < 0) App.ctx.scale(-1, 1);
     if (ghost) App.ctx.globalAlpha *= f.nitroEcho ? 0.7 : 0.28;
     if (f.invuln > 0) App.ctx.globalAlpha *= 0.75;

@@ -2,19 +2,22 @@
 (function (App) {
   'use strict';
   const isR8 = (f) => f.kind === 'r8';
-  const fighterMargin = (f) => (isR8(f) ? (f.form === 'car' ? 54 : 38) : 26);
+  const isTeddy = (f) => f.kind === 'teddy';
+  const fighterMargin = (f) =>
+    isTeddy(f) ? Math.max(16, 44 * f.teddyScale) : isR8(f) ? (f.form === 'car' ? 54 : 38) : 26;
   function configureOpponent(round) {
-    const r8 = round >= 3,
+    const r8 = round === 3,
+      teddy = round >= 4,
       form = r8 ? 'car' : null;
     Object.assign(
       App.dummy,
       App.makeFighter({
-        name: r8 ? 'R8 · GOLDLINE' : 'DUMMY',
-        kind: r8 ? 'r8' : 'dummy',
+        name: teddy ? 'BLUE VELVET' : r8 ? 'R8 · GOLDLINE' : 'DUMMY',
+        kind: teddy ? 'teddy' : r8 ? 'r8' : 'dummy',
         pal: App.DUM_PAL,
         x: App.world.width / 2 + 65,
         facing: -1,
-        hp: r8 ? App.R8_TUNING.car.health : 130
+        hp: teddy ? App.TEDDY_TUNING.health : r8 ? App.R8_TUNING.car.health : 130
       })
     );
     App.dummy.form = form;
@@ -32,6 +35,7 @@
     f.flash = 0;
     f.invuln = 0;
     App.player.atk = null;
+    App.player.teleport = null;
     App.player.vx = App.player.vy = 0;
     App.player.y = App.GROUND;
     App.player.grounded = true;
@@ -101,14 +105,17 @@
     App.resetInput();
   }
   function encounterSubtitle() {
-    return App.game.round >= 3
-      ? 'R8 GOLDLINE · STAY LOW. JUMP THE DASH.'
-      : App.game.round === 2
-        ? 'DUMMY AWAKENED'
-        : '';
+    return App.game.round >= 4
+      ? 'BLUE VELVET · BIG EGO. SMALL FUSE.'
+      : App.game.round === 3
+        ? 'R8 GOLDLINE · STAY LOW. JUMP THE DASH.'
+        : App.game.round === 2
+          ? 'DUMMY AWAKENED'
+          : '';
   }
   Object.assign(App, {
     isR8,
+    isTeddy,
     fighterMargin,
     configureOpponent,
     beginR8Transform,

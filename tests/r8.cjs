@@ -283,7 +283,7 @@ module.exports = async function verifyR8(page, check, root) {
     a.game.round = 3;
     a.resetRound();
     out.laterBossResets =
-      a.game.round === 4 && a.dummy.form === 'car' && a.dummy.hp === a.R8_TUNING.car.health;
+      a.game.round === 4 && a.dummy.kind === 'teddy' && a.dummy.hp === a.TEDDY_TUNING.health;
     a.restartGame();
     out.restartClearsBoss =
       a.game.round === 1 &&
@@ -299,7 +299,8 @@ module.exports = async function verifyR8(page, check, root) {
   const benchmarks = await page.evaluate(() => {
     const a = INJ,
       results = {},
-      play = a.Sfx.play;
+      play = a.Sfx.play,
+      random = a.rnd;
     a.Sfx.play = () => {};
     try {
       for (const form of ['car', 'robot']) {
@@ -315,6 +316,7 @@ module.exports = async function verifyR8(page, check, root) {
           'crouch/sweep'
         ].map((policy) => ({ policy, trials: 0, bossWins: 0, playerWins: 0 }));
         for (let trial = 0; trial < 100; trial++) {
+          a.rnd = a.mulberry32(8000 + trial + (form === 'robot' ? 1000 : 0));
           a.game.round = 2;
           a.resetRound();
           if (form === 'robot') a.completeR8Transform();
@@ -374,7 +376,7 @@ module.exports = async function verifyR8(page, check, root) {
         }
         results[form] = {
           trials: 100,
-          targetLossPercent: form === 'car' ? 65 : 90,
+          targetLossPercent: form === 'car' ? 65 : 80,
           bossWins,
           playerWins,
           policies,
@@ -384,6 +386,7 @@ module.exports = async function verifyR8(page, check, root) {
       }
     } finally {
       a.Sfx.play = play;
+      a.rnd = random;
       a.game.paused = true;
       a.game.round = 0;
       a.resetRound();
@@ -396,6 +399,8 @@ module.exports = async function verifyR8(page, check, root) {
       result.bossWins > 0 && result.playerWins > 0,
       `R8 ${form}: ${result.bossWins}/100 scripted boss wins, with real player wins`
     );
+  check(benchmarks.robot.playerWins >= 15 && benchmarks.robot.playerWins <= 25,
+    'Robot stays near the requested 20% scripted INJ wins, with outcomes resolved by combat');
   await page.setViewportSize({ width: 844, height: 390 });
   await page.waitForFunction(
     () => Math.abs(INJ.world.width / 225 - innerWidth / innerHeight) < 0.01

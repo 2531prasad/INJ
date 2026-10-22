@@ -172,6 +172,14 @@
       const tone = (offset, f1, f2, d, wave, vol, cutoff) => this.tone(at + offset, f1, f2, d, wave, vol, bus, cutoff);
       const noise = (offset, d, f, vol, filter) => this.noise(at + offset, d, f, vol, bus, filter);
       switch (type) {
+        case 'teleport':
+          tone(0, 660, 110, .14, 'sine', .16, 3000);
+          noise(0, .08, 2600, .055, 'bandpass');
+          tone(.22, 220, 880, .18, 'triangle', .12, 3200); break;
+        case 'shrink':
+          [0, .14, .28].forEach((o, i) => tone(o, 440 + i * 220, 900 + i * 300, .13, 'sine', .09, 3600));
+          tone(.72, 1600, 160, .83, 'triangle', .13, 2800);
+          tone(1.65, 880, 1320, .19, 'sine', .12, 4000); break;
         case 'engine':
           tone(0, 68, 158, .16, 'sawtooth', .13, 1000); noise(0,.06,850,.07,'bandpass'); break;
         case 'boost':

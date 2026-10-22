@@ -1,11 +1,11 @@
 /* controls.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: core.js, menus.js, movement.js, renderer.js, state.js.
+ * Cross-module dependencies: core.js, menus.js, movement.js, renderer.js, state.js, teleport.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
   const input = { left: 0, right: 0, up: 0, down: 0, block: 0 };
 
-  const pressBuf = { punch: 0, kick: 0, upper: 0, special: 0, nitro: 0, jump: 0 };
+  const pressBuf = { punch: 0, kick: 0, upper: 0, special: 0, nitro: 0, teleport: 0, jump: 0 };
 
   const heldKeys = new Set(),
     guardPointers = new Set(),
@@ -24,6 +24,7 @@
   function queueAction(act) {
     if (App.game.paused || App.game.state !== 'fight') return;
     if (act === 'nitro' && App.player.meter < 100) return;
+    if (act === 'teleport' && (App.player.teleportCooldown > 0 || App.player.teleport)) return;
     pressBuf[act] = performance.now() + 220;
     if (
       !App.player.atk &&
@@ -54,6 +55,7 @@
   }
 
   function updateChargeUI() {
+    App.updateTeleportUI();
     const nitroReady = App.player.meter >= 100;
     document.querySelectorAll('[data-act="nitro"]').forEach((btn) => {
       btn.hidden = !nitroReady;
@@ -294,7 +296,8 @@
         k: 'kick',
         u: 'upper',
         l: 'special',
-        q: 'nitro'
+        q: 'nitro',
+        e: 'teleport'
       }[k];
       if (action && !e.repeat) {
         e.preventDefault();

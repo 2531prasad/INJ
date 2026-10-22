@@ -1,5 +1,5 @@
 /* rounds.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: arena.js, controls.js, core.js, menus.js, state.js.
+ * Cross-module dependencies: arena.js, controls.js, core.js, menus.js, state.js, teddy.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -8,15 +8,18 @@
     App.game.lost = winner === App.dummy;
     App.game.state = 'ko';
     App.game.koTimer = App.game.lost ? 3 : 1.1;
-    App.game.victory = App.game.lost ? null : {
-      round: App.game.round,
-      opponent: App.isR8(App.dummy) ? 'GOLDLINE' : App.dummy.name,
-      health: Math.ceil(App.player.hp),
-      maxHealth: App.player.maxHp,
-      bestCombo: App.game.bestCombo
-    };
+    App.game.victory = App.game.lost
+      ? null
+      : {
+          round: App.game.round,
+          opponent: App.isR8(App.dummy) ? 'GOLDLINE' : App.dummy.name,
+          health: Math.ceil(App.player.hp),
+          maxHealth: App.player.maxHp,
+          bestCombo: App.game.bestCombo
+        };
     App.resetInput();
     App.player.atk = null;
+    App.player.teleport = null;
     App.dummy.atk = null;
     App.projectiles.length = 0;
     App.game.msg = { text: winner.name + ' WINS', sub: '', big: 16 };
@@ -29,8 +32,16 @@
     App.game.msg = null;
     App.game.hitStop = App.game.shake = App.game.shakeX = App.game.shakeY = 0;
     Object.assign(App.player, {
-      state: 'victory', atk: null, grounded: true, y: App.GROUND,
-      vx: 0, vy: 0, hitstun: 0, flash: 0, invuln: 0, crouching: false
+      state: 'victory',
+      atk: null,
+      grounded: true,
+      y: App.GROUND,
+      vx: 0,
+      vy: 0,
+      hitstun: 0,
+      flash: 0,
+      invuln: 0,
+      crouching: false
     });
     App.projectiles.length = App.particles.length = App.afterimages.length = 0;
     App.resetInput();
@@ -99,7 +110,11 @@
     } else if (App.game.state === 'transform') {
       App.game.t += dt;
       if (App.game.t >= 2.1) App.completeR8Transform();
+    } else if (App.game.state === 'shrink') {
+      App.stepTeddyShrink(dt);
     } else if (App.game.state === 'fight') {
+      App.stepTeddyShrink(dt);
+      if (App.game.state === 'shrink') return;
       App.game.roundTime -= dt;
       if (App.game.roundTime <= 0) {
         App.game.roundTime = 0;

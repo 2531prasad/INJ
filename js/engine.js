@@ -1,5 +1,5 @@
 /* engine.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: core.js, effects.js, menus.js, movement.js, opponent.js, renderer.js, rounds.js, state.js.
+ * Cross-module dependencies: core.js, effects.js, menus.js, movement.js, opponent.js, renderer.js, rounds.js, state.js, teleport.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -17,9 +17,15 @@
       App.game.shakeY = (App.rnd() - 0.5) * App.game.shake;
       return;
     }
+    const previousState = App.game.state;
     App.updateFlow(dt);
     if (App.game.paused) return;
-    if (['transform', 'victory'].includes(App.game.state)) return;
+    if (
+      ['transform', 'shrink', 'victory'].includes(previousState) ||
+      ['transform', 'shrink', 'victory'].includes(App.game.state)
+    )
+      return;
+    App.tickTeleport(dt);
     App.controlPlayer(App.player, App.dummy, dt);
     if (App.game.state === 'transform') return;
     App.controlDummy(App.dummy, App.player, dt);

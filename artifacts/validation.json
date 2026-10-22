@@ -1,11 +1,11 @@
 {
-  "checks": 276,
+  "checks": 341,
   "awakenedBenchmark": {
     "trials": 100,
     "roundSeconds": 99,
     "policies": 7,
-    "dummyWins": 61,
-    "playerWins": 39,
+    "dummyWins": 52,
+    "playerWins": 48,
     "policyResults": [
       {
         "policy": "idle",
@@ -16,20 +16,20 @@
       {
         "policy": "punch spam",
         "trials": 15,
-        "dummyWins": 11,
-        "playerWins": 4
+        "dummyWins": 7,
+        "playerWins": 8
       },
       {
         "policy": "mixed attacks",
         "trials": 14,
-        "dummyWins": 10,
-        "playerWins": 4
+        "dummyWins": 12,
+        "playerWins": 2
       },
       {
         "policy": "Shadow kiting",
         "trials": 14,
-        "dummyWins": 1,
-        "playerWins": 13
+        "dummyWins": 0,
+        "playerWins": 14
       },
       {
         "policy": "jumping kicks",
@@ -40,19 +40,19 @@
       {
         "policy": "guard/counter",
         "trials": 14,
-        "dummyWins": 14,
-        "playerWins": 0
+        "dummyWins": 12,
+        "playerWins": 2
       },
       {
         "policy": "crouch/sweep",
         "trials": 14,
-        "dummyWins": 10,
-        "playerWins": 4
+        "dummyWins": 6,
+        "playerWins": 8
       }
     ],
-    "attacks": 1452,
-    "dodges": 5874,
-    "restFraction": 0.5483886244111562
+    "attacks": 1514,
+    "dodges": 5905,
+    "restFraction": 0.5486920137543351
   },
   "r8Benchmarks": {
     "car": {
@@ -70,8 +70,8 @@
         {
           "policy": "punch spam",
           "trials": 15,
-          "bossWins": 9,
-          "playerWins": 6
+          "bossWins": 10,
+          "playerWins": 5
         },
         {
           "policy": "mixed attacks",
@@ -82,8 +82,8 @@
         {
           "policy": "Shadow kiting",
           "trials": 14,
-          "bossWins": 1,
-          "playerWins": 13
+          "bossWins": 0,
+          "playerWins": 14
         },
         {
           "policy": "jumping kicks",
@@ -108,9 +108,9 @@
     },
     "robot": {
       "trials": 100,
-      "targetLossPercent": 90,
-      "bossWins": 84,
-      "playerWins": 16,
+      "targetLossPercent": 80,
+      "bossWins": 79,
+      "playerWins": 21,
       "policies": [
         {
           "policy": "idle",
@@ -133,8 +133,8 @@
         {
           "policy": "Shadow kiting",
           "trials": 14,
-          "bossWins": 12,
-          "playerWins": 2
+          "bossWins": 4,
+          "playerWins": 10
         },
         {
           "policy": "jumping kicks",
@@ -145,8 +145,8 @@
         {
           "policy": "guard/counter",
           "trials": 14,
-          "bossWins": 0,
-          "playerWins": 14
+          "bossWins": 3,
+          "playerWins": 11
         },
         {
           "policy": "crouch/sweep",
@@ -158,16 +158,51 @@
       "limit": "Isolated form with fresh INJ health; car-aware policies use low strikes. Not a human loss-rate estimate."
     }
   },
+  "teddyBenchmark": {
+    "trials": 40,
+    "playerWins": 29,
+    "teddyWins": 11,
+    "shrinkEvents": 30,
+    "tinyAttacks": 74,
+    "teleports": 8,
+    "nitroKicks": 20,
+    "policies": [
+      {
+        "name": "idle",
+        "trials": 10,
+        "playerWins": 0,
+        "teddyWins": 10
+      },
+      {
+        "name": "low pressure",
+        "trials": 10,
+        "playerWins": 9,
+        "teddyWins": 1
+      },
+      {
+        "name": "Shadow kiting + Blink",
+        "trials": 10,
+        "playerWins": 10,
+        "teddyWins": 0
+      },
+      {
+        "name": "mixed + Nitro + Blink",
+        "trials": 10,
+        "playerWins": 10,
+        "teddyWins": 0
+      }
+    ]
+  },
   "engine": "Chrome / Chromium",
   "viewports": 9,
   "audio": {
     "peak": 0.5534541010856628,
-    "rms": 0.03012639853230553,
+    "rms": 0.030126398306645864,
     "clippedSamples": 0
   },
   "limitations": [
     "No physical phone or mobile Safari test",
     "No subjective speaker or headphone listening review",
-    "Scripted phase benchmarks do not measure human loss rates; INJ now refills health at robot reveal; policies omit Nitro and aerial Shadow"
+    "Scripted benchmarks do not measure human win rates. Dummy/R8 use seven basic policies without Nitro, Blink or aerial Shadow; Teddy uses four policies including Nitro and Blink."
   ]
 }

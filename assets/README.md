@@ -45,3 +45,7 @@ The original `r8-sprites-v1.png` is a sixteen-pose, 1254×1254 RGBA atlas genera
 ### Current turquoise / cute revision
 
 `r8-sprites-v2.png` is the current 1254×1254 RGBA atlas, edited with built-in ImageGen on 19 October 2026. It gives the car a short, round, cute turquoise silhouette with large gold wheels, while preserving all sixteen fierce attack/transformation poses and matching the robot paint. Source pixels were copied unchanged; `r8-frames.js` and `tools/inspect-r8.py` now target v2, including updated body roots for airborne art. The blue v1 atlas remains as its historical source. [Both exact edit prompts and provenance](r8-generation-v2.md).
+
+## Blue Velvet / Doraemon
+
+The blue plush opponent uses sixteen authored poses in `teddy-sprites-v1.png`; Doraemon's shrink-ray assist uses four poses in `doraemon-sprites-v1.png`. Both are generated transparent PNGs, copied unchanged. `teddy-frames.js` records alpha bounds and grounded/body roots from `tools/inspect-teddy.py`. Runtime drawing applies one uniform scale: normal height 123.2, tiny height 41.888 world units. Source art is shared between forms. [Exact prompts, dimensions and provenance](teddy-generation.md). Gameplay/AI and shrink flow live in `js/teddy.js`; pose selection and cameo composition live in `js/teddy-renderer.js`.

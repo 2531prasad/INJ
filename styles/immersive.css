@@ -32,8 +32,12 @@
   color: #fff;
 }
 @media (max-width: 680px) and (orientation: portrait) {
+  .arena-menu {
+    left: calc(100% - var(--deck-right) - var(--main-size) * 2 - var(--deck-gap) - 46px);
+    bottom: 7px;
+  }
   #stickZone {
-    width: 34%;
+    width: 33%;
   }
 }
 #fullscreenStatus {
@@ -127,6 +131,9 @@ body.immersive-view {
 .standalone-view #pad {
   right: max(10px, env(safe-area-inset-right));
   bottom: max(12px, env(safe-area-inset-bottom));
+}
+.standalone-view .screen {
+  --deck-right: max(10px, env(safe-area-inset-right));
 }
 .standalone-view #stickZone::before,
 .standalone-view #stickZone .stick-directions {

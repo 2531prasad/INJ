@@ -140,11 +140,19 @@
       (airborneThreat ? op : null) ||
       (op.atk && !op.atk.hasHit && gap < 115 ? op.atk : null);
     const repeatedLow =
-      f.form === 'robot' && f.repeatCount >= 2 && op.grounded &&
+      f.form === 'robot' &&
+      f.repeatCount >= 2 &&
+      op.grounded &&
       ['sweep', 'slide', 'cpunch'].includes(f.repeatedMove);
     if (
-      repeatedLow && gap < 145 && !f.atk && !f.blockT && !f.dodgeT &&
-      f.openingT === 0 && f.dodgeCooldown === 0 && f.reactionT === 0
+      repeatedLow &&
+      gap < 145 &&
+      !f.atk &&
+      !f.blockT &&
+      !f.dodgeT &&
+      f.openingT === 0 &&
+      f.dodgeCooldown === 0 &&
+      f.reactionT === 0
     ) {
       // Recognized low spam is met with a visible shield, then a closing counter.
       f.facing = dir;
@@ -155,8 +163,12 @@
       f.dodgeCooldown = 0.8;
     }
     if (
-      threat && threat !== f.lastThreat && !f.atk && !f.blockT &&
-      f.dodgeT === 0 && f.reactionT === 0
+      threat &&
+      threat !== f.lastThreat &&
+      !f.atk &&
+      !f.blockT &&
+      f.dodgeT === 0 &&
+      f.reactionT === 0
     ) {
       f.lastThreat = threat;
       if (
@@ -169,7 +181,9 @@
         if (f.form === 'robot' && (missile || airborneThreat || op.atk?.def.knockdown)) {
           f.facing = dir;
           f.state = 'block';
-          f.blockT = airborneThreat ? 0.12 : 0.2;
+          // Vary the visible shield beat before committing to a counter, rather
+          // than repeating an identical response to every projectile.
+          f.blockT = airborneThreat ? 0.12 : p.shieldHold + App.rnd() * p.shieldHoldRange;
           f.restT = 0;
           f.counterMove = airborneThreat ? 'r8Upper' : missile ? 'r8Lunge' : 'r8Piston';
           f.dodgeCooldown = 0.9;

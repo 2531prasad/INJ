@@ -160,12 +160,16 @@
     },
     robot: {
       health: 140,
-      armor: 0.75,
-      damage: 1.35,
+      armor: 0.85,
+      damage: 1.3,
       speed: 250,
-      rest: 0.42,
+      rest: 0.48,
       restRange: 0.3,
-      dodge: 0.92
+      dodge: 0.92,
+      shieldHold: 0.16,
+      shieldHoldRange: 0.14,
+      reassess: 0.01,
+      reassessRange: 0.055
     }
   };
   Object.assign(App, { R8_MOVES, R8_TUNING, LEVEL_TWO });

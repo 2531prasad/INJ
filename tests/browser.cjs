@@ -34,7 +34,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   actual.on('requestfailed',request=>{if(/(?:127\.0\.0\.1|^file:)/.test(request.url())&&/\.(?:js|css)(?:$|\?)/.test(request.url()))productionErrors.push(request.url()+': '+request.failure()?.errorText);});
   for(const url of ['http://127.0.0.1:8879/index.html',pathToFileURL(path.join(root,'index.html')).href]){
     await actual.goto(url);
-    await actual.waitForFunction(()=>window.InjAudio&&window.INJ&&INJ.r8Sheet.ready&&Object.values(INJ.spriteSheets).every(s=>s.ready)&&Object.values(INJ.walkSheets).every(s=>s.ready)&&INJ.arenaImg.naturalWidth>0);
+    await actual.waitForFunction(()=>window.InjAudio&&window.INJ&&INJ.r8Sheet.ready&&Object.values(INJ.teddySheets).every(s=>s.ready)&&Object.values(INJ.spriteSheets).every(s=>s.ready)&&Object.values(INJ.walkSheets).every(s=>s.ready)&&INJ.arenaImg.naturalWidth>0);
     check(await actual.evaluate(()=>!window.__test&&INJ.game.paused&&InjAudio.ctx===null&&document.styleSheets.length>=7&&document.querySelector('#screen').clientHeight>100),`Uninstrumented ${url.startsWith('file:')?'direct file':'HTTP'} launch loads modules, art and styles without test hooks`);
     await actual.locator('#btnStartFight').tap();await actual.locator('#btnArenaMenu').tap();
     await actual.evaluate(()=>{INJ.game.round=4;INJ.player.hp=1;});
@@ -77,6 +77,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
       const visible = el => el.getClientRects().length > 0;
       const rect = el => el.getBoundingClientRect();
       const controls = [...document.querySelectorAll('.abtn')].filter(visible);
+      const missingControls = controls.length < 6;
       const offscreen = controls.some(el => { const r = rect(el); return r.left < 0 || r.right > innerWidth + 1 || r.top < 0 || r.bottom > innerHeight + 1; });
       const arena = rect(document.querySelector('#screen'));
       const outsideArena = controls.some(el => {const r=rect(el);return r.left<arena.left||r.right>arena.right||r.top<arena.top||r.bottom>arena.bottom;});
@@ -94,7 +95,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
       const landscapeGap=innerWidth>innerHeight&&Math.abs(arena.height-innerHeight)>2;
       const fullscreenMissing=fullscreen.height<44||fullscreen.top<arena.top||fullscreen.bottom>arena.bottom||fullscreen.left<arena.left||fullscreen.right>arena.right||!!document.querySelector('.phone-tools');
       const menuOverlap = controls.some(el=>rect(el).top<arena.top+arena.height*.18);
-      return { overflow: document.documentElement.scrollWidth > innerWidth, offscreen, outsideArena, wrongRatio, undersized, landscapeGap, menuOverlap, fullscreenMissing,utilityOverlap,utilityHeavy:!!utilityHeavy };
+      return { missingControls, overflow: document.documentElement.scrollWidth > innerWidth, offscreen, outsideArena, wrongRatio, undersized, landscapeGap, menuOverlap, fullscreenMissing,utilityOverlap,utilityHeavy:!!utilityHeavy };
     });
     check(!Object.values(layout).some(Boolean), `Phone ${width}×${height}: dynamic aspect, on-screen targets ≥44px, fullscreen embedded and landscape fills height (${JSON.stringify(layout)})`);
     await page.locator('#btnArenaMenu').click();
@@ -427,6 +428,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
 
   await require('./abilities.cjs')(page,check,root);
   await require('./victory.cjs')(page,check,root);
+  const teddyBenchmark=await require('./teddy-teleport.cjs')(page,check,root);
 
   const difficulty=await page.evaluate(()=>{
     const t=__test,out={};
@@ -585,7 +587,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     engine.master.gain.value=.72;engine.music.gain.value=.58;
     const step=60/112/4;
     for(let i=0;i<256;i++)engine.sequence(i,.1+i*step);
-    const effects=['victory','swing','jump','punch','kick','uppercut','jumpkick','block','toss','shadow','charge','gong','finish','fall','ui','catlaugh','engine','boost','rim','transform'];
+    const effects=['teleport','shrink','victory','swing','jump','punch','kick','uppercut','jumpkick','block','toss','shadow','charge','gong','finish','fall','ui','catlaugh','engine','boost','rim','transform'];
     // Effects are recorded in a separate offline pass below to preserve the score preview.
     const buffer=await offline.startRendering(), data=buffer.getChannelData(0);
     let peak=0,sum=0,invalid=0,clipped=0;
@@ -625,7 +627,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await pc.screenshot({path:path.join(root,'artifacts/background-duel-victory.png')});
   check(errors.length===0, `No browser runtime errors (${errors.join('; ')})`);
   check(resourceErrors.length===0, `All local split-script and stylesheet requests complete (${resourceErrors.join('; ')})`);
-  const report={checks,awakenedBenchmark:difficulty.benchmark,r8Benchmarks,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review','Scripted phase benchmarks do not measure human loss rates; INJ now refills health at robot reveal; policies omit Nitro and aerial Shadow']};
+  const report={checks,awakenedBenchmark:difficulty.benchmark,r8Benchmarks,teddyBenchmark,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review','Scripted benchmarks do not measure human win rates. Dummy/R8 use seven basic policies without Nitro, Blink or aerial Shadow; Teddy uses four policies including Nitro and Blink.']};
   fs.writeFileSync(path.join(root,'artifacts/validation.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify(report,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();await server.close();});

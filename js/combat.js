@@ -1,5 +1,5 @@
 /* combat.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: content.js, controls.js, core.js, effects.js, rounds.js, state.js.
+ * Cross-module dependencies: content.js, controls.js, core.js, effects.js, encounters.js, r8.js, teddy.js, rounds.js, state.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -10,6 +10,7 @@
   }
   function hurtbox(f) {
     if (App.isR8(f)) return App.r8Hurtbox(f);
+    if (App.isTeddy(f)) return App.teddyHurtbox(f);
     const low =
       f.state === 'crouch' ||
       (f.atk && (['sweep', 'cpunch', 'slide'].includes(f.atk.key) || f.atk.low));
@@ -21,7 +22,11 @@
     };
   }
   function startAttack(f, key) {
-    if (f.atk) return;
+    if (f.atk || f.teleport) return;
+    if (App.isTeddy(f)) {
+      App.startTeddyAttack(f, key);
+      return;
+    }
     const cost = App.MOVES[key]?.meter || 0;
     if (cost && (f !== App.player || f.meter < cost)) return;
     if (cost) {
@@ -58,6 +63,10 @@
     f.state = 'attack';
   }
   function stepAttack(f, dt, opp) {
+    if (f.atk.def.teddy) {
+      App.stepTeddyAttack(f, dt, opp);
+      return;
+    }
     if (f.atk.def.mechanical) {
       App.stepR8Attack(f, dt, opp);
       return;
@@ -77,7 +86,9 @@
         Math.floor(a.t / 0.035) !== Math.floor((a.t - dt) / 0.035)
       )
         App.afterimages.push({
-          f: { ...f, nitroEcho: true, atk: { ...a } }, life: 0.12, max: 0.12
+          f: { ...f, nitroEcho: true, atk: { ...a } },
+          life: 0.12,
+          max: 0.12
         });
     }
     if (d.projectile) {
@@ -85,7 +96,8 @@
         a.fired = true;
         const charged = !!a.charged;
         const originY = f.y - 46 * App.FIGHTER_SCALE,
-          aimAtTarget = !f.grounded || (App.isR8(opp) && opp.form === 'car'),
+          aimAtTarget =
+            !f.grounded || (App.isR8(opp) && opp.form === 'car') || (App.isTeddy(opp) && opp.tiny),
           targetBox = hurtbox(opp);
         App.projectiles.push({
           x: f.x + f.facing * 18 * App.FIGHTER_SCALE,
@@ -120,6 +132,7 @@
     if (!a || a.hasHit) return;
     if (
       def.invuln > 0 ||
+      def.teleport ||
       def.state === 'knockdown' ||
       def.state === 'ko' ||
       App.game.state !== 'fight'
@@ -142,6 +155,7 @@
   function applyHit(def, att, d, cx, cy) {
     if (
       def.invuln > 0 ||
+      def.teleport ||
       def.state === 'knockdown' ||
       def.state === 'ko' ||
       App.game.state !== 'fight'
@@ -199,7 +213,7 @@
     App.game.shake = d.heavy ? 7 : 4;
     def.vx = att.facing * d.kb;
     App.hitSpark(cx, cy, !!d.heavy);
-    if (App.isR8(def)) App.blockSpark(cx, cy);
+    if (App.isR8(def) || App.isTeddy(def)) App.blockSpark(cx, cy);
     else App.bloodBurst(cx, cy, d.heavy ? 14 : 7);
     if (d.key === 'shadow') App.Sfx.play('shadow');
     else if (d.key === 'uppercut') App.Sfx.play('uppercut');
@@ -267,6 +281,14 @@
       def.burstLeft = 0;
       def.restT = 0;
       def.openingT = Math.max(def.openingT, 0.12);
+      if (def.form === 'robot' && def.hitstun > 0) {
+        const profile = App.R8_TUNING.robot;
+        // Reassess after a stagger instead of perfectly countering every recovery.
+        def.aiT = Math.max(
+          def.aiT,
+          def.hitstun + profile.reassess + App.rnd() * profile.reassessRange
+        );
+      }
     }
   }
 

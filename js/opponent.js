@@ -39,6 +39,28 @@
     return true;
   }
   function controlDummy(f, op, dt) {
+    if (
+      op.teleport &&
+      App.game.state === 'fight' &&
+      f.hitstun <= 0 &&
+      !['ko', 'knockdown'].includes(f.state)
+    ) {
+      // Commit an existing swing toward the last seen side. Reacquire after Blink,
+      // rather than turning perfectly toward an invisible target mid-animation.
+      if (f.atk) App.stepAttack(f, dt, op);
+      else {
+        f.blockT = Math.max(0, f.blockT - dt);
+        f.state = f.blockT > 0 ? 'block' : f.grounded ? 'idle' : 'jump';
+      }
+      f.restT = Math.max(f.restT, 0.12);
+      f.openingT = Math.max(f.openingT, 0.12);
+      App.physics(f, dt);
+      return;
+    }
+    if (App.isTeddy(f)) {
+      App.controlTeddy(f, op, dt);
+      return;
+    }
     f.anim += dt;
     if (App.isR8(f)) {
       App.controlR8(f, op, dt);

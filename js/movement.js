@@ -1,5 +1,5 @@
 /* movement.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: combat.js, controls.js, core.js, effects.js, state.js.
+ * Cross-module dependencies: combat.js, controls.js, core.js, effects.js, state.js, teleport.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -46,6 +46,19 @@
       if (f.comboTimer <= 0) f.comboStep = 0;
     }
     const canAct = App.game.state === 'fight';
+    if (f.teleport) {
+      App.stepTeleport(f, op, dt);
+      return;
+    }
+    if (
+      canAct &&
+      !f.atk &&
+      f.hitstun <= 0 &&
+      !['ko', 'knockdown'].includes(f.state) &&
+      App.consume('teleport') &&
+      App.startTeleport(f)
+    )
+      return;
     if (f.atk) {
       App.stepAttack(f, dt, op);
     } else if (f.state === 'ko') {

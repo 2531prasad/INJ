@@ -142,6 +142,12 @@
     for (const fighter of [App.player, App.dummy]) {
       const margin = App.fighterMargin(fighter);
       fighter.x = App.clamp(fighter.x + shift, margin, App.world.width - margin);
+      if (fighter.teleport)
+        fighter.teleport.fromX = App.clamp(
+          fighter.teleport.fromX + shift,
+          margin,
+          App.world.width - margin
+        );
       fighter.dodgeFrom = App.clamp(fighter.dodgeFrom + shift, margin, App.world.width - margin);
       fighter.dodgeTo = App.clamp(fighter.dodgeTo + shift, margin, App.world.width - margin);
     }
