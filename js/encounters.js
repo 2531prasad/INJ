@@ -1,25 +1,36 @@
-/* Encounter ladder and the R8's two independent health pools. */
+/* Encounter ladder, dynamic combat bounds and the R8's two independent lives.
+ * Runtime dependencies: state.js, r8-content.js, teddy.js, giant.js. */
 (function (App) {
   'use strict';
   const isR8 = (f) => f.kind === 'r8';
   const isTeddy = (f) => f.kind === 'teddy';
+  const isGiant = (f) => isTeddy(f) && f.giant;
+  const fightWidth = () => App.world.width / (isGiant(App.dummy) ? App.GIANT_TUNING.zoom : 1);
   const fighterMargin = (f) =>
     isTeddy(f) ? Math.max(16, 44 * f.teddyScale) : isR8(f) ? (f.form === 'car' ? 54 : 38) : 26;
   function configureOpponent(round) {
     const r8 = round === 3,
       teddy = round >= 4,
+      giant = round >= 5,
       form = r8 ? 'car' : null;
     Object.assign(
       App.dummy,
       App.makeFighter({
-        name: teddy ? 'BLUE VELVET' : r8 ? 'R8 · GOLDLINE' : 'DUMMY',
+        name: giant ? 'VELVET COLOSSUS' : teddy ? 'BLUE VELVET' : r8 ? 'R8 · GOLDLINE' : 'DUMMY',
         kind: teddy ? 'teddy' : r8 ? 'r8' : 'dummy',
         pal: App.DUM_PAL,
         x: App.world.width / 2 + 65,
         facing: -1,
-        hp: teddy ? App.TEDDY_TUNING.health : r8 ? App.R8_TUNING.car.health : 130
+        hp: giant
+          ? App.GIANT_TUNING.health
+          : teddy
+            ? App.TEDDY_TUNING.health
+            : r8
+              ? App.R8_TUNING.car.health
+              : 130
       })
     );
+    App.dummy.giant = giant;
     App.dummy.form = form;
     App.dummy.robotMaxHp = r8 ? App.R8_TUNING.robot.health : 0;
     App.dummy.carMaxHp = r8 ? App.R8_TUNING.car.health : 0;
@@ -105,17 +116,21 @@
     App.resetInput();
   }
   function encounterSubtitle() {
-    return App.game.round >= 4
-      ? 'BLUE VELVET · BIG EGO. SMALL FUSE.'
-      : App.game.round === 3
-        ? 'R8 GOLDLINE · STAY LOW. JUMP THE DASH.'
-        : App.game.round === 2
-          ? 'DUMMY AWAKENED'
-          : '';
+    return App.game.round >= 5
+      ? 'VELVET COLOSSUS · KINGDOM OF GIANTS'
+      : App.game.round >= 4
+        ? 'BLUE VELVET · BIG EGO. SMALL FUSE.'
+        : App.game.round === 3
+          ? 'R8 GOLDLINE · STAY LOW. JUMP THE DASH.'
+          : App.game.round === 2
+            ? 'DUMMY AWAKENED'
+            : '';
   }
   Object.assign(App, {
     isR8,
     isTeddy,
+    isGiant,
+    fightWidth,
     fighterMargin,
     configureOpponent,
     beginR8Transform,

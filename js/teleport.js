@@ -35,22 +35,22 @@
       op.x =
         op.facing > 0
           ? Math.max(op.x, margin + distance)
-          : Math.min(op.x, App.world.width - margin - distance);
-      op.x = App.clamp(op.x, opponentMargin, App.world.width - opponentMargin);
+          : Math.min(op.x, App.fightWidth() - margin - distance);
+      op.x = App.clamp(op.x, opponentMargin, App.fightWidth() - opponentMargin);
       const shift = op.x - previousX;
       if (shift) {
         op.dodgeFrom = App.clamp(
           op.dodgeFrom + shift,
           opponentMargin,
-          App.world.width - opponentMargin
+          App.fightWidth() - opponentMargin
         );
         op.dodgeTo = App.clamp(
           op.dodgeTo + shift,
           opponentMargin,
-          App.world.width - opponentMargin
+          App.fightWidth() - opponentMargin
         );
       }
-      f.x = App.clamp(op.x - op.facing * distance, margin, App.world.width - margin);
+      f.x = App.clamp(op.x - op.facing * distance, margin, App.fightWidth() - margin);
       f.y = App.GROUND;
       f.grounded = true;
       f.facing = op.x > f.x ? 1 : -1;

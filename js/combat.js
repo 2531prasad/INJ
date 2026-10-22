@@ -1,5 +1,5 @@
 /* combat.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: content.js, controls.js, core.js, effects.js, encounters.js, r8.js, teddy.js, rounds.js, state.js.
+ * Cross-module dependencies: content.js, controls.js, core.js, effects.js, encounters.js, r8.js, teddy.js, giant.js, rounds.js, state.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -23,6 +23,10 @@
   }
   function startAttack(f, key) {
     if (f.atk || f.teleport) return;
+    if (App.isGiant(f)) {
+      App.startGiantAttack(f, key);
+      return;
+    }
     if (App.isTeddy(f)) {
       App.startTeddyAttack(f, key);
       return;
@@ -43,7 +47,7 @@
       if (f.atk.low) f.atk.def = { ...f.atk.def, box: [10, -30, 48, 28], type: 'low' };
       App.Sfx.play('boost');
     }
-    if (f === App.dummy && App.game.round >= 2) {
+    if (App.isAwakened(f)) {
       const move = App.MOVES[key];
       f.atk.def = {
         ...move,
@@ -63,6 +67,10 @@
     f.state = 'attack';
   }
   function stepAttack(f, dt, opp) {
+    if (f.atk.def.giant) {
+      App.stepGiantAttack(f, dt, opp);
+      return;
+    }
     if (f.atk.def.teddy) {
       App.stepTeddyAttack(f, dt, opp);
       return;
@@ -144,6 +152,16 @@
     const by = att.y + d.box[1] * scale,
       bw = d.box[2] * scale,
       bh = d.box[3] * scale;
+    if (att === App.player && def === App.dummy && App.giantEncounter.minion) {
+      const targets = [def, App.giantEncounter.minion]
+        .filter((f) => f.hp > 0 && !f.invuln && !['ko', 'knockdown'].includes(f.state))
+        .sort((a, b) => Math.abs(a.x - att.x) - Math.abs(b.x - att.x));
+      def =
+        targets.find((f) => {
+          const b = hurtbox(f);
+          return bx < b.x + b.w && bx + bw > b.x && by < b.y + b.h && by + bh > b.y;
+        }) || def;
+    }
     const ub = hurtbox(def);
     if (bx < ub.x + ub.w && bx + bw > ub.x && by < ub.y + ub.h && by + bh > ub.y) {
       a.hasHit = true;
@@ -187,6 +205,10 @@
       App.game.hitStop = 0.03;
       App.Sfx.play('block');
       if (def.hp <= 0) {
+        if (def.summoned) {
+          App.defeatGiantMinion(def);
+          return;
+        }
         if (App.beginR8Transform(def)) return;
         def.state = 'ko';
         def.grounded = false;
@@ -204,13 +226,16 @@
       def.atk.t >= 0.06 &&
       def.atk.t < def.atk.def.startup + def.atk.def.active;
     const mechanicalAttack = committed ? def.atk : null;
+    const giantPoise = App.isGiant(def);
+    const giantAttack = giantPoise ? def.atk : null;
+    const giantState = def.state;
     def.atk = null;
     def.blockT = 0;
     def.dodgeT = 0;
     def.hp = Math.max(0, def.hp - d.dmg);
     def.flash = 0.16;
-    App.game.hitStop = d.heavy ? 0.085 : 0.05;
-    App.game.shake = d.heavy ? 7 : 4;
+    App.game.hitStop = giantPoise ? 0 : d.heavy ? 0.085 : 0.05;
+    App.game.shake = giantPoise ? 1.5 : d.heavy ? 7 : 4;
     def.vx = att.facing * d.kb;
     App.hitSpark(cx, cy, !!d.heavy);
     if (App.isR8(def) || App.isTeddy(def)) App.blockSpark(cx, cy);
@@ -243,12 +268,21 @@
       App.updateChargeUI();
     }
     if (def.hp <= 0) {
+      if (def.summoned) {
+        App.defeatGiantMinion(def);
+        return;
+      }
       if (App.beginR8Transform(def)) return;
       def.state = 'ko';
       def.vy = -235;
       def.grounded = false;
       def.vx = att.facing * d.kb * 1.5;
       App.endRound(att);
+    } else if (giantPoise) {
+      def.atk = giantAttack;
+      def.state = giantState;
+      def.vx = 0;
+      def.hitstun = 0;
     } else if (mechanicalAttack) {
       def.atk = mechanicalAttack;
       def.state = 'attack';

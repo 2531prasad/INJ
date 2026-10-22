@@ -1,11 +1,12 @@
 {
-  "checks": 381,
+  "checks": 441,
   "awakenedBenchmark": {
+    "seedBase": 1993,
     "trials": 100,
     "roundSeconds": 99,
     "policies": 7,
-    "dummyWins": 53,
-    "playerWins": 47,
+    "dummyWins": 51,
+    "playerWins": 49,
     "policyResults": [
       {
         "policy": "idle",
@@ -16,14 +17,14 @@
       {
         "policy": "punch spam",
         "trials": 15,
-        "dummyWins": 6,
-        "playerWins": 9
+        "dummyWins": 5,
+        "playerWins": 10
       },
       {
         "policy": "mixed attacks",
         "trials": 14,
-        "dummyWins": 9,
-        "playerWins": 5
+        "dummyWins": 11,
+        "playerWins": 3
       },
       {
         "policy": "Shadow kiting",
@@ -46,13 +47,13 @@
       {
         "policy": "crouch/sweep",
         "trials": 14,
-        "dummyWins": 9,
-        "playerWins": 5
+        "dummyWins": 6,
+        "playerWins": 8
       }
     ],
-    "attacks": 1447,
-    "dodges": 5861,
-    "restFraction": 0.5500703994923304
+    "attacks": 1445,
+    "dodges": 5845,
+    "restFraction": 0.5491608089945915
   },
   "r8Benchmarks": {
     "car": {
@@ -212,16 +213,74 @@
       ]
     }
   },
+  "giantBenchmark": {
+    "trials": 30,
+    "policies": [
+      {
+        "name": "idle",
+        "trials": 10,
+        "playerWins": 0
+      },
+      {
+        "name": "reckless pressure",
+        "trials": 10,
+        "playerWins": 10
+      },
+      {
+        "name": "guard / Blink / punish",
+        "trials": 10,
+        "playerWins": 10
+      }
+    ],
+    "summons": 31,
+    "smashes": 50,
+    "blinks": 10,
+    "playerWins": 20,
+    "bossWins": 10,
+    "bossAudio": {
+      "peak": 0.5678412318229675,
+      "rms": 0.02821473908379876,
+      "invalid": 0,
+      "clipped": 0,
+      "chunks": [
+        0.03714329956741139,
+        0.031127027143440407,
+        0.030310423013191423,
+        0.023173469834988702,
+        0.028593135040532583,
+        0.03190249626015955,
+        0.031902081595041654,
+        0.0250320907832555,
+        0.03603900107197327,
+        0.02956992710086686,
+        0.020323242337542364,
+        0.03768766598244223,
+        0.03218731012303313,
+        0.02842837084519325,
+        0.023997008903945814,
+        0.03047064577660836,
+        0.033602135449323015,
+        0.02699066432675655,
+        0.023144378989038174,
+        0.030363695941036408,
+        0.030720232773240482,
+        0.014391971732516528,
+        0.0007804471665381083,
+        0.000014056444398903131
+      ],
+      "distinctArrangement": true
+    }
+  },
   "engine": "Chrome / Chromium",
   "viewports": 9,
   "audio": {
     "peak": 0.5534541010856628,
-    "rms": 0.030126398310341005,
+    "rms": 0.030126398346304917,
     "clippedSamples": 0
   },
   "limitations": [
     "No physical phone or mobile Safari test",
     "No subjective speaker or headphone listening review",
-    "Scripted benchmarks do not measure human win rates. Dummy/R8 use seven basic policies without Nitro, Blink or aerial Shadow; Teddy uses four full-encounter policies including Nitro and Blink, plus twenty isolated tiny-phase repeated-kick trials."
+    "Scripted benchmarks do not measure human win rates. Dummy/R8 use seven basic policies without Nitro, Blink or aerial Shadow; Teddy uses four full-encounter policies including Nitro and Blink, plus twenty isolated tiny-phase repeated-kick trials. Colossus uses thirty full fights across idle, reckless and prepared guard/Blink policies."
   ]
 }

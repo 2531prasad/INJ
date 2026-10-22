@@ -57,3 +57,7 @@ The blue plush opponent uses sixteen authored poses in `teddy-sprites-v1.png`; D
 ## Encounter stages (v0.23)
 
 Four new 1672×941 ImageGen background plates now replace the shared temple in live play: `stage-training-v1.png` (Cedar Courtyard), `stage-awakened-v1.png` (Storm Sanctum), `stage-goldline-v1.png` (Goldline Foundry, car and robot), and `stage-velvet-v1.png` (Toybox Opera, both Teddy sizes). Each PNG is copied unchanged. The original `hollow-courtyard.png` is retained as historical source art. `js/arena.js` owns selection, loading, fallbacks, baking, themed atmosphere and sanctum-only terrace duel; `js/rounds.js` repaints on encounter reset. [Exact prompts, hashes and review captures](stage-generation.md).
+
+## Velvet Colossus (v0.24)
+
+`stage-giants-v1.png` adds a fifth, standalone Kingdom of Giants plate. `teddy-giant-poses-v1.png` adds a four-pose transparent atlas: overhead two-fist windup, planted-paw impact, kneeling recovery and folded-arm recess. `tools/inspect-teddy.py` appends its alpha bounds/roots under `giant` in `teddy-frames.js`, normalized to the standing pose's 574-pixel height; source PNGs are never redrawn. Existing Teddy walking and combat art remain unchanged. `js/giant-renderer.js` uses a shared uniform boss scale and a separate pullback camera; `js/giant.js` owns the encounter. [Exact built-in ImageGen prompts, output paths and hashes](giant-generation.md).

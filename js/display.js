@@ -1,5 +1,5 @@
 /* display.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: arena.js, controls.js, core.js, menus.js, renderer.js, state.js.
+ * Cross-module dependencies: arena.js, controls.js, core.js, giant.js, menus.js, renderer.js, state.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -125,7 +125,8 @@
     arena.style.height = contentWidth / (nextWidth / App.H) + borderY + 'px';
     if (nextWidth === App.world.width) return;
     const previousWidth = App.world.width,
-      shift = (nextWidth - App.world.width) / 2;
+      shift =
+        (nextWidth - App.world.width) / (App.isGiant(App.dummy) ? App.GIANT_TUNING.zoom : 1) / 2;
     const marks = document.createElement('canvas');
     marks.width = App.bloodCv.width;
     marks.height = App.bloodCv.height;
@@ -139,19 +140,22 @@
       context.setTransform(App.RENDER_SCALE, 0, 0, App.RENDER_SCALE, 0, 0);
     App.ctx.imageSmoothingEnabled = true;
     App.bctx.drawImage(marks, shift, 0, previousWidth, App.H);
-    for (const fighter of [App.player, App.dummy]) {
+    for (const fighter of [App.player, App.dummy, App.giantEncounter.minion].filter(Boolean)) {
       const margin = App.fighterMargin(fighter);
-      fighter.x = App.clamp(fighter.x + shift, margin, App.world.width - margin);
+      fighter.x = App.clamp(fighter.x + shift, margin, App.fightWidth() - margin);
       if (fighter.teleport)
         fighter.teleport.fromX = App.clamp(
           fighter.teleport.fromX + shift,
           margin,
-          App.world.width - margin
+          App.fightWidth() - margin
         );
-      fighter.dodgeFrom = App.clamp(fighter.dodgeFrom + shift, margin, App.world.width - margin);
-      fighter.dodgeTo = App.clamp(fighter.dodgeTo + shift, margin, App.world.width - margin);
+      fighter.dodgeFrom = App.clamp(fighter.dodgeFrom + shift, margin, App.fightWidth() - margin);
+      fighter.dodgeTo = App.clamp(fighter.dodgeTo + shift, margin, App.fightWidth() - margin);
     }
-    for (const object of [...App.projectiles, ...App.particles]) object.x += shift;
+    for (const object of [...App.projectiles, ...App.particles, ...App.giantEncounter.hazards])
+      object.x += shift;
+    if (App.giantEncounter.impact) App.giantEncounter.impact.x += shift;
+    if (App.isGiant(App.dummy) && App.dummy.atk) App.dummy.atk.targetX += shift;
     for (const ghost of App.afterimages) ghost.f.x += shift;
     App.paintArena();
     App.render(App.game.elapsed * 1000);

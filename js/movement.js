@@ -1,5 +1,5 @@
 /* movement.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: combat.js, controls.js, core.js, effects.js, state.js, teleport.js.
+ * Cross-module dependencies: combat.js, controls.js, core.js, effects.js, encounters.js, state.js, teleport.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -8,7 +8,7 @@
   // Reversing movement plays the same footfalls backward; a wall stops the cycle.
   function moveWalking(f, dx) {
     const margin = App.fighterMargin(f);
-    const next = App.clamp(f.x + dx, margin, App.world.width - margin),
+    const next = App.clamp(f.x + dx, margin, App.fightWidth() - margin),
       travel = next - f.x;
     f.x = next;
     f.walkPhase += travel * f.facing;
@@ -36,7 +36,7 @@
       }
     }
     const margin = App.fighterMargin(f);
-    f.x = App.clamp(f.x, margin, App.world.width - margin);
+    f.x = App.clamp(f.x, margin, App.fightWidth() - margin);
     f.flash = Math.max(0, f.flash - dt);
   }
   function controlPlayer(f, op, dt) {

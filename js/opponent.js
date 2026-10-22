@@ -21,15 +21,15 @@
     f.dodgeT = hard ? 0.18 : 0.22;
     f.dodgeCooldown = hard ? App.LEVEL_TWO.dodgeCooldown : 1.8;
     f.dodgeFrom = f.x;
-    f.dodgeTo = App.clamp(f.x - dir * (hard ? 48 : 24), 26, App.world.width - 26);
+    f.dodgeTo = App.clamp(f.x - dir * (hard ? 48 : 24), 26, App.fightWidth() - 26);
     if (hard && Math.abs(f.dodgeTo - f.x) < 18)
-      f.dodgeTo = App.clamp(op.x + dir * 62, 26, App.world.width - 26);
+      f.dodgeTo = App.clamp(op.x + dir * 62, 26, App.fightWidth() - 26);
     f.state = 'dodge';
     if (hard) {
       f.burstLeft = 0;
       f.invuln = leap ? 0.15 : 0.1;
       if (leap) {
-        f.dodgeTo = App.clamp(f.x + dir * 54, 26, App.world.width - 26);
+        f.dodgeTo = App.clamp(f.x + dir * 54, 26, App.fightWidth() - 26);
         if (f.grounded) {
           f.grounded = false;
           f.vy = -430;
@@ -48,13 +48,17 @@
       // Commit an existing swing toward the last seen side. Reacquire after Blink,
       // rather than turning perfectly toward an invisible target mid-animation.
       if (f.atk) App.stepAttack(f, dt, op);
-      else {
+      else if (!(App.isGiant(f) && f.state === 'relax')) {
         f.blockT = Math.max(0, f.blockT - dt);
         f.state = f.blockT > 0 ? 'block' : f.grounded ? 'idle' : 'jump';
       }
       f.restT = Math.max(f.restT, 0.12);
       f.openingT = Math.max(f.openingT, 0.12);
       App.physics(f, dt);
+      return;
+    }
+    if (App.isGiant(f)) {
+      App.controlGiant(f, op, dt);
       return;
     }
     if (App.isTeddy(f)) {

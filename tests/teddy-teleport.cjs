@@ -461,12 +461,12 @@ module.exports = async function verifyTeddyTeleport(page, check, root) {
         a.game.round === 4;
       a.game.paused = false;
       a.finishVictory();
-      out.nextTeddyStartsFullSize =
+      out.nextStageStartsGiantReveal =
         a.game.round === 5 &&
         a.dummy.kind === 'teddy' &&
-        !a.dummy.shrinkUsed &&
+        a.dummy.giant && a.game.state === 'enlarge' &&
         a.dummy.teddyScale === 1 &&
-        a.dummy.hp === 140;
+        a.dummy.hp === 480;
       setup();
       const motion = a.reducedMotion;
       const rotate = ctx.rotate,

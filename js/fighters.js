@@ -160,6 +160,10 @@
     }
   }
   function drawFighter(f, ghost = false) {
+    if (App.isGiant(f)) {
+      App.drawGiant(f, ghost);
+      return;
+    }
     if (App.isTeddy(f)) {
       App.drawTeddy(f, ghost);
       return;
@@ -173,7 +177,7 @@
     if (!ghost && !f.backstage && !f.reflection) {
       App.ctx.save();
       App.ctx.beginPath();
-      App.ctx.rect(0, App.GROUND + 2, App.world.width, App.H - App.GROUND - 2);
+      App.ctx.rect(0, App.GROUND + 2, App.fightWidth(), App.H - App.GROUND - 2);
       App.ctx.clip();
       App.ctx.globalAlpha *= 0.09;
       App.ctx.translate(0, App.GROUND + 2);

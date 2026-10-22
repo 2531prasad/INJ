@@ -4,6 +4,7 @@
   'use strict';
   const midi = n => 440 * Math.pow(2, (n - 69) / 12);
   const STEP = 60 / 112 / 4;
+  const BOSS_STEP = 60 / 88 / 4;
   const ROOTS = [38, 38, 34, 36, 38, 41, 34, 33];
   const BASS = [0, null, 0, 12, null, 0, 7, null, 0, null, 12, null, 7, 0, null, 12];
   const MELODIES = [
@@ -78,9 +79,9 @@
     mix() {
       if (!this.ctx) return;
       this.ramp(this.master.gain, this.muted ? 0 : .72);
-      this.ramp(this.music.gain, !this.musicEnabled ? 0 : this.mode === 'fight' ? .58 : .24, .12);
+      this.ramp(this.music.gain, !this.musicEnabled ? 0 : ['fight', 'boss'].includes(this.mode) ? .58 : .24, .12);
     },
-    setMode(mode) { if (this.mode !== mode) { this.mode = mode; this.mix(); } },
+    setMode(mode) { if (this.mode !== mode) { if (mode === 'boss' || this.mode === 'boss') this.step = 0; this.mode = mode; this.mix(); } },
     toggleMute() { this.init(); this.muted = !this.muted; this.mix(); this.save(); },
     toggleMusic() { this.init(); this.musicEnabled = !this.musicEnabled; this.mix(); this.save(); },
     suspend() {
@@ -129,10 +130,11 @@
       while (this.nextTime < this.ctx.currentTime + .12) {
         if (this.musicEnabled && !this.muted) this.sequence(this.step, this.nextTime);
         this.step = (this.step + 1) % 256;
-        this.nextTime += STEP;
+        this.nextTime += this.mode === 'boss' ? BOSS_STEP : STEP;
       }
     },
     sequence(step, at) {
+      if (this.mode === 'boss') { this.bossSequence(step, at); return; }
       const s = step % 16, bar = Math.floor(step / 16), root = ROOTS[bar % 8];
       // Tight drum machine, syncopated triangle bass, restrained pulse arpeggio.
       if ([0, 6, 8].includes(s) || (bar % 4 === 3 && s === 14)) this.kick(at, .38);
@@ -166,12 +168,48 @@
         this.tone(at, f, f, .07, 'square', .02, this.music, 2500, true);
       }
     },
+    bossSequence(step, at) {
+      const s = step % 16, bar = Math.floor(step / 16);
+      const root = [26, 26, 29, 25, 26, 33, 29, 24][bar % 8];
+      // Slow half-time drums, low bowed pulse, choir fifths and a music-box call.
+      if ([0, 3, 8, 10].includes(s)) this.kick(at, s === 0 ? .46 : .3);
+      if (s === 4 || s === 12) {
+        this.noise(at, .18, 680, .14, this.music, 'lowpass');
+        this.tone(at, 100, 44, .25, 'triangle', .16, this.music, 1000);
+      }
+      if (s % 2 === 0) this.noise(at, .055, 4800, .022, this.music);
+      if ([0, 3, 6, 8, 11, 14].includes(s)) {
+        const f = midi(root + (s === 6 || s === 14 ? 7 : 0));
+        this.tone(at, f, f, BOSS_STEP * 1.65, 'sawtooth', .1, this.music, 480);
+        this.tone(at, f * 2, f * 2, BOSS_STEP * 1.3, 'triangle', .14, this.music, 1300);
+      }
+      if (s === 0 || s === 8) for (const note of [12, 19, 24]) {
+        const f = midi(root + note);
+        this.tone(at, f, f, BOSS_STEP * 6, 'sine', .045, this.music, 1800, true);
+      }
+      if ([2, 6, 10, 14].includes(s)) {
+        const intervals = [24, 31, 27, 26];
+        const f = midi(root + 12 + intervals[Math.floor(s / 4)]);
+        this.tone(at, f, f, .32, 'sine', .075, this.music, 4000, true);
+        this.tone(at, f * 2.003, f * 2.003, .13, 'sine', .02, this.music, 4800);
+      }
+    },
     play(type) {
       if (!this.ctx || this.ctx.state !== 'running' || this.muted) return;
       const at = this.ctx.currentTime + .004, bus = this.effects;
       const tone = (offset, f1, f2, d, wave, vol, cutoff) => this.tone(at + offset, f1, f2, d, wave, vol, bus, cutoff);
       const noise = (offset, d, f, vol, filter) => this.noise(at + offset, d, f, vol, bus, filter);
       switch (type) {
+        case 'enlarge':
+          [0, .22, .44].forEach((o, i) => tone(o, 220 + i * 110, 880 + i * 220, .3, 'sine', .1, 3200));
+          tone(.6, 120, 48, 1.4, 'triangle', .22, 1800); break;
+        case 'bossWindup':
+          tone(0, 100, 55, .6, 'triangle', .12, 1400); break;
+        case 'bossSmash':
+          this.kick(at, .6, bus); noise(0, .3, 550, .22, 'lowpass');
+          tone(0, 72, 32, .5, 'sine', .24, 900); break;
+        case 'summon':
+          [62, 65, 69, 74].forEach((n, i) => tone(i * .08, midi(n), midi(n), .3, 'triangle', .08, 2800)); break;
         case 'teleport':
           tone(0, 660, 110, .14, 'sine', .16, 3000);
           noise(0, .08, 2600, .055, 'bandpass');
@@ -234,7 +272,7 @@
       }
       if (['uppercut', 'jumpkick', 'shadow', 'finish'].includes(type) && this.musicEnabled) {
         // Make room for a heavy hit, then let the score return smoothly.
-        const level = this.mode === 'fight' ? .58 : .24;
+        const level = ['fight', 'boss'].includes(this.mode) ? .58 : .24;
         this.music.gain.cancelScheduledValues(at);
         this.music.gain.setValueAtTime(level * .52, at);
         this.music.gain.setTargetAtTime(level, at + .09, .09);

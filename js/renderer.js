@@ -1,5 +1,5 @@
 /* renderer.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: arena.js, core.js, fighters.js, state.js, teddy-renderer.js.
+ * Cross-module dependencies: arena.js, core.js, fighters.js, state.js, teddy-renderer.js, giant-renderer.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -75,6 +75,7 @@
     ctx.restore();
   }
   function render(now) {
+    if (App.isGiant(App.dummy)) { App.renderGiant(now); return; }
     if (App.game.state === 'victory') {
       drawVictory();
       return;

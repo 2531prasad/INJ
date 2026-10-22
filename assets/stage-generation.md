@@ -38,3 +38,7 @@ Create a finished ultra-detailed production background plate for a side-view 2D 
 ## Review
 
 In-game desktop/phone captures are `artifacts/stage-{1,2,3,4}-{desktop,phone}.png`. The structure/browser runner checks all four local plates, actual distinct rendered pixels, round-to-stage mapping, same-stage retries, Goldline phase continuity, later Teddy stages, fallback painting and late image-load isolation. Chrome emulation does not establish physical Safari behavior.
+
+## Fifth encounter: Velvet Colossus (v0.24)
+
+Round five onward now uses the standalone `stage-giants-v1.png` Kingdom of Giants plate. Its enlargement intro starts with a cropped view, then pulls back to reveal the monumental outer statues and architecture. The four plates and generation prompts above remain unchanged. [Fifth-stage prompt, source path, dimensions and hash](giant-generation.md).

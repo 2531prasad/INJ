@@ -385,7 +385,7 @@
     if (!f.atk) f.facing = op.x > f.x ? 1 : -1;
   }
   function queueTeddyShrink(f) {
-    if (!App.isTeddy(f) || f.shrinkUsed || f.hp <= 0 || f.hp > f.maxHp * 0.67) return;
+    if (!App.isTeddy(f) || App.isGiant(f) || f.shrinkUsed || f.hp <= 0 || f.hp > f.maxHp * 0.67) return;
     f.shrinkUsed = true;
     f.shrinkDelay = 0.45 + App.rnd() * 1.05;
   }

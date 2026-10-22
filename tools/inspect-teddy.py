@@ -63,7 +63,14 @@ def pelvis_center(filename, frame):
 
 data = dict(teddy=inspect('teddy-sprites-v1.png', 16, 4),
             cameo=inspect('doraemon-sprites-v1.png', 4, 2),
-            walkLeft=inspect('teddy-walk-left-v1.png', 1, 1))
+            walkLeft=inspect('teddy-walk-left-v1.png', 1, 1),
+            giant=inspect('teddy-giant-poses-v1.png', 4, 2))
+# New boss poses share the standing folded-arm pose's body scale. Raised paws
+# and low smash/recovery silhouettes must not be normalized to the same height.
+data['giant']['neutralHeight'] = data['giant']['frames'][3]['h']
+# Pin smash poses at the planted rear foot, never the extended front hands.
+for i in [1, 2]:
+    data['giant']['frames'][i]['anchorX'] = round(data['giant']['frames'][i]['w'] * .23, 2)
 # Match the original left step's height and the correct right step's torso/root
 # relationship. Both foot baselines stay grounded; source PNGs are never edited.
 left = data['walkLeft']['frames'][0]

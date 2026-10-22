@@ -40,6 +40,9 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     await actual.evaluate(()=>{INJ.game.round=4;INJ.player.hp=1;});
     await actual.locator('#btnRestart').tap();
     check(await actual.evaluate(()=>INJ.game.round===1&&INJ.player.hp===INJ.player.maxHp&&!INJ.game.paused),`Uninstrumented ${url.startsWith('file:')?'direct file':'HTTP'} controls and restart work through the module bootstrap`);
+    check(await actual.evaluate(()=>{INJ.game.round=4;INJ.resetRound();INJ.stepGiantIntro(4.8);INJ.game.paused=true;INJ.render(0);
+      return INJ.isGiant(INJ.dummy)&&INJ.arenaStage().id==='giants'&&INJ.teddySheets.giant.ready&&INJ.game.roundTime===null;}),
+      `Uninstrumented ${url.startsWith('file:')?'direct file':'HTTP'} boss stage loads and renders its local art`);
   }
   check(productionErrors.length===0,`Production module startup has no runtime errors (${productionErrors.join('; ')})`);
   await production.close();
@@ -430,6 +433,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await require('./victory.cjs')(page,check,root);
   await require('./stages.cjs')(page,check,root);
   const teddyBenchmark=await require('./teddy-teleport.cjs')(page,check,root);
+  const giantBenchmark=await require('./giant.cjs')(page,check,root);
 
   const difficulty=await page.evaluate(()=>{
     const t=__test,out={};
@@ -469,11 +473,12 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     for(let i=0;i<7200&&t.game.state==='fight';i++){t.controlPlayer(t.player,t.dummy,1/120);t.controlDummy(t.dummy,t.player,1/120);}
     out.idlePlayerLoses=t.player.hp===0&&t.game.lost;
     roundTwo();t.game.round=20;t.startAttack(t.dummy,'jab');out.laterRoundsHard=t.dummy.atk.def.dmg>t.MOVES.jab.dmg&&t.dummy.atk.def.recovery>=.18;
-    const play=InjAudio.play;InjAudio.play=()=>{};
+    const play=InjAudio.play, random=INJ.rnd;InjAudio.play=()=>{};
     let dummyWins=0,playerWins=0,attacks=0,dodges=0,restFrames=0,frames=0;
     const policyResults=['idle','punch spam','mixed attacks','Shadow kiting','jumping kicks','guard/counter','crouch/sweep'].map(policy=>({policy,trials:0,dummyWins:0,playerWins:0}));
     try{
       for(let trial=0;trial<100;trial++){
+        INJ.rnd=INJ.mulberry32(1993+trial);
         roundTwo();t.game.paused=false;t.game.roundTime=99;
         const policy=trial%7;
         // Hit-stop pauses the round clock, so allow enough simulation time for
@@ -496,8 +501,8 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
         policyResults[policy].trials++;
         if(t.game.lost){dummyWins++;policyResults[policy].dummyWins++;}else{playerWins++;policyResults[policy].playerWins++;}
       }
-    }finally{InjAudio.play=play;t.settle();}
-    return {checks:out,benchmark:{trials:100,roundSeconds:99,policies:7,dummyWins,playerWins,policyResults,attacks,dodges,restFraction:restFrames/frames}};
+    }finally{InjAudio.play=play;INJ.rnd=random;t.settle();}
+    return {checks:out,benchmark:{seedBase:1993,trials:100,roundSeconds:99,policies:7,dummyWins,playerWins,policyResults,attacks,dodges,restFraction:restFrames/frames}};
   });
   for(const [name,passed] of Object.entries(difficulty.checks))check(passed,`Awakened opponent: ${name}`);
   check(difficulty.benchmark.dummyWins>difficulty.benchmark.playerWins&&difficulty.benchmark.playerWins>=5,`Awakened benchmark: dummy wins ${difficulty.benchmark.dummyWins}/100 against seven scripted play styles (not a human win-rate estimate)`);
@@ -588,7 +593,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     engine.master.gain.value=.72;engine.music.gain.value=.58;
     const step=60/112/4;
     for(let i=0;i<256;i++)engine.sequence(i,.1+i*step);
-    const effects=['teleport','shrink','victory','swing','jump','punch','kick','uppercut','jumpkick','block','toss','shadow','charge','gong','finish','fall','ui','catlaugh','engine','boost','rim','transform'];
+    const effects=['teleport','shrink','victory','swing','jump','punch','kick','uppercut','jumpkick','block','toss','shadow','charge','gong','finish','fall','ui','catlaugh','engine','boost','rim','transform','enlarge','bossWindup','bossSmash','summon'];
     // Effects are recorded in a separate offline pass below to preserve the score preview.
     const buffer=await offline.startRendering(), data=buffer.getChannelData(0);
     let peak=0,sum=0,invalid=0,clipped=0;
@@ -628,7 +633,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await pc.screenshot({path:path.join(root,'artifacts/background-duel-victory.png')});
   check(errors.length===0, `No browser runtime errors (${errors.join('; ')})`);
   check(resourceErrors.length===0, `All local split-script and stylesheet requests complete (${resourceErrors.join('; ')})`);
-  const report={checks,awakenedBenchmark:difficulty.benchmark,r8Benchmarks,teddyBenchmark,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review','Scripted benchmarks do not measure human win rates. Dummy/R8 use seven basic policies without Nitro, Blink or aerial Shadow; Teddy uses four full-encounter policies including Nitro and Blink, plus twenty isolated tiny-phase repeated-kick trials.']};
+  const report={checks,awakenedBenchmark:difficulty.benchmark,r8Benchmarks,teddyBenchmark,giantBenchmark,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review','Scripted benchmarks do not measure human win rates. Dummy/R8 use seven basic policies without Nitro, Blink or aerial Shadow; Teddy uses four full-encounter policies including Nitro and Blink, plus twenty isolated tiny-phase repeated-kick trials. Colossus uses thirty full fights across idle, reckless and prepared guard/Blink policies.']};
   fs.writeFileSync(path.join(root,'artifacts/validation.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify(report,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();await server.close();});

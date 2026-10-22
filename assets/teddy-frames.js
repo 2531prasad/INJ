@@ -188,5 +188,44 @@ window.InjTeddyFrames = {
         anchorY: 1121
       }
     ]
+  },
+  giant: {
+    width: 1254,
+    height: 1254,
+    neutralHeight: 574,
+    frames: [
+      {
+        x: 94,
+        y: 7,
+        w: 528,
+        h: 611,
+        anchorX: 210.39,
+        anchorY: 611
+      },
+      {
+        x: 648,
+        y: 141,
+        w: 582,
+        h: 477,
+        anchorX: 133.86,
+        anchorY: 477
+      },
+      {
+        x: 82,
+        y: 773,
+        w: 575,
+        h: 435,
+        anchorX: 132.25,
+        anchorY: 435
+      },
+      {
+        x: 693,
+        y: 639,
+        w: 479,
+        h: 574,
+        anchorX: 274.1,
+        anchorY: 574
+      }
+    ]
   }
 };

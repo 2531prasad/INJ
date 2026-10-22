@@ -90,7 +90,12 @@
           size: 1.4 + App.rnd() * 1.6,
           g: 0
         });
-      const target = p.owner === App.player ? App.dummy : App.player;
+      let target = p.owner === App.player ? App.dummy : App.player;
+      const minion = App.giantEncounter.minion;
+      if (p.owner === App.player && minion && minion.hp > 0) {
+        const b = App.hurtbox(minion);
+        if (p.x > b.x && p.x < b.x + b.w && p.y > b.y && p.y < b.y + b.h) target = minion;
+      }
       const ub = App.hurtbox(target);
       if (p.x > ub.x && p.x < ub.x + ub.w && p.y > ub.y && p.y < ub.y + ub.h) {
         const move =
@@ -103,7 +108,7 @@
         App.projectiles.splice(i, 1);
         continue;
       }
-      if (p.life <= 0 || p.x < -20 || p.x > App.world.width + 20) {
+      if (p.life <= 0 || p.x < -20 || p.x > App.fightWidth() + 20) {
         App.projectiles.splice(i, 1);
       }
     }

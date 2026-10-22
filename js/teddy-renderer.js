@@ -5,7 +5,8 @@
   for (const [kind, source] of [
     ['teddy', 'teddy-sprites-v1.png'],
     ['cameo', 'doraemon-sprites-v1.png'],
-    ['walkLeft', 'teddy-walk-left-v1.png']
+    ['walkLeft', 'teddy-walk-left-v1.png'],
+    ['giant', 'teddy-giant-poses-v1.png']
   ]) {
     const sheet = { image: new Image(), meta: window.InjTeddyFrames[kind], ready: false };
     sheet.image.onload = () => {

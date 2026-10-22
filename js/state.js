@@ -39,6 +39,9 @@
       teleportCooldown: 0,
       teddyScale: 1,
       tiny: false,
+      giant: false,
+      summoned: false,
+      summonRetreatT: 0,
       shrinkUsed: false,
       shrinkDelay: -1,
       dodgeT: 0,
@@ -105,7 +108,14 @@
     roastStep: 0,
     roastSet: 0
   };
-  const isAwakened = (f) => f === dummy && f.kind === 'dummy' && game.round >= 2;
+  const giantEncounter = {
+    minion: null,
+    hazards: [],
+    impact: null,
+    hpTrail: 0,
+    revealPlayed: false
+  };
+  const isAwakened = (f) => f.kind === 'dummy' && ((f === dummy && game.round >= 2) || f.summoned);
 
   Object.assign(App, {
     makeFighter,
@@ -116,6 +126,7 @@
     afterimages,
     reducedMotion,
     game,
+    giantEncounter,
     isAwakened
   });
 })(window.INJ);

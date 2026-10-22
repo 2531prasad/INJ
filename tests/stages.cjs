@@ -18,8 +18,8 @@ module.exports = async function verifyStages(page, check, root) {
       return 0.5;
     };
     try {
-      out.fourHighQualityPlates =
-        a.arenaStages.length === 4 &&
+      out.fiveHighQualityPlates =
+        a.arenaStages.length === 5 &&
         a.arenaStages.every(
           (s) =>
             s.image.naturalWidth >= 1500 &&
@@ -43,16 +43,17 @@ module.exports = async function verifyStages(page, check, root) {
       out.distinctStagePixels = new Set(hashes).size === 4;
       a.game.round = 8;
       a.paintArena();
-      out.laterTeddyKeepsTheatre = a.arenaStage().id === 'velvet' && pixels() === hashes[3];
+      out.laterGiantKeepsKingdom = a.arenaStage().id === 'giants' && pixels() !== hashes[3];
+      const giantPixels = pixels();
       a.arenaStages[0].image.onload();
-      out.lateLoadCannotReplaceCurrentStage = pixels() === hashes[3];
+      out.lateLoadCannotReplaceCurrentStage = pixels() === giantPixels;
       const stage = a.arenaStage(),
         image = stage.image;
       try {
         stage.image = new Image();
         a.paintArena();
         out.immediateLocalFallback =
-          pixels() !== hashes[3] && a.bgx.getImageData(0, 0, 1, 1).data[3] === 255;
+          pixels() !== giantPixels && a.bgx.getImageData(0, 0, 1, 1).data[3] === 255;
       } finally {
         stage.image = image;
         a.paintArena();
@@ -62,7 +63,8 @@ module.exports = async function verifyStages(page, check, root) {
         !a.arenaStages[0].duel &&
         a.arenaStages[1].duel &&
         !a.arenaStages[2].duel &&
-        !a.arenaStages[3].duel;
+        !a.arenaStages[3].duel &&
+        !a.arenaStages[4].duel;
     } finally {
       a.rnd = random;
       a.game.round = 0;

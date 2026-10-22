@@ -5,7 +5,7 @@
   'use strict';
   function endRound(winner) {
     if (['ko', 'victory'].includes(App.game.state)) return;
-    App.game.lost = winner === App.dummy;
+    App.game.lost = winner !== App.player;
     App.game.state = 'ko';
     App.game.koTimer = App.game.lost ? 3 : 1.1;
     App.game.victory = App.game.lost
@@ -22,6 +22,8 @@
     App.player.teleport = null;
     App.dummy.atk = null;
     App.projectiles.length = 0;
+    App.giantEncounter.hazards.length = 0;
+    App.giantEncounter.minion = null;
     App.game.msg = { text: winner.name + ' WINS', sub: '', big: 16 };
     App.Sfx.play('finish');
   }
@@ -76,6 +78,7 @@
     App.afterimages.length = 0;
     App.bctx.clearRect(0, 0, App.world.width, App.H);
     App.game.roundTime = 99;
+    App.resetGiantEncounter();
     if (advance) App.game.round++;
     App.configureOpponent(App.game.round);
     App.paintArena();
@@ -87,11 +90,14 @@
     App.game.hitStop = 0;
     App.game.shake = 0;
     App.game.shakeX = App.game.shakeY = 0;
+    if (App.isGiant(App.dummy)) App.beginGiantIntro();
     App.updateChargeUI();
   }
 
   function updateFlow(dt) {
-    if (App.game.state === 'intro') {
+    if (App.game.state === 'enlarge') {
+      App.stepGiantIntro(dt);
+    } else if (App.game.state === 'intro') {
       App.game.t += dt;
       if (App.game.t < 1.1) {
         if (!App.game.gongPlayed) {
@@ -116,13 +122,15 @@
     } else if (App.game.state === 'fight') {
       App.stepTeddyShrink(dt);
       if (App.game.state === 'shrink') return;
-      App.game.roundTime -= dt;
-      if (App.game.roundTime <= 0) {
-        App.game.roundTime = 0;
-        // Both boss forms must be cleared before the active phase clock expires.
-        endRound(
-          App.isR8(App.dummy) ? App.dummy : App.player.hp >= App.dummy.hp ? App.player : App.dummy
-        );
+      if (!App.isGiant(App.dummy)) {
+        App.game.roundTime -= dt;
+        if (App.game.roundTime <= 0) {
+          App.game.roundTime = 0;
+          // Both boss forms must be cleared before the active phase clock expires.
+          endRound(
+            App.isR8(App.dummy) ? App.dummy : App.player.hp >= App.dummy.hp ? App.player : App.dummy
+          );
+        }
       }
     } else if (App.game.state === 'ko') {
       App.game.koTimer -= dt;

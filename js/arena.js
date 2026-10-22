@@ -61,6 +61,18 @@
         [237, 30, 10],
         [271, 35, 10]
       ]
+    },
+    {
+      id: 'giants',
+      name: 'KINGDOM OF GIANTS',
+      sky: '#30243d',
+      floor: '#7e6856',
+      accent: '#edcd8d',
+      glows: [
+        [33, 97, 13],
+        [200, 49, 20],
+        [366, 97, 13]
+      ]
     }
   ];
   function arenaStage(round = App.game.round) {
