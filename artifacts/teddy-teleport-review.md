@@ -38,3 +38,7 @@ Full mode. Scope: Blue Velvet normal/tiny art, Doraemon's ray sequence, INJ Blin
 - Not verified: physical iPhone/Safari touch ergonomics, Home Screen interruptions and subjective speaker/headphone listening.
 
 **Approve within the inspected Chromium scope.** No actionable interface-polish findings remain there; the physical-device and listening checks above remain unverified.
+
+## Walking correction follow-up
+
+The left step now uses a separate authored pose with the far left thigh behind the planted right leg and opposite arm swing. The correct original right step is unchanged. The replacement shares the floor baseline and a torso-matched root at both normal and tiny sizes, facing either way. Visually inspected [registered pose comparison](teddy-walk-review.png). The latest full suite passes **345 Chromium checks**, including renderer-source preservation, shared height/baseline and both-size/both-facing walking checks. Source art was corrected with built-in ImageGen; [exact prompts and asset provenance](../assets/teddy-generation.md#walking-correction).

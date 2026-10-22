@@ -4,7 +4,8 @@
   const teddySheets = {};
   for (const [kind, source] of [
     ['teddy', 'teddy-sprites-v1.png'],
-    ['cameo', 'doraemon-sprites-v1.png']
+    ['cameo', 'doraemon-sprites-v1.png'],
+    ['walkLeft', 'teddy-walk-left-v1.png']
   ]) {
     const sheet = { image: new Image(), meta: window.InjTeddyFrames[kind], ready: false };
     sheet.image.onload = () => {
@@ -14,6 +15,12 @@
     teddySheets[kind] = sheet;
   }
   function drawTeddyFrame(kind, index, height) {
+    // Only the incorrect left step is replaced; the authored right step and all
+    // combat poses retain their original atlas pixels and frame numbers.
+    if (kind === 'teddy' && index === 2) {
+      kind = 'walkLeft';
+      index = 0;
+    }
     const sheet = teddySheets[kind];
     if (!sheet.ready) return;
     const frame = sheet.meta.frames[index],

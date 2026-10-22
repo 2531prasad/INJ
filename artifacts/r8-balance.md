@@ -11,7 +11,7 @@ The robot target is now roughly **20% INJ wins / 80% player losses**. Every resu
 
 ## Latest scripted results
 
-`node tests/structure.cjs` passes **28 classic scripts / seven stylesheets**. `node tests/browser.cjs` passes **341 Chromium checks**.
+`node tests/structure.cjs` passes **28 classic scripts / seven stylesheets**. `node tests/browser.cjs` passes **345 Chromium checks**.
 
 | Encounter | Intended player-loss goal | Opponent wins | INJ wins |
 | --- | ---: | ---: | ---: |

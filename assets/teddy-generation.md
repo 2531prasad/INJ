@@ -30,3 +30,25 @@ Edit this exact four-pose Doraemon sprite atlas. Remove ALL soft colored glows, 
 
 - `teddy-sprites-v1.png` SHA-256: `0327355ce3c647db316cd4df4ae1fa24714742e34781f47b2bfd6edaab3324a9`
 - `doraemon-sprites-v1.png` SHA-256: `0182523c28a15ff9e9e0025d0ff037a1383388c5bc229c4dcdf2f7fb8283c112`
+
+## Walking correction
+
+The original left-step cell also advanced the near/right leg. A separate **`teddy-walk-left-v1.png`** now supplies the far/left-leg-forward step. The built-in ImageGen tool produced the correction; the selected final PNG was copied without pixel editing. Its far forward leg is behind the planted near thigh, with a smaller blue-clawed paw and opposite arm swing. The correct right step and every other original atlas cell retain their original source pixels. The original atlas and Doraemon hashes above remain unchanged.
+
+`walkLeft` metadata normalizes the replacement's visible height to the old left step. The inspector measures the lower-torso center across 70–78% of the silhouette height and matches the correct right step's torso-to-root offset. Feet share the original floor baseline. This affects rendering only; walking distance, speed, hitboxes and AI are unchanged. [Normal/tiny, both-facing preview](../artifacts/teddy-walk-review.png).
+
+### Initial single-pose edit prompt
+
+```text
+Use case: precise-object-edit. Asset type: one corrected transparent walking sprite for an existing 2D game. Reference/edit target: the blue plush teddy sprite atlas. Extract/recreate ONLY the third sprite in its TOP ROW (the intended LEFT-LEG-FORWARD walk pose) as ONE isolated full-body sprite on a square transparent canvas. Correct its gait: same teddy facing RIGHT in the SAME three-quarter side view, but the ANATOMICAL LEFT leg, the FAR-SIDE LEG, must swing FORWARD toward screen-right. The ANATOMICAL RIGHT leg, the NEAR-SIDE LEG, is planted BACK toward screen-left supporting the weight. Make the forward far-side left leg visibly emerge BEHIND the belly/right thigh at the hip; its shin and foot reach rightward beyond the planted right foot. The planted near right thigh must clearly overlap and occlude the root of the far left thigh, establishing which leg is which. Do NOT raise the near right leg in front of the body like the reference: that is the error being fixed. The left/far forward paw shows its TOP BLUE FUR and tiny blue claws, with its toes tipped slightly DOWN; NO broad cream sole facing the camera on this forward paw. Keep head, ears, face, guard hands, sky-blue plush texture, proportions and hand-painted style closely matching the top-row source sprites. Long upright cream-lined ears, tan face, huge blue eyes, tiny blue nose, small triangular teeth. Counter-swing the arms subtly for the opposite step. Keep the torso upright, neutral guard, both legs clearly distinguishable. Whole character including ear tips and all toes inside frame, generous transparent margin. Only ONE sprite, no other poses, no labels, no scene, no background, no floor, no shadow or glow. Genuine alpha transparency. This is the opposite leg step to the current atlas top-right pose; DO NOT simply mirror the character or change facing.
+```
+
+The first result still put the diagonal thigh in front. The following targeted edit supplied the selected final pose.
+
+### Final correction prompt
+
+```text
+Edit target is IMAGE 1, the single blue teddy walking sprite. Image 2 is the existing game atlas, style reference only. The leg layering is STILL WRONG in image 1: the huge diagonal forward leg is drawn in the foreground. Correct ONLY the walking limb pose/layering, retaining this same character, right-facing head, ears, torso design, overall scale, source hand-painted appearance and transparent background. The FORWARD LEG reaching screen-right must be the FAR LEG, drawn SMALLER, slightly darker blue and BEHIND the planted NEAR LEG where the thighs overlap. Put the vertical planted near/right thigh visibly IN FRONT at the crotch overlap, its outside edge unbroken from hip down to the broad planted paw at screen-left. Hide the ROOT of the diagonal forward far/left thigh behind that foreground planted thigh. The forward far leg should only become visible from BEHIND the planted leg around knee height, then extend right with a small TOP-VIEW blue-clawed paw. No giant foreground diagonal thigh, no camera-facing cream sole. Lift the NEAR RIGHT ARM FORWARD at chest level, paw reaching toward screen-right in front of the belly; swing the FAR LEFT ARM backward, partially occluded by torso, to counterbalance the forward far/left leg. This is explicitly the OPPOSITE stride and arm swing to the top-right walking sprite of image 2, while both sprites face RIGHT. Strong readable side-view limb occlusion is essential; don't just make the same near leg stride with different fur. One full-body sprite, all ear tips and feet inside generous transparent margins. No background, floor, shadows, glows, labels or extra sprites. Genuine transparency.
+```
+
+Final `teddy-walk-left-v1.png` SHA-256: `4588da5c7553da9f78d5edf5d95a63c17748146b82a708cc309297e62c2c7183`.

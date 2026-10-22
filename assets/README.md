@@ -49,3 +49,7 @@ The original `r8-sprites-v1.png` is a sixteen-pose, 1254×1254 RGBA atlas genera
 ## Blue Velvet / Doraemon
 
 The blue plush opponent uses sixteen authored poses in `teddy-sprites-v1.png`; Doraemon's shrink-ray assist uses four poses in `doraemon-sprites-v1.png`. Both are generated transparent PNGs, copied unchanged. `teddy-frames.js` records alpha bounds and grounded/body roots from `tools/inspect-teddy.py`. Runtime drawing applies one uniform scale: normal height 123.2, tiny height 41.888 world units. Source art is shared between forms. [Exact prompts, dimensions and provenance](teddy-generation.md). Gameplay/AI and shrink flow live in `js/teddy.js`; pose selection and cameo composition live in `js/teddy-renderer.js`.
+
+### Teddy walking correction
+
+`teddy-walk-left-v1.png` replaces only the incorrect left-leg step at runtime. The far left leg reaches forward behind the planted near/right thigh; the original right-leg-forward pose remains atlas frame 3. The original sixteen-pose PNG is unchanged. `tools/inspect-teddy.py` writes `walkLeft` bounds, a matched display height and a torso-aligned root to `teddy-frames.js`. Both sizes and facings share this correction. [Edit prompts/provenance](teddy-generation.md#walking-correction), [registered-pose preview](../artifacts/teddy-walk-review.png).

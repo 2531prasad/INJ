@@ -173,5 +173,20 @@ window.InjTeddyFrames = {
         anchorY: 474
       }
     ]
+  },
+  walkLeft: {
+    width: 1254,
+    height: 1254,
+    neutralHeight: 1124.43865,
+    frames: [
+      {
+        x: 275,
+        y: 47,
+        w: 703,
+        h: 1121,
+        anchorX: 301.43,
+        anchorY: 1121
+      }
+    ]
   }
 };

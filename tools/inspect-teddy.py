@@ -2,6 +2,7 @@
 from collections import deque
 from pathlib import Path
 import json
+from statistics import median
 from PIL import Image
 
 root = Path(__file__).resolve().parents[1]
@@ -49,8 +50,28 @@ def inspect(filename, count, columns):
     return dict(width=w, height=h, neutralHeight=frames[0]['h'], frames=frames)
 
 
+def pelvis_center(filename, frame):
+    """Read the lower-torso center; planted-foot changes must not move the root."""
+    alpha = Image.open(root / 'assets' / filename).getchannel('A')
+    centers = []
+    for y in range(frame['y'] + int(frame['h']*.70), frame['y'] + int(frame['h']*.78)):
+        xs = [x for x in range(frame['x'], frame['x'] + frame['w']) if alpha.getpixel((x, y)) >= 96]
+        if xs:
+            centers.append((xs[0] + xs[-1]) / 2)
+    return median(centers) - frame['x']
+
+
 data = dict(teddy=inspect('teddy-sprites-v1.png', 16, 4),
-            cameo=inspect('doraemon-sprites-v1.png', 4, 2))
+            cameo=inspect('doraemon-sprites-v1.png', 4, 2),
+            walkLeft=inspect('teddy-walk-left-v1.png', 1, 1))
+# Match the original left step's height and the correct right step's torso/root
+# relationship. Both foot baselines stay grounded; source PNGs are never edited.
+left = data['walkLeft']['frames'][0]
+old_left = data['teddy']['frames'][2]
+right = data['teddy']['frames'][3]
+data['walkLeft']['neutralHeight'] = round(left['h'] * data['teddy']['neutralHeight'] / old_left['h'], 6)
+right_offset = (pelvis_center('teddy-sprites-v1.png', right) - right['anchorX']) / data['teddy']['neutralHeight']
+left['anchorX'] = round(pelvis_center('teddy-walk-left-v1.png', left) - right_offset * data['walkLeft']['neutralHeight'], 2)
 (root / 'assets/teddy-frames.js').write_text(
     '/* Alpha bounds from tools/inspect-teddy.py; source PNGs unchanged. */\n'
     'window.InjTeddyFrames = ' + json.dumps(data, indent=2) + ';\n')

@@ -1,5 +1,5 @@
 {
-  "checks": 341,
+  "checks": 345,
   "awakenedBenchmark": {
     "trials": 100,
     "roundSeconds": 99,
@@ -197,7 +197,7 @@
   "viewports": 9,
   "audio": {
     "peak": 0.5534541010856628,
-    "rms": 0.030126398306645864,
+    "rms": 0.03012639851672639,
     "clippedSamples": 0
   },
   "limitations": [

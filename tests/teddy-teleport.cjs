@@ -38,6 +38,45 @@ module.exports = async function verifyTeddyTeleport(page, check, root) {
       scratch.height = a.cv.height;
       const ctx = scratch.getContext('2d', { willReadFrequently: true }),
         live = a.ctx;
+      const walkDraws = [],
+        imageDraw = ctx.drawImage;
+      try {
+        a.ctx = ctx;
+        ctx.drawImage = (image, ...args) => {
+          walkDraws.push({ image, args, facing: Math.sign(ctx.getTransform().a) });
+          imageDraw.call(ctx, image, ...args);
+        };
+        for (const facing of [1, -1])
+          for (const tiny of [false, true]) {
+            for (const phase of [0, tiny ? 5 : 14])
+              a.drawTeddy({
+                ...a.dummy,
+                state: 'walk',
+                walkPhase: phase,
+                facing,
+                tiny,
+                teddyScale: tiny ? 0.34 : 1
+              });
+          }
+      } finally {
+        a.ctx = live;
+        ctx.drawImage = imageDraw;
+      }
+      out.walkLeftUsesCorrectedPose = walkDraws[0].image === a.teddySheets.walkLeft.image;
+      const originalRight = a.teddySheets.teddy.meta.frames[3];
+      out.walkRightKeepsOriginalPose =
+        walkDraws[1].image === a.teddySheets.teddy.image &&
+        walkDraws[1].args.slice(0, 4).join() ===
+          [originalRight.x, originalRight.y, originalRight.w, originalRight.h].join();
+      out.walkPosesShareGroundAndHeight =
+        walkDraws.every((d) => Math.abs(d.args[5] + d.args[7]) < 0.001) &&
+        Math.abs(walkDraws[0].args[7] - walkDraws[1].args[7]) < 1;
+      out.correctedWalkBothSizesAndDirections =
+        walkDraws.every(
+          (d, i) =>
+            d.facing === (i < 4 ? 1 : -1) &&
+            d.image === (i % 2 ? a.teddySheets.teddy.image : a.teddySheets.walkLeft.image)
+        ) && Math.abs(walkDraws[2].args[7] / walkDraws[0].args[7] - 0.34) < 0.001;
       function bounds(f) {
         ctx.clearRect(0, 0, scratch.width, scratch.height);
         ctx.save();
