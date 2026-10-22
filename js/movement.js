@@ -50,6 +50,17 @@
       App.stepTeleport(f, op, dt);
       return;
     }
+    // Blink deliberately keeps the boss as its destination; normal combat
+    // faces and aims toward the nearest living enemy, including the echo.
+    op = App.playerTarget(f);
+    if (
+      App.giantEncounter.minion?.hp > 0 &&
+      !f.atk &&
+      f.hitstun <= 0 &&
+      !['ko', 'knockdown'].includes(f.state) &&
+      Math.abs(op.x - f.x) > 3
+    )
+      f.facing = op.x > f.x ? 1 : -1;
     if (
       canAct &&
       !f.atk &&

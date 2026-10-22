@@ -45,7 +45,9 @@ BLINK / E is available standing, crouching or airborne while free to act. The 46
 
 ## Velvet Colossus
 
-Round five is a standalone 480 HP boss after Blue Velvet's player-paced victory. A protected 4.8-second Doraemon enlargement grows Teddy to 2× base height while the camera pulls back to 0.6. INJ keeps her world model and starts at full health. This stage has no round timer; combo, Blink and AI clocks still run. The boss takes full damage without flinch, knockback, canceled attacks or attacker-induced hit-stop.
+The v0.25 update raises HP to 1,200 and isolates targeting/combo chains between the echo and boss. The measurements above and below are historical v0.24 results at 480 HP; no new human difficulty or simulated win rate is claimed. Focused targeting checks replace a full-suite rerun for this quick update.
+
+Round five is a standalone 1,200 HP boss after Blue Velvet's player-paced victory. A protected 4.8-second Doraemon enlargement grows Teddy to 2× base height while the camera pulls back to 0.6. INJ keeps her world model and starts at full health. This stage has no round timer; combo, Blink and AI clocks still run. The boss takes full damage without flinch, knockback, canceled attacks or attacker-induced hit-stop.
 
 Kingdom Breaker winds up for 1.15 seconds, tracks only until 550 ms, then locks facing. Guard takes 4 chip instead of 20 damage, and timed rear Blink avoids the committed strike. Its 1.4-second recovery plus subsequent rest creates a long opening. Royal Footfall sends jumpable/guardable ground waves. Falling Ovation places fixed star markers to move away from. Royal Recess retreats for at most 850 ms, calls one awakened 40 HP echo, and rests for up to seven seconds; echo defeat shortens the break. The echo uses awakened AI and normal flinch/knockdown, expires after ten active seconds, can be hit independently, never completes the boss on KO, and can cause a real INJ loss. Boss KO/retry/restart clears its fields. A loss retries the enlargement, rather than going back to round four.
 

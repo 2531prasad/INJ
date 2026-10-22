@@ -85,8 +85,7 @@
     App.game.state = 'intro';
     App.game.t = 0;
     App.game.msg = null;
-    App.game.hits = 0;
-    App.game.hitTimer = 0;
+    App.resetCombo();
     App.game.hitStop = 0;
     App.game.shake = 0;
     App.game.shakeX = App.game.shakeY = 0;

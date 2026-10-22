@@ -91,11 +91,13 @@
           g: 0
         });
       let target = p.owner === App.player ? App.dummy : App.player;
-      const minion = App.giantEncounter.minion;
-      if (p.owner === App.player && minion && minion.hp > 0) {
-        const b = App.hurtbox(minion);
-        if (p.x > b.x && p.x < b.x + b.w && p.y > b.y && p.y < b.y + b.h) target = minion;
-      }
+      if (p.owner === App.player && App.giantEncounter.minion)
+        target = App.playerTargets()
+          .sort((a, b) => Math.abs(a.x - p.owner.x) - Math.abs(b.x - p.owner.x))
+          .find((f) => {
+            const b = App.hurtbox(f);
+            return p.x > b.x && p.x < b.x + b.w && p.y > b.y && p.y < b.y + b.h;
+          }) || target;
       const ub = App.hurtbox(target);
       if (p.x > ub.x && p.x < ub.x + ub.w && p.y > ub.y && p.y < ub.y + ub.h) {
         const move =

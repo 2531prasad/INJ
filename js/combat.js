@@ -7,6 +7,17 @@
   function resetCombo() {
     App.game.hits = 0;
     App.game.hitTimer = 0;
+    App.game.comboTarget = null;
+  }
+  function playerTargets() {
+    return [App.dummy, App.giantEncounter.minion].filter(
+      (f) => f && f.hp > 0 && f.state !== 'ko'
+    );
+  }
+  function playerTarget(f = App.player) {
+    return (
+      playerTargets().sort((a, b) => Math.abs(a.x - f.x) - Math.abs(b.x - f.x))[0] || App.dummy
+    );
   }
   function hurtbox(f) {
     if (App.isR8(f)) return App.r8Hurtbox(f);
@@ -138,30 +149,24 @@
   function tryHit(att, def) {
     const a = att.atk;
     if (!a || a.hasHit) return;
-    if (
-      def.invuln > 0 ||
-      def.teleport ||
-      def.state === 'knockdown' ||
-      def.state === 'ko' ||
-      App.game.state !== 'fight'
-    )
-      return;
+    if (App.game.state !== 'fight') return;
     const d = a.def;
     const scale = d.worldBox ? 1 : App.FIGHTER_SCALE;
     const bx = att.facing > 0 ? att.x + d.box[0] * scale : att.x - (d.box[0] + d.box[2]) * scale;
     const by = att.y + d.box[1] * scale,
       bw = d.box[2] * scale,
       bh = d.box[3] * scale;
-    if (att === App.player && def === App.dummy && App.giantEncounter.minion) {
-      const targets = [def, App.giantEncounter.minion]
-        .filter((f) => f.hp > 0 && !f.invuln && !['ko', 'knockdown'].includes(f.state))
-        .sort((a, b) => Math.abs(a.x - att.x) - Math.abs(b.x - att.x));
+    if (att === App.player && App.giantEncounter.minion) {
+      // A protected/downed echo still intercepts the swing. Never fall through
+      // to the boss just because the closer actor cannot currently take damage.
+      const targets = playerTargets().sort((a, b) => Math.abs(a.x - att.x) - Math.abs(b.x - att.x));
       def =
         targets.find((f) => {
           const b = hurtbox(f);
           return bx < b.x + b.w && bx + bw > b.x && by < b.y + b.h && by + bh > b.y;
         }) || def;
     }
+    if (def.invuln > 0 || def.teleport || ['knockdown', 'ko'].includes(def.state)) return;
     const ub = hurtbox(def);
     if (bx < ub.x + ub.w && bx + bw > ub.x && by < ub.y + ub.h && by + bh > ub.y) {
       a.hasHit = true;
@@ -185,7 +190,8 @@
     const blocked = guarding && Math.sign(att.x - def.x) === def.facing;
     if (def === App.player || (att === App.player && blocked)) resetCombo();
     if (att === App.player && !blocked) {
-      if (App.game.hitTimer <= 0) resetCombo();
+      if (App.game.hitTimer <= 0 || App.game.comboTarget !== def) resetCombo();
+      App.game.comboTarget = def;
       d = { ...d, dmg: Math.round(d.dmg * (1 + App.game.hits / 10)) };
     }
     if (App.isAwakened(def))
@@ -326,5 +332,14 @@
     }
   }
 
-  Object.assign(App, { resetCombo, hurtbox, startAttack, stepAttack, tryHit, applyHit });
+  Object.assign(App, {
+    resetCombo,
+    playerTargets,
+    playerTarget,
+    hurtbox,
+    startAttack,
+    stepAttack,
+    tryHit,
+    applyHit
+  });
 })(window.INJ);

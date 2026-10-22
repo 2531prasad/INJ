@@ -39,7 +39,7 @@ module.exports = async function verifyGiant(page, check, root) {
         a.game.round === 5 &&
         a.game.state === 'enlarge' &&
         a.dummy.giant &&
-        a.dummy.hp === 480 &&
+        a.dummy.hp === 1200 &&
         a.player.hp === 120 &&
         a.arenaStage().id === 'giants' &&
         a.game.roundTime === null;
@@ -207,7 +207,7 @@ module.exports = async function verifyGiant(page, check, root) {
       a.stepGiantEncounter(10.1);
       a.stepGiantEncounter(0.6);
       out.echoExpiresWithoutEndingBoss =
-        !a.giantEncounter.minion && a.game.state === 'fight' && a.dummy.hp === 480;
+        !a.giantEncounter.minion && a.game.state === 'fight' && a.dummy.hp === 1200;
       setup();
       const text = a.text,
         cues = [];
@@ -234,14 +234,14 @@ module.exports = async function verifyGiant(page, check, root) {
       a.player.facing = 1;
       a.startAttack(a.player, 'jab');
       a.stepAttack(a.player, 0.05, a.dummy);
-      out.meleeCanTargetEcho = m.hp < 40 && a.dummy.hp === 480;
+      out.meleeCanTargetEcho = m.hp < 40 && a.dummy.hp === 1200;
       setup();
       a.summonGiantMinion(a.dummy);
       a.giantEncounter.minion.invuln = 0;
       const projectileEcho = a.giantEncounter.minion;
       a.projectiles.push({ x: projectileEcho.x - 2, y: 140, vx: 120, life: 1, owner: a.player });
       a.updateProjectiles(1 / 60);
-      out.projectileCanTargetEcho = projectileEcho.hp < 40 && a.dummy.hp === 480;
+      out.projectileCanTargetEcho = projectileEcho.hp < 40 && a.dummy.hp === 1200;
       setup();
       a.summonGiantMinion(a.dummy);
       a.player.hp = 1;
@@ -252,7 +252,7 @@ module.exports = async function verifyGiant(page, check, root) {
       out.lossRetriesBossReveal =
         a.game.round === 5 &&
         a.game.state === 'enlarge' &&
-        a.dummy.hp === 480 &&
+        a.dummy.hp === 1200 &&
         a.dummy.teddyScale === 1 &&
         !a.giantEncounter.minion &&
         !a.giantEncounter.hazards.length;

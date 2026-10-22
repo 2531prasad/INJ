@@ -1,6 +1,8 @@
 # Velvet Colossus · v0.24 · 23 October 2026
 
-Round five is Teddy's standalone giant boss battle. Blue Velvet's victory still waits for Next Round; the next stage starts with fresh health, Doraemon's enlargement and a pullback into the Kingdom of Giants. Teddy ends at twice its base height with 480 HP. INJ keeps her actual size and appears smaller through the camera. Boss attacks cannot be interrupted by flinching, but still take full damage. This fight has no timer.
+Round five is Teddy's standalone giant boss battle. Blue Velvet's victory still waits for Next Round; the next stage starts with fresh health, Doraemon's enlargement and a pullback into the Kingdom of Giants. Teddy ends at twice its base height with 1,200 HP. INJ keeps her actual size and appears smaller through the camera. Boss attacks cannot be interrupted by flinching, but still take full damage. This fight has no timer.
+
+The v0.25 quick update raises HP to 1,200 and fixes nearest-enemy targeting, protected-echo interception and per-enemy combo scaling. The screenshots, full-suite results and scripted balance counts below are from v0.24 (480 HP). Only the focused targeting runner and structure check were rerun for v0.25.
 
 ## Play and previews
 

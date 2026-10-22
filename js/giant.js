@@ -4,7 +4,7 @@
 (function (App) {
   'use strict';
   const GIANT_TUNING = {
-    health: 480,
+    health: 1200,
     scale: 2,
     zoom: 0.6,
     intro: 4.8,

@@ -99,6 +99,7 @@
     bestCombo: 0,
     hits: 0,
     hitTimer: 0,
+    comboTarget: null,
     round: 1,
     paused: true,
     started: false,
