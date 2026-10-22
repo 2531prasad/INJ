@@ -101,6 +101,29 @@
   const btnArenaMenu = document.getElementById('btnArenaMenu');
 
   let focusBeforeProfile = null;
+  let cheatsUnlocked = false;
+
+  function unlockCheats(submitted = false) {
+    const code = document.getElementById('cheatCode');
+    if (code.value.trim().toUpperCase() === 'INJ0') cheatsUnlocked = true;
+    document.getElementById('cheatLevels').hidden = !cheatsUnlocked;
+    document.getElementById('cheatStatus').textContent = cheatsUnlocked
+      ? 'Level select unlocked'
+      : submitted
+        ? 'Code not recognised'
+        : '';
+  }
+
+  function startCheatLevel() {
+    if (!cheatsUnlocked || pauseOverlay.hidden) return;
+    const level = Number(document.getElementById('cheatLevel').value);
+    if (!Number.isInteger(level) || level < 1 || level > 5) return;
+    App.game.round = level - 1;
+    App.game.elapsed = 0;
+    App.resetRound();
+    resumeGame();
+    App.render(0);
+  }
 
   function syncAudioUI() {
     for (const btn of document.querySelectorAll('[data-audio]')) {
@@ -223,6 +246,12 @@
     btnArenaMenu.addEventListener('click', pauseGame);
     document.querySelector('[data-profile]').addEventListener('click', openIntro);
     btnResume.addEventListener('click', resumeGame);
+    document.getElementById('cheatCode').addEventListener('input', () => unlockCheats());
+    document.getElementById('cheatForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      unlockCheats(true);
+    });
+    document.getElementById('btnCheatLevel').addEventListener('click', startCheatLevel);
     document.getElementById('btnRestart').addEventListener('click', restartGame);
     window.addEventListener('blur', () => {
       App.resetInput();

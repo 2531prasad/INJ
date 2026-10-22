@@ -229,11 +229,11 @@
             : !App.introModal.classList.contains('hidden')
               ? App.introModal
               : App.pauseOverlay;
-        const buttons = [...dialog.querySelectorAll('button')].filter(
-          (btn) => btn.getClientRects().length
-        );
-        const first = buttons[0],
-          end = buttons[buttons.length - 1];
+        const focusable = [
+          ...dialog.querySelectorAll('button, input, select, textarea, [tabindex="0"]')
+        ].filter((el) => !el.disabled && el.getClientRects().length);
+        const first = focusable[0],
+          end = focusable[focusable.length - 1];
         if (
           e.shiftKey &&
           (document.activeElement === first || !dialog.contains(document.activeElement))
@@ -246,6 +246,9 @@
         }
         return;
       }
+      // Native text/select editing must not trigger mute, combat or navigation.
+      if (e.target.closest('input, select, textarea, [contenteditable="true"]') && k !== 'escape')
+        return;
       if (k === 'm' && !e.repeat) {
         App.Sfx.toggleMute();
         App.syncAudioUI();

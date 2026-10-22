@@ -64,7 +64,7 @@
   color: #fff0c7;
 }
 .pause-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 8;
   background: #080a1099;
@@ -72,7 +72,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: 12px;
 }
 .pause-overlay[hidden] {
   display: none;
@@ -134,6 +134,66 @@
 }
 .pause-grid [data-audio][aria-pressed='false'] {
   color: #8a8786;
+}
+.cheat-controls {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ffffff12;
+  font: 500 13px/1.4 'Chakra Petch', sans-serif;
+  color: #b9b2a8;
+}
+.cheat-controls label {
+  display: block;
+  margin-bottom: 5px;
+}
+.cheat-controls input,
+.cheat-controls select,
+.cheat-controls button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid #ffffff20;
+  border-radius: 6px;
+  background: #0e0e16;
+  color: #e9dfcd;
+  font: 500 16px/1.2 'Chakra Petch', sans-serif;
+  touch-action: manipulation;
+}
+.cheat-controls input {
+  width: 100%;
+}
+.cheat-controls input:focus-visible,
+.cheat-controls select:focus-visible {
+  border-color: #d9c397;
+  outline: none;
+}
+.cheat-controls small {
+  display: block;
+  color: #d9c397;
+}
+.cheat-controls small:not(:empty) {
+  margin: 6px 0;
+}
+.cheat-level-row {
+  display: flex;
+  gap: 6px;
+}
+.cheat-level-row select {
+  flex: 1;
+  width: 0;
+}
+.cheat-controls button {
+  font-size: 13px;
+  background: #d9c397;
+  color: #211d1a;
+  cursor: pointer;
+}
+.cheat-controls button:hover,
+.cheat-controls button:focus-visible {
+  background: #e9d5ad;
+}
+.cheat-controls button:active {
+  background: #f2ddb4;
 }
 .intro-card {
   margin: auto;

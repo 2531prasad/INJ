@@ -1,7 +1,7 @@
 /* Standalone Colossus flow, physical commitment, tells, echo targeting and balance. */
 const fs = require('node:fs');
 const path = require('node:path');
-module.exports = async function verifyGiant(page, check, root) {
+module.exports = async function verifyGiant(page, check, root, options = {}) {
   await page.waitForFunction(
     () => INJ.teddySheets.giant.ready && INJ.arenaStages[4].image.naturalWidth
   );
@@ -114,7 +114,8 @@ module.exports = async function verifyGiant(page, check, root) {
       a.dummy.restT = 3;
       a.applyHit(a.dummy, a.player, a.MOVES.sweep, 300, 190);
       out.restIsDamageableWithoutKnockdown =
-        a.dummy.state === 'relax' && a.dummy.hp === 471 && a.dummy.grounded;
+        a.dummy.state === 'relax' &&
+        a.dummy.hp === a.dummy.maxHp - a.MOVES.sweep.dmg && a.dummy.grounded;
       setup();
       a.player.state = 'block';
       a.player.facing = 1;
@@ -303,6 +304,7 @@ module.exports = async function verifyGiant(page, check, root) {
     return out;
   });
   for (const [name, passed] of Object.entries(results)) check(passed, `Colossus: ${name}`);
+  if (options.fast) return null; // Functional checks only; full mode keeps simulations/previews/audio.
   const benchmark = await page.evaluate(() => {
     const a = INJ,
       random = a.rnd,

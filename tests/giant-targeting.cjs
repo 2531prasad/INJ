@@ -1,21 +1,5 @@
-/* Quick boss targeting regression: no full suite, screenshots or balance simulation. */
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-let pw;
-try { pw = require(process.env.INJ_PLAYWRIGHT || 'playwright'); }
-catch (_) { pw = require(path.join(process.env.HOME, '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright-core')); }
-const root = path.resolve(__dirname, '..');
-let browser;
-(async () => {
-  // Direct-file startup keeps this focused runner independent of server ports.
-  const chrome = process.env.INJ_CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-  browser = await pw.chromium.launch({ headless: true, ...(fs.existsSync(chrome) ? { executablePath: chrome } : {}) });
-  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(require('node:url').pathToFileURL(path.join(root, 'index.html')).href);
-  await page.waitForFunction(() => window.INJ?.teddySheets.giant.ready);
+/* Shared focused boss targeting checks; standalone command delegates to the runner. */
+module.exports = async function verifyTargeting(page, check) {
   const checks = await page.evaluate(() => {
     const a = INJ, out = {};
     a.Sfx.play = () => {};
@@ -123,12 +107,10 @@ let browser;
     a.game.paused = true;
     return out;
   });
-  for (const [name, passed] of Object.entries(checks)) {
-    assert.ok(passed, name);
-    console.log('PASS', name);
-  }
-  assert.deepEqual(errors, [], 'No production runtime errors');
-  console.log(`Passed ${Object.keys(checks).length + 1} focused Chromium checks.`);
-})().catch((error) => { console.error(error); process.exitCode = 1; }).finally(async () => {
-  if (browser) await browser.close();
-});
+  for (const [name, passed] of Object.entries(checks)) check(passed, name);
+};
+if (require.main === module) {
+  const { spawnSync } = require('node:child_process');
+  const result = spawnSync(process.execPath, [require('node:path').join(__dirname, 'browser.cjs'), '--suite', 'targeting'], { stdio: 'inherit' });
+  process.exitCode = result.status ?? 1;
+}

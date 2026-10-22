@@ -1,6 +1,6 @@
 /* Real plates, encounter selection, resize/fallback and visual review captures. */
 const path = require('node:path');
-module.exports = async function verifyStages(page, check, root) {
+module.exports = async function verifyStages(page, check, root, options = { artifacts: true }) {
   await page.waitForFunction(() => INJ.arenaStages.every((s) => s.image.naturalWidth > 0));
   const results = await page.evaluate(() => {
     const a = INJ,
@@ -94,7 +94,7 @@ module.exports = async function verifyStages(page, check, root) {
         a.dummy.x = a.world.width * 0.69;
         a.render(6000);
       }, round);
-      await page.screenshot({
+      if (options.artifacts) await page.screenshot({
         path: path.join(
           root,
           `artifacts/stage-${round}-${viewport.width === 390 ? 'phone' : 'desktop'}.png`

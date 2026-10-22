@@ -1,5 +1,5 @@
 /* Combo damage, meter abilities and aerial input integration. */
-module.exports = async function verifyAbilities(page, check, root) {
+module.exports = async function verifyAbilities(page, check, root, options = { artifacts: true }) {
   const results = await page.evaluate(() => {
     const a = INJ, out = {};
     function setup() {
@@ -283,10 +283,10 @@ module.exports = async function verifyAbilities(page, check, root) {
     INJ.player.meter = 100; INJ.game.hits = 5; INJ.game.hitTimer = 1;
     INJ.updateChargeUI(); INJ.render(0);
   });
-  await page.screenshot({ path: require('node:path').join(root, 'artifacts/combo-nitro-phone.png') });
+  if (options.artifacts) await page.screenshot({ path: require('node:path').join(root, 'artifacts/combo-nitro-phone.png') });
   await page.evaluate(() => {
     INJ.startAttack(INJ.player, 'nitrokick'); INJ.player.atk.t = 0.16; INJ.render(0);
   });
-  await page.screenshot({ path: require('node:path').join(root, 'artifacts/nitro-kick-phone.png') });
+  if (options.artifacts) await page.screenshot({ path: require('node:path').join(root, 'artifacts/nitro-kick-phone.png') });
   await page.evaluate(() => { INJ.game.round = 0; INJ.resetRound(); INJ.game.paused = true; });
 };

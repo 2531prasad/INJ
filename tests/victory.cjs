@@ -1,5 +1,5 @@
 /* Win-scene lifecycle, safe progression and responsive presentation. */
-module.exports = async function verifyVictory(page, check, root) {
+module.exports = async function verifyVictory(page, check, root, options = { artifacts: true }) {
   const results = await page.evaluate(() => {
     const a = INJ, out = {}, played = [], play = a.Sfx.play;
     function setup(round = 1) {
@@ -96,7 +96,7 @@ module.exports = async function verifyVictory(page, check, root) {
     });
     check(fits, `Victory: ${width}×${height} scene fits with separated accessible controls`);
     if ([320, 390, 844].includes(width))
-      await page.screenshot({ path: require('node:path').join(root, `artifacts/victory-${width}.png`) });
+      if (options.artifacts) await page.screenshot({ path: require('node:path').join(root, `artifacts/victory-${width}.png`) });
   }
   await page.evaluate(() => { INJ.game.paused = false; });
   await page.locator('#btnNextRound').tap();

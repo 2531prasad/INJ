@@ -1,6 +1,6 @@
 /* Real-browser encounter, animation and timed-ability integration. */
 const path = require('node:path');
-module.exports = async function verifyTeddyTeleport(page, check, root) {
+module.exports = async function verifyTeddyTeleport(page, check, root, options = {}) {
   await page.waitForFunction(() => Object.values(INJ.teddySheets).every((s) => s.ready));
   const results = await page.evaluate(() => {
     const a = INJ,
@@ -466,7 +466,7 @@ module.exports = async function verifyTeddyTeleport(page, check, root) {
         a.dummy.kind === 'teddy' &&
         a.dummy.giant && a.game.state === 'enlarge' &&
         a.dummy.teddyScale === 1 &&
-        a.dummy.hp === 480;
+        a.dummy.hp === a.GIANT_TUNING.health;
       setup();
       const motion = a.reducedMotion;
       const rotate = ctx.rotate,
@@ -522,6 +522,7 @@ module.exports = async function verifyTeddyTeleport(page, check, root) {
     return out;
   });
   for (const [name, passed] of Object.entries(results)) check(passed, `Teddy / Blink: ${name}`);
+  if (options.fast) return null; // Functional checks only; full mode keeps simulations/previews/audio.
   const benchmark = await page.evaluate(() => {
     const a = INJ,
       sound = a.Sfx.play,

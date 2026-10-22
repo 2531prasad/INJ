@@ -162,6 +162,26 @@
               <button data-audio="sound" aria-pressed="true">Sound on</button>
               <button data-audio="music" aria-pressed="true">Music on</button>
             </div>
+            <form id="cheatForm" class="cheat-controls" autocomplete="off">
+              <label for="cheatCode">Cheat code</label>
+              <input id="cheatCode" name="cheat" type="text" placeholder="Enter code"
+                maxlength="16" autocapitalize="characters" spellcheck="false"
+                aria-describedby="cheatStatus" />
+              <small id="cheatStatus" role="status"></small>
+              <div id="cheatLevels" hidden>
+                <label for="cheatLevel">Start a level</label>
+                <div class="cheat-level-row">
+                  <select id="cheatLevel" name="level">
+                    <option value="1">1 · Cedar Courtyard</option>
+                    <option value="2">2 · Awakened Dummy</option>
+                    <option value="3">3 · Goldline</option>
+                    <option value="4">4 · Blue Velvet</option>
+                    <option value="5">5 · Velvet Colossus</option>
+                  </select>
+                  <button id="btnCheatLevel" type="button">Start level</button>
+                </div>
+              </div>
+            </form>
             <small id="fullscreenStatus" role="status"></small>
           </section>
         </div>

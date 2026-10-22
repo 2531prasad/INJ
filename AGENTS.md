@@ -38,7 +38,7 @@ The detailed arena plate and authored sprites have source notes in `assets/READM
 
 ## Verify and document
 
-Run `node tests/structure.cjs`, then `node tests/browser.cjs` for gameplay, startup or layout changes. The latter covers real Chromium touch events, combat, audio, and uninstrumented HTTP / direct-file startup. It owns its server and browser. `INJ_PLAYWRIGHT` / `INJ_CHROME` override local test-tool paths.
+Run `node tests/browser.cjs` for the quick default (structure, untouched HTTP/file startup across all levels, pause/cheats and boss targeting). For a subsystem change use `node tests/browser.cjs --suite menus,giant` with the relevant suite names; smoke and structure always run. See [docs/testing.md](docs/testing.md) for the ownership-to-suite map. `--all` runs every functional group without fight simulations, offline audio rendering, slow reveal replays or screenshots. Use `--artifacts` only when previews are useful. Reserve `--full` for an explicit exhaustive/release validation or work that requires the legacy balance/audio/replay checks; do not rerun it after routine edits. The runner reports per-suite time and owns its server/browser. `INJ_PLAYWRIGHT` / `INJ_CHROME` override local tool paths. Do not claim a quick run establishes balance, audio quality or full-suite coverage.
 
 Tests add `window.__test` only to an intercepted copy of `js/main.js`; keep those hooks out of production sources. Update the relevant current guide when behavior or ownership changes. Treat `docs/archive/` and older artifact reports as historical. Chrome emulation does not establish physical iPhone/Safari behavior, and scripted fights do not establish a human win rate.
 

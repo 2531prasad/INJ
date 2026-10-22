@@ -1,6 +1,6 @@
 /* Boss-specific integration checks, called by browser.cjs with its owned page. */
 const path = require('node:path');
-module.exports = async function verifyR8(page, check, root) {
+module.exports = async function verifyR8(page, check, root, options = {}) {
   await page.waitForFunction(() => INJ.r8Sheet.ready);
   const mechanics = await page.evaluate(() => {
     const a = INJ,
@@ -296,6 +296,7 @@ module.exports = async function verifyR8(page, check, root) {
     return out;
   });
   for (const [name, passed] of Object.entries(mechanics)) check(passed, `R8 encounter: ${name}`);
+  if (options.fast) return null; // Functional checks only; full mode keeps simulations/previews/audio.
   const benchmarks = await page.evaluate(() => {
     const a = INJ,
       results = {},
