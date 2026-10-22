@@ -97,9 +97,9 @@ The renderer reuses the original Teddy atlas for neutral/walk/stomp/ovation and 
 
 ## Pause cheats and native editing
 
-`index.html` owns the labeled cheat input, live status, hidden five-option selector and Start level button. `menus.js` owns private session-only unlock state. Typing `INJ0` (case-insensitive, trimmed) reveals the selector immediately; submitting an unknown code only shows feedback. Start requires unlocked state and an open pause menu, validates a level in 1–5, sets the ladder to level minus one, and uses `resetRound()`/`resumeGame()` so all actors, pools, resources, timer and cutscenes follow normal initialization. It does not skip the Goldline car or boss reveal. Reload relocks; normal restart remains round one.
+`index.html` owns the cheat input (accessible name, placeholder, no visible label), live status, hidden five-option selector and Start level button. `menus.js` owns private session-only unlock state. Typing `INJ0` (case-insensitive, trimmed) reveals the selector immediately; submitting an unknown code only shows feedback. Start requires unlocked state and an open pause menu, validates a level in 1–5, sets the ladder to level minus one, and uses `resetRound()`/`resumeGame()` so all actors, pools, resources, timer and cutscenes follow normal initialization. It does not skip the Goldline car or boss reveal. Reload relocks; normal restart remains round one.
 
-`controls.js` traps every visible enabled button/input/select inside the active dialog. Native editable controls bypass combat/mute/Enter handlers; Escape retains pause/resume behavior. The pause overlay now uses viewport framing, a scrollable panel and 44 px native controls so the selector fits beyond the short portrait arena. Styling stays in `styles/layout.css`; there is no separate UI system or animation.
+`controls.js` traps every visible enabled button/input/select inside the active dialog. Native editable controls bypass combat/mute/Enter handlers; Escape retains pause/resume behavior. The pause overlay now uses viewport framing, a scrollable panel and 44 px native controls so the selector fits beyond the short portrait arena. Compact panel padding and row/section gaps preserve 44 px touch targets. Styling stays in `styles/layout.css`; there is no separate UI system or animation.
 
 ## Loss retry and stage boundary
 

@@ -26,7 +26,7 @@ Full review scope: new cheat input, status, native level selector/start action a
 | --- | --- | --- | --- | --- |
 | MEDIUM | `js/controls.js:232` | Dialog trap considered only buttons; global shortcuts also received editable-field keys | Visible enabled inputs/selects join the focus loop; editing bypasses combat/mute handlers while Escape resumes | Native keyboard behavior and a complete focus trap keep entry usable |
 | MEDIUM | `styles/layout.css:66` | Arena-sized pause area would make added fields scroll inside a very short portrait canvas | Viewport overlay with a bounded scrollable panel | All controls stay reachable on phones |
-| LOW | `styles/layout.css:138`, `index.html:166` | No code entry, unlock feedback or stage controls | Labeled 16 px input, live status, hidden native selector, separate 44 px Start action | Clear state feedback and minimum hit areas; selecting does not unexpectedly navigate |
+| LOW | `styles/layout.css:138`, `index.html:166` | No code entry, unlock feedback or stage controls | Accessible-name 16 px input with placeholder, live status, hidden native selector, separate 44 px Start action | Clear state feedback and minimum hit areas; selecting does not unexpectedly navigate |
 
 | Location | Considered | Rejected because |
 | --- | --- | --- |
@@ -34,3 +34,9 @@ Full review scope: new cheat input, status, native level selector/start action a
 | Unlock feedback | Animated expansion or celebration | Instant field/status changes communicate this repeatable utility action without motion |
 
 Verification: real typing, Enter, Tab/Shift+Tab, native selector arrows, Escape, all five stage starts, close/reopen, restart and reload; fresh resources and cleared boss pools; 320/390/844 geometry and selected screenshots. [320 px](cheat-menu-320.png), [390 px](cheat-menu-390.png), [landscape](cheat-menu-844.png) were visually inspected. **Approve**: no actionable findings remain in this scope. Not verified: physical iPhone/Safari/onscreen-keyboard behavior, full-suite/balance/audio results.
+
+## Compact-menu follow-up
+
+Removed the visible Cheat code label while preserving its accessible name. Reduced panel padding (10→8 px), grid gaps (6→4 px), cheat-section spacing (12→6 px), heading/label/status spacing and selector-row gap. All touch targets stay at least 44 px. The 320 px updated capture was visually inspected; geometry also passes at 390/844 px. `node tests/browser.cjs --suite menus --artifacts` passed structure and 40 focused checks in 10.47 seconds. Full suite skipped.
+
+Quick review: typography and surfaces clear; no new animation or icons, performance unchanged. Considered shrinking the buttons further, rejected to preserve touch targets. Approve; physical iPhone/Safari keyboard behavior remains unverified.

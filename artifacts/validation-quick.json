@@ -1,72 +1,29 @@
 {
   "mode": "functional",
-  "recordedAt": "2026-10-22T21:25:29.037Z",
+  "recordedAt": "2026-10-22T21:29:32.823Z",
   "selected": [
-    "smoke",
-    "menus",
-    "targeting",
-    "combat",
-    "giant",
-    "teddy",
-    "r8",
-    "stages"
+    "menus"
   ],
-  "checks": 300,
-  "seconds": 18.92,
+  "checks": 40,
+  "seconds": 10.47,
   "suites": [
     {
       "suite": "smoke.cjs",
       "checks": 19,
-      "seconds": 5.72
+      "seconds": 5.86
     },
     {
       "suite": "menus.cjs",
       "checks": 21,
-      "seconds": 2.45
-    },
-    {
-      "suite": "giant-targeting.cjs",
-      "checks": 21,
-      "seconds": 1.27
-    },
-    {
-      "suite": "abilities.cjs",
-      "checks": 41,
-      "seconds": 1.61
-    },
-    {
-      "suite": "victory.cjs",
-      "checks": 28,
-      "seconds": 1.27
-    },
-    {
-      "suite": "giant.cjs",
-      "checks": 44,
-      "seconds": 1.12
-    },
-    {
-      "suite": "teddy-teleport.cjs",
-      "checks": 70,
-      "seconds": 1.23
-    },
-    {
-      "suite": "r8.cjs",
-      "checks": 39,
-      "seconds": 1.14
-    },
-    {
-      "suite": "stages.cjs",
-      "checks": 17,
-      "seconds": 1.96
+      "seconds": 2.7
     }
   ],
-  "artifacts": false,
+  "artifacts": true,
   "skipped": [
     "balance simulations",
     "offline audio renders",
     "slow reveal replay",
-    "legacy full suite",
-    "preview screenshots"
+    "legacy full suite"
   ],
   "limitations": [
     "Chromium emulation; no physical iPhone/Safari validation",
