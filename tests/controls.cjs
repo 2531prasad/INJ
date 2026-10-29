@@ -58,10 +58,15 @@ module.exports = async function verifyControls(page, check, root, { artifacts, h
       const r = el.getBoundingClientRect();
       return (el.hidden || Math.abs(r.width - r.height) < 0.1) &&
         el.querySelector('.skill-icon path') && ['block','teleport','special','nitro'].includes(el.dataset.act);
-    }) && [...document.querySelectorAll('#pad .action-face path')].every(path => {
-      const channels = getComputedStyle(path).fill.match(/[\d.]+/g).slice(0, 3).map(Number);
+    }) && [...document.querySelectorAll('#pad .surface-top,#pad .surface-mid,#pad .surface-low')].every(stop => {
+      const channels = getComputedStyle(stop).stopColor.match(/[\d.]+/g).slice(0, 3).map(Number);
       return Math.max(...channels) - Math.min(...channels) <= 18;
     })), 'Controls: four circular skill buttons have individual emblems and muted faces');
+  check(await page.evaluate(() => [...document.querySelectorAll('#pad .ability:not([hidden])')].every(button => {
+    const r = button.getBoundingClientRect();
+    const target = document.elementFromPoint(r.right + 2, r.top + r.height / 2 + 2);
+    return !button.contains(target) && !target?.closest('.abtn');
+  })), 'Controls: decorative outer shadows never expand a skill touch target');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
   await page.evaluate(() => { INJ.resumeGame(); INJ.pauseGame(); });

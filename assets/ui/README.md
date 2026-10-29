@@ -7,3 +7,5 @@ The complete generation prompt is in [inset-controls-concept-v1.prompt.txt](inse
 `index.html`, `js/controls.js` and `styles/responsive.css` implement the generated arrangement as independent SVG/native-button components: equal Punch/Kick arc segments, a slightly smaller Upper segment, then circular Guard/Blink/Shadow/Nitro skills ahead of the arc. Emblems are crisp code-native SVGs based on the concept's fist, boot, rising fist, shield, split silhouette, crescent projectile and blazing boot. Insets fit to 18 px plus safe areas in landscape and 8 px plus safe areas in short portrait arenas; saved scale still fits the available space.
 
 This image is referenced by the current guides. Fighters, sprites, stage plates and game startup resources retain their existing artwork and loading paths.
+
+The v0.32 material pass brings the components closer to this reference with directional rim lighting, graphite and radial inner shading, inset bevel lines and silhouette-shaped outer shadows. These remain code-native SVG/CSS layers on the same interactive faces.

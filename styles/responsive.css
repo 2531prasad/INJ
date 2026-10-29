@@ -78,7 +78,12 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  color: #d5d1c8;
+  --control-top: #44464d;
+  --control-mid: #282b32;
+  --control-low: #11141a;
+  --control-edge: #e8e4d6;
+  --control-shadow: 0 3px 3px #000b;
+  color: #e4dfd2;
   font: 600 9px/1 'Chakra Petch', sans-serif;
   letter-spacing: 0.035em;
   font-variant-numeric: tabular-nums;
@@ -112,12 +117,36 @@
   width: 100%;
   height: 100%;
   overflow: visible;
-  fill: #181a20a3;
-  stroke: #c6c2b456;
-  stroke-width: 1;
+  fill: none;
+  stroke: none;
 }
-#pad .action-face path {
+#pad .abtn .action-face {
+  filter: drop-shadow(0 1px 0 #0009) drop-shadow(var(--control-shadow));
+}
+#pad .action-face .surface-base {
   pointer-events: visiblePainted;
+}
+#pad .action-face .surface-top {
+  stop-color: var(--control-top);
+}
+#pad .action-face .surface-mid {
+  stop-color: var(--control-mid);
+}
+#pad .action-face .surface-low {
+  stop-color: var(--control-low);
+}
+#pad .action-face .surface-edge-top {
+  stop-color: var(--control-edge);
+}
+#pad .action-face .surface-edge {
+  stroke-width: 1.8;
+}
+#pad .action-face .surface-inset {
+  stroke: #02050bc9;
+  stroke-width: 1.5;
+}
+#pad .action-face .surface-bevel {
+  stroke-width: 0.8;
 }
 #pad .abtn .button-label,
 #pad .abtn .cooldown-value {
@@ -130,10 +159,8 @@
 }
 #pad .abtn.primary {
   font-size: 10px;
-}
-#pad .abtn.primary .action-face {
-  fill: #28292f9c;
-  stroke: #d4cebb70;
+  --control-top: #494a50;
+  --control-mid: #2c2e35;
 }
 #pad .abtn.primary > svg.skill-icon {
   width: 25px;
@@ -152,21 +179,21 @@
 #pad .abtn.down,
 #pad .abtn:active {
   transform: scale(0.96);
-}
-#pad .abtn.down .action-face,
-#pad .abtn:active .action-face {
-  fill: #66645a99;
-  stroke: #e6e0cbba;
+  --control-top: #24272d;
+  --control-mid: #1c1f25;
+  --control-low: #101319;
+  --control-edge: #f0eadb;
+  --control-shadow: 0 1px 1px #000b;
 }
 #pad .abtn:focus-visible {
   outline: none;
+  --control-edge: #fff4d8;
 }
-#pad .abtn:focus-visible .action-face {
-  stroke: #eee7d4;
-  stroke-width: 2;
+#pad .abtn:focus-visible .surface-edge {
+  stroke-width: 2.5;
 }
-#pad .abtn.ready .action-face {
-  stroke: #cfceaf99;
+#pad .abtn.ready {
+  --control-edge: #dce2c6;
 }
 #pad .abtn .cooldown-track {
   display: none;
@@ -224,4 +251,10 @@
 }
 #pad .abtn[data-act='upper'] .button-label {
   top: calc(var(--label-y) + 8px);
+}
+
+@media (max-width: 680px) and (orientation: portrait) {
+  #pad .abtn {
+    --control-shadow: 0 2px 2px #000b;
+  }
 }

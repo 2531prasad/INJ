@@ -207,6 +207,57 @@
   let controlScale = 100;
   let settingsWritable = true;
 
+  function prepareControlSurface(button) {
+    const face = button.querySelector('.action-face');
+    const id = 'control-' + button.dataset.act;
+    face.innerHTML = `
+      <defs>
+        <linearGradient id="${id}-face" x1="0" y1="0" x2="0.65" y2="1">
+          <stop class="surface-top" offset="0" stop-opacity="0.96" />
+          <stop class="surface-mid" offset="0.4" stop-opacity="0.96" />
+          <stop class="surface-low" offset="1" stop-opacity="0.98" />
+        </linearGradient>
+        <radialGradient id="${id}-shade" cx="0.42" cy="0.35" r="0.75">
+          <stop offset="0.35" stop-color="#000" stop-opacity="0" />
+          <stop offset="1" stop-color="#000" stop-opacity="0.4" />
+        </radialGradient>
+        <linearGradient id="${id}-edge" x1="0" y1="0" x2="0.6" y2="1">
+          <stop class="surface-edge-top" offset="0" stop-opacity="0.9" />
+          <stop offset="0.46" stop-color="#90928e" stop-opacity="0.8" />
+          <stop offset="1" stop-color="#454950" stop-opacity="0.9" />
+        </linearGradient>
+        <linearGradient id="${id}-bevel" x1="0" y1="0" x2="0.5" y2="1">
+          <stop offset="0" stop-color="#eee9dc" stop-opacity="0.3" />
+          <stop offset="0.5" stop-color="#aaa99f" stop-opacity="0.08" />
+          <stop offset="1" stop-color="#03060a" stop-opacity="0.8" />
+        </linearGradient>
+      </defs>
+      <path class="surface-base" fill="url(#${id}-face)" />
+      <path class="surface-shade" fill="url(#${id}-shade)" />
+      <path class="surface-edge" fill="none" stroke="url(#${id}-edge)" />
+      <path class="surface-inset" fill="none" />
+      <path class="surface-bevel" fill="none" stroke="url(#${id}-bevel)" />`;
+  }
+
+  function updateControlFace(button, width, height, path) {
+    const cx = parseFloat(button.style.getPropertyValue('--label-x'));
+    const cy = parseFloat(button.style.getPropertyValue('--label-y'));
+    for (const svg of button.querySelectorAll('.action-face,.cooldown-track')) {
+      svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+      for (const layer of svg.querySelectorAll('path')) {
+        layer.setAttribute('d', path);
+        layer.setAttribute('vector-effect', 'non-scaling-stroke');
+        if (layer.matches('.surface-inset,.surface-bevel')) {
+          const scale = layer.classList.contains('surface-inset') ? 0.945 : 0.925;
+          layer.setAttribute(
+            'transform',
+            `translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})`
+          );
+        }
+      }
+    }
+  }
+
   function layoutControlArc(act, start, end, outer, inner, originX, originY) {
     const button = document.querySelector('[data-act="' + act + '"]');
     // Zero points left, ninety points up: primary segments share an inset origin.
@@ -235,11 +286,7 @@
     const xy = p => (p.x - x) + ' ' + (p.y - y);
     const path = 'M' + xy(a) + ' A' + outer + ' ' + outer + ' 0 0 1 ' + xy(b) +
       ' L' + xy(c) + (inner > 0 ? ' A' + inner + ' ' + inner + ' 0 0 0 ' + xy(d) : '') + ' Z';
-    for (const svg of button.querySelectorAll('.action-face,.cooldown-track')) {
-      svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
-      svg.querySelector('path').setAttribute('d', path);
-      svg.querySelector('path').setAttribute('vector-effect', 'non-scaling-stroke');
-    }
+    updateControlFace(button, width, height, path);
   }
 
   function layoutAbilityButton(act, x, y, size) {
@@ -258,11 +305,7 @@
     button.style.setProperty('--hit-shape', 'polygon(' + points.join(',') + ')');
     const path = 'M1 ' + center + ' A' + radius + ' ' + radius + ' 0 1 1 ' + (size - 1) + ' ' + center +
       ' A' + radius + ' ' + radius + ' 0 1 1 1 ' + center + ' Z';
-    for (const svg of button.querySelectorAll('.action-face,.cooldown-track')) {
-      svg.setAttribute('viewBox', '0 0 ' + size + ' ' + size);
-      svg.querySelector('path').setAttribute('d', path);
-      svg.querySelector('path').setAttribute('vector-effect', 'non-scaling-stroke');
-    }
+    updateControlFace(button, size, size, path);
   }
 
   function layoutControls() {
@@ -346,6 +389,7 @@
   }
 
   function initControls() {
+    document.querySelectorAll('#pad .abtn').forEach(prepareControlSurface);
     loadControlSettings();
     document.getElementById('controlScale').addEventListener('input', (event) =>
       setControlScale(Number(event.target.value))

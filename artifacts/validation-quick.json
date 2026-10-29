@@ -1,54 +1,37 @@
 {
   "mode": "functional",
-  "recordedAt": "2026-10-29T02:58:57.447Z",
+  "recordedAt": "2026-10-29T03:26:31.061Z",
   "selected": [
     "controls",
-    "combat",
-    "menus",
-    "progression"
+    "combat"
   ],
-  "checks": 231,
-  "seconds": 35.12,
+  "checks": 156,
+  "seconds": 20.93,
   "suites": [
     {
       "suite": "smoke.cjs",
       "checks": 19,
-      "seconds": 5.78
+      "seconds": 6.53
     },
     {
       "suite": "controls.cjs",
-      "checks": 38,
-      "seconds": 8.39
+      "checks": 39,
+      "seconds": 7.32
     },
     {
       "suite": "input.cjs",
       "checks": 29,
-      "seconds": 1.82
+      "seconds": 1.77
     },
     {
       "suite": "abilities.cjs",
       "checks": 41,
-      "seconds": 1.61
+      "seconds": 1.69
     },
     {
       "suite": "victory.cjs",
       "checks": 28,
-      "seconds": 1.4
-    },
-    {
-      "suite": "menus.cjs",
-      "checks": 21,
-      "seconds": 2.31
-    },
-    {
-      "suite": "progression.cjs",
-      "checks": 20,
-      "seconds": 6.05
-    },
-    {
-      "suite": "passive.cjs",
-      "checks": 35,
-      "seconds": 5.53
+      "seconds": 1.53
     }
   ],
   "artifacts": true,
