@@ -209,7 +209,7 @@
 
   function layoutControlArc(act, start, end, outer, inner, originX, originY) {
     const button = document.querySelector('[data-act="' + act + '"]');
-    // Zero points left, ninety points up: every large arc is rooted at the corner.
+    // Zero points left, ninety points up: primary segments share an inset origin.
     const point = (r, degrees) => {
       const angle = degrees * Math.PI / 180;
       return { x: originX - r * Math.cos(angle), y: originY - r * Math.sin(angle) };
@@ -273,14 +273,19 @@
     const safeBottom = parseFloat(style.getPropertyValue('--safe-bottom')) || 0;
     const safeLeft = parseFloat(style.getPropertyValue('--safe-left')) || 0;
     const compact = height < 240;
-    const aux = Math.max(44, 50 * controlScale / 100);
+    const inset = compact ? 8 : 18;
+    const edge = safeRight + inset, floor = safeBottom + inset;
+    const requestedAux = 50 * controlScale / 100;
+    const aux = compact
+      ? Math.max(44, Math.min(requestedAux, (height - floor - 44) / 2,
+        (width - edge - safeLeft - 174) / 2))
+      : Math.max(44, requestedAux);
     const cell = aux + 5;
-    const edge = safeRight, floor = safeBottom;
-    const requested = (compact ? 96 : 126) * controlScale / 100;
+    const requested = (compact ? 104 : 148) * controlScale / 100;
     const radius = compact
-      ? Math.max(88, Math.min(requested, height - floor - 28,
+      ? Math.max(96, Math.min(requested, height - floor - 30,
         width - edge - safeLeft - 66 - cell * 2 - 6))
-      : Math.max(96, Math.min(requested, height - floor - aux - 36));
+      : Math.max(108, Math.min(requested, height - floor - aux - 36));
     const deck = compact ? radius + cell * 2 + 6 : radius + aux + 14;
     const tall = compact ? Math.max(radius, cell * 2 + 4) : deck;
     const padLeft = width - edge - deck;
@@ -293,10 +298,10 @@
       'menu-left': Math.max(safeLeft, (stickZoneWidth - 44) / 2), 'menu-bottom': safeBottom
     };
     for (const [key, value] of Object.entries(values)) arena.style.setProperty('--' + key, value + 'px');
-    layoutControlArc('punch', 24, 66, radius, 0, deck, tall);
-    layoutControlArc('kick', 0, 20, radius, radius * 0.6, deck, tall);
-    layoutControlArc('block', 70, 90, radius, radius * 0.6, deck, tall);
-    const abilities = ['teleport', 'upper', 'special', 'nitro'];
+    layoutControlArc('punch', 0, 28, radius, radius * 0.5, deck, tall);
+    layoutControlArc('kick', 32, 60, radius, radius * 0.5, deck, tall);
+    layoutControlArc('upper', 64, 90, radius * 0.92, radius * 0.5, deck, tall);
+    const abilities = ['block', 'teleport', 'special', 'nitro'];
     if (compact) {
       const slots = [[0, tall - cell], [cell, tall - cell * 2 - 4], [0, tall - cell * 2 - 4], [cell, tall - cell]];
       for (let i = 0; i < abilities.length; i++) {

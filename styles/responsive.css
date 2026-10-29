@@ -48,7 +48,7 @@
     display: none;
   }
 }
-/* Corner-rooted quarter arc, with compact supporting abilities around its edge. */
+/* Inset three-attack arc, with circular skill buttons ahead of its curved edge. */
 .screen {
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -128,16 +128,26 @@
   pointer-events: none;
   white-space: nowrap;
 }
-#pad .abtn[data-act='punch'] {
-  font-size: 11px;
+#pad .abtn.primary {
+  font-size: 10px;
 }
-#pad .abtn[data-act='punch'] .action-face {
-  fill: #33343b9c;
+#pad .abtn.primary .action-face {
+  fill: #28292f9c;
   stroke: #d4cebb70;
 }
-#pad .abtn[data-act='punch'] > svg:not(.action-face) {
-  width: 28px;
-  height: 28px;
+#pad .abtn.primary > svg.skill-icon {
+  width: 25px;
+  height: 25px;
+}
+#pad .abtn[data-act='upper'] {
+  font-size: 8px;
+}
+#pad .abtn[data-act='upper'] > svg.skill-icon {
+  width: 19px;
+  height: 19px;
+}
+#pad .abtn[data-act='nitro'] .skill-icon {
+  color: #c1cdb5;
 }
 #pad .abtn.down,
 #pad .abtn:active {
@@ -209,14 +219,9 @@
   border: 1px solid #dad6cc70;
 }
 
-#pad [data-act='kick'] > svg:not(.action-face),
-#pad [data-act='block'] > svg:not(.action-face) {
-  width: 16px;
-  height: 16px;
-  top: calc(var(--label-y) - 5px);
+#pad .abtn.primary .button-label {
+  top: calc(var(--label-y) + 10px);
 }
-#pad [data-act='kick'] .button-label,
-#pad [data-act='block'] .button-label {
-  font-size: 8px;
-  top: calc(var(--label-y) + 7px);
+#pad .abtn[data-act='upper'] .button-label {
+  top: calc(var(--label-y) + 8px);
 }

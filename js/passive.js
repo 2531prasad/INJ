@@ -2,7 +2,7 @@
  * Runtime dependencies: state.js, core.js, combat.js, movement.js. */
 (function (App) {
   'use strict';
-  const BURST = { grow: 0.1, shrink: 0.3, scale: 1.6, radius: 130, stun: 1, chainWindow: 2 };
+  const BURST = { grow: 0.1, shrink: 0.3, scale: 2.5, radius: 130, stun: 1, chainWindow: 2 };
   function resetBurstChain() {
     App.player.burstHits = 0;
     App.player.burstWindow = 0;

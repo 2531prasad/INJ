@@ -61,3 +61,7 @@ Four new 1672×941 ImageGen background plates now replace the shared temple in l
 ## Velvet Colossus (v0.24)
 
 `stage-giants-v1.png` adds a fifth, standalone Kingdom of Giants plate. `teddy-giant-poses-v1.png` adds a four-pose transparent atlas: overhead two-fist windup, planted-paw impact, kneeling recovery and folded-arm recess. `tools/inspect-teddy.py` appends its alpha bounds/roots under `giant` in `teddy-frames.js`, normalized to the standing pose's 574-pixel height; source PNGs are never redrawn. Existing Teddy walking and combat art remain unchanged. `js/giant-renderer.js` uses a shared uniform boss scale and a separate pullback camera; `js/giant.js` owns the encounter. [Exact built-in ImageGen prompts, output paths and hashes](giant-generation.md).
+
+## Inset combat HUD concept
+
+The v0.31 controls were developed from a generated layout reference, then implemented as responsive native buttons and SVG components. [Concept, provenance and prompt](ui/README.md). This adds no new fighter sprites or stage plates.

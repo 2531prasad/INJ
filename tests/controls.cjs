@@ -26,19 +26,42 @@ module.exports = async function verifyControls(page, check, root, { artifacts, h
     getComputedStyle(INJ.stickBase).display === 'none' && getComputedStyle(INJ.stickKnob).display === 'none'),
     'Controls: idle movement area has no permanent pad, arrows or labels');
   check(await page.evaluate(() => {
-    const buttons = [...document.querySelectorAll('#pad .abtn:not([hidden])')];
-    const arena = document.querySelector('#screen'), box = arena.getBoundingClientRect();
-    const style = getComputedStyle(arena), punch = document.querySelector('[data-act="punch"]').getBoundingClientRect();
-    const right = box.right - parseFloat(style.borderRightWidth) - (parseFloat(style.getPropertyValue('--safe-right')) || 0);
-    const bottom = box.bottom - parseFloat(style.borderBottomWidth) - (parseFloat(style.getPropertyValue('--safe-bottom')) || 0);
-    return Math.abs(punch.right - right) < 1 && Math.abs(punch.bottom - bottom) < 1 && buttons.every(b => {
-      const path = b.querySelector('.action-face path');
+    const arena = document.querySelector('#screen'), bounds = arena.getBoundingClientRect();
+    const style = getComputedStyle(arena);
+    const primary = [...document.querySelectorAll('#pad .primary')];
+    const frames = primary.map(el => el.getBoundingClientRect());
+    const right = bounds.right - parseFloat(style.borderRightWidth) - (parseFloat(style.getPropertyValue('--safe-right')) || 0);
+    const bottom = bounds.bottom - parseFloat(style.borderBottomWidth) - (parseFloat(style.getPropertyValue('--safe-bottom')) || 0);
+    const area = el => {
+      const r = el.getBoundingClientRect();
+      const points = el.style.getPropertyValue('--hit-shape').slice(8, -1).split(',').map(pair => {
+        const [x, y] = pair.trim().split(/\s+/).map(parseFloat);
+        return [x * r.width / 100, y * r.height / 100];
+      });
+      return Math.abs(points.reduce((sum, p, i) => {
+        const q = points[(i + 1) % points.length];
+        return sum + p[0] * q[1] - p[1] * q[0];
+      }, 0)) / 2;
+    };
+    const [punch, kick, upper] = ['punch', 'kick', 'upper'].map(act =>
+      document.querySelector('[data-act="' + act + '"]'));
+    const sizes = [punch, kick, upper].map(area);
+    return primary.length === 3 && primary.every(el => !el.hidden &&
+      (el.querySelector('.action-face path').getAttribute('d').match(/ A/g) || []).length === 2) &&
+      right - Math.max(...frames.map(r => r.right)) >= 7 &&
+      bottom - Math.max(...frames.map(r => r.bottom)) >= 7 &&
+      Math.abs(sizes[0] / sizes[1] - 1) < 0.05 && sizes[2] < Math.min(sizes[0], sizes[1]) * 0.9 &&
+      sizes[2] > Math.min(sizes[0], sizes[1]) * 0.6;
+  }), 'Controls: inset annular Punch/Kick/Upper arc has two equal main attacks and a smaller persistent Upper');
+  check(await page.evaluate(() => [...document.querySelectorAll('#pad .ability')].length === 4 &&
+    [...document.querySelectorAll('#pad .ability')].every(el => {
+      const r = el.getBoundingClientRect();
+      return (el.hidden || Math.abs(r.width - r.height) < 0.1) &&
+        el.querySelector('.skill-icon path') && ['block','teleport','special','nitro'].includes(el.dataset.act);
+    }) && [...document.querySelectorAll('#pad .action-face path')].every(path => {
       const channels = getComputedStyle(path).fill.match(/[\d.]+/g).slice(0, 3).map(Number);
-      return path.getAttribute('d').includes(' A') &&
-        Math.max(...channels) - Math.min(...channels) <= 18;
-    }) && document.querySelector('[data-act="punch"]').getBoundingClientRect().width >
-      document.querySelector('[data-act="kick"]').getBoundingClientRect().width;
-  }), 'Controls: corner arc has a larger middle strike and muted translucent controls');
+      return Math.max(...channels) - Math.min(...channels) <= 18;
+    })), 'Controls: four circular skill buttons have individual emblems and muted faces');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
   await page.evaluate(() => { INJ.resumeGame(); INJ.pauseGame(); });

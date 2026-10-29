@@ -27,9 +27,9 @@ module.exports = async function verifyPassive(page, check, root, { artifacts = f
       out.thirdHitStartsWithoutHealing = !!a.player.burst && a.player.hp === 105 && !a.player.hitstun;
       const hp = a.dummy.hp;
       a.stepPassive(0.05);
-      out.halfGrowthIsBetweenNormalAndPeak = a.passiveScale(a.player) > 1 && a.passiveScale(a.player) < 1.6;
+      out.halfGrowthIsBetweenNormalAndPeak = a.passiveScale(a.player) > 1 && a.passiveScale(a.player) < 2.5;
       a.stepPassive(0.05);
-      out.exactPeakAt100ms = Math.abs(a.passiveScale(a.player) - 1.6) < 1e-9 && a.dummy.burstStun === 1;
+      out.exactPeakAt100ms = Math.abs(a.passiveScale(a.player) - 2.5) < 1e-9 && a.dummy.burstStun === 1;
       out.pulseKnocksAwayWithoutDamage = a.dummy.vx > 0 && a.dummy.hp === hp && a.dummy.atk === null;
       a.applyHit(a.player, a.dummy, a.MOVES.jab, 180, 150);
       out.burstAnimationProtectsAgainstFurtherHits = a.player.hp === 105;
@@ -41,7 +41,7 @@ module.exports = async function verifyPassive(page, check, root, { artifacts = f
       a.controlDummy(a.dummy, a.player, 0.5);
       out.stunEndsAfterOneActiveSecond = !a.dummy.burstStun && a.dummy.state === 'idle';
       a.stepPassive(0.15);
-      out.halfShrinkIsBetweenNormalAndPeak = a.passiveScale(a.player) > 1 && a.passiveScale(a.player) < 1.6;
+      out.halfShrinkIsBetweenNormalAndPeak = a.passiveScale(a.player) > 1 && a.passiveScale(a.player) < 2.5;
       a.stepPassive(0.15);
       out.returnsToNormalAt400ms = !a.player.burst && a.passiveScale(a.player) === 1;
       setup(); hit(); hit();
@@ -106,10 +106,10 @@ module.exports = async function verifyPassive(page, check, root, { artifacts = f
     await page.waitForTimeout(100);
   }
   check(samples.every(s => s.x === 170 && s.y === INJ_GROUND && Number.isFinite(s.scale)), 'Burst: slow replay preserves the foot/root anchor');
-  check(Math.abs(samples[10].scale - 1.6) < 1e-9 && samples[40].scale === 1 &&
+  check(Math.abs(samples[10].scale - 2.5) < 1e-9 && samples[40].scale === 1 &&
     samples.slice(1, 10).every((s, i) => s.scale >= samples[i].scale) &&
     samples.slice(11).every((s, i) => s.scale <= samples[i + 10].scale), 'Burst: slow replay grows for 0.1s then shrinks over 0.3s');
-  check(samples[10].pose === 10 && Math.abs(samples[10].height / samples[0].height - 1.6) < 1e-9,
+  check(samples[10].pose === 10 && Math.abs(samples[10].height / samples[0].height - 2.5) < 1e-9,
     'Burst: authored knockout pose and hurtbox share the runtime scale');
 };
 const INJ_GROUND = 198;

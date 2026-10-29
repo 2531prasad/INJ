@@ -1,52 +1,62 @@
 {
   "mode": "functional",
-  "recordedAt": "2026-10-29T02:32:44.314Z",
+  "recordedAt": "2026-10-29T02:58:57.447Z",
   "selected": [
     "controls",
     "combat",
-    "menus"
+    "menus",
+    "progression"
   ],
-  "checks": 175,
-  "seconds": 21.67,
+  "checks": 231,
+  "seconds": 35.12,
   "suites": [
     {
       "suite": "smoke.cjs",
       "checks": 19,
-      "seconds": 6.06
+      "seconds": 5.78
     },
     {
       "suite": "controls.cjs",
-      "checks": 37,
-      "seconds": 6.33
+      "checks": 38,
+      "seconds": 8.39
     },
     {
       "suite": "input.cjs",
       "checks": 29,
-      "seconds": 1.9
+      "seconds": 1.82
     },
     {
       "suite": "abilities.cjs",
       "checks": 41,
-      "seconds": 1.6
+      "seconds": 1.61
     },
     {
       "suite": "victory.cjs",
       "checks": 28,
-      "seconds": 1.28
+      "seconds": 1.4
     },
     {
       "suite": "menus.cjs",
       "checks": 21,
-      "seconds": 2.21
+      "seconds": 2.31
+    },
+    {
+      "suite": "progression.cjs",
+      "checks": 20,
+      "seconds": 6.05
+    },
+    {
+      "suite": "passive.cjs",
+      "checks": 35,
+      "seconds": 5.53
     }
   ],
-  "artifacts": false,
+  "artifacts": true,
   "skipped": [
     "balance simulations",
     "offline audio renders",
     "slow reveal replay",
-    "legacy full suite",
-    "preview screenshots"
+    "legacy full suite"
   ],
   "limitations": [
     "Chromium emulation; no physical iPhone/Safari validation",
