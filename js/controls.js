@@ -213,13 +213,13 @@
     face.innerHTML = `
       <defs>
         <linearGradient id="${id}-face" x1="0" y1="0" x2="0.65" y2="1">
-          <stop class="surface-top" offset="0" stop-opacity="0.96" />
-          <stop class="surface-mid" offset="0.4" stop-opacity="0.96" />
-          <stop class="surface-low" offset="1" stop-opacity="0.98" />
+          <stop class="surface-top" offset="0" stop-opacity="0.6" />
+          <stop class="surface-mid" offset="0.4" stop-opacity="0.64" />
+          <stop class="surface-low" offset="1" stop-opacity="0.68" />
         </linearGradient>
         <radialGradient id="${id}-shade" cx="0.42" cy="0.35" r="0.75">
           <stop offset="0.35" stop-color="#000" stop-opacity="0" />
-          <stop offset="1" stop-color="#000" stop-opacity="0.4" />
+          <stop offset="1" stop-color="#000" stop-opacity="0.18" />
         </radialGradient>
         <linearGradient id="${id}-edge" x1="0" y1="0" x2="0.6" y2="1">
           <stop class="surface-edge-top" offset="0" stop-opacity="0.9" />

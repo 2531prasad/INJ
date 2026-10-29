@@ -120,9 +120,6 @@
   fill: none;
   stroke: none;
 }
-#pad .abtn .action-face {
-  filter: drop-shadow(0 1px 0 #0009) drop-shadow(var(--control-shadow));
-}
 #pad .action-face .surface-base {
   pointer-events: visiblePainted;
 }
@@ -140,6 +137,8 @@
 }
 #pad .action-face .surface-edge {
   stroke-width: 1.8;
+  /* Shadow the rim so the translucent center stays clear of a dark underlay. */
+  filter: drop-shadow(0 1px 0 #0009) drop-shadow(var(--control-shadow));
 }
 #pad .action-face .surface-inset {
   stroke: #02050bc9;
