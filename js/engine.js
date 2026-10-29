@@ -1,5 +1,5 @@
 /* engine.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: core.js, effects.js, giant.js, menus.js, movement.js, opponent.js, renderer.js, rounds.js, state.js, teleport.js.
+ * Cross-module dependencies: passive.js, core.js, effects.js, giant.js, menus.js, movement.js, opponent.js, renderer.js, rounds.js, state.js, teleport.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -32,6 +32,7 @@
     )
       return;
     App.tickTeleport(dt);
+    App.stepPassive(dt);
     App.controlPlayer(App.player, App.dummy, dt);
     if (App.game.state === 'transform') return;
     App.controlDummy(App.dummy, App.player, dt);

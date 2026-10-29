@@ -11,7 +11,7 @@
     return App.world.width / 2 + (x - App.fightWidth() / 2) * giantCamera();
   }
   function giantPose(f) {
-    if (f.state === 'ko') return { kind: 'teddy', frame: 10 };
+    if (f.state === 'ko' || f.burstStun > 0) return { kind: 'teddy', frame: 10 };
     if (f.state === 'walk') return App.sampleTeddyAnimation(f);
     const a = f.atk;
     if (a?.key === 'colossusSmash')

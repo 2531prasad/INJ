@@ -39,6 +39,7 @@
     return true;
   }
   function controlDummy(f, op, dt) {
+    if (App.stepBurstStun(f, dt)) return;
     if (
       op.teleport &&
       App.game.state === 'fight' &&

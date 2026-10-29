@@ -1,11 +1,12 @@
 /* rounds.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: arena.js, controls.js, core.js, menus.js, state.js, teddy.js.
+ * Cross-module dependencies: passive.js, progression.js, arena.js, controls.js, core.js, menus.js, state.js, teddy.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
   function endRound(winner) {
     if (['ko', 'victory'].includes(App.game.state)) return;
     App.game.lost = winner !== App.player;
+    const newUnlock = App.recordRoundResult(!App.game.lost);
     App.game.state = 'ko';
     App.game.koTimer = App.game.lost ? 3 : 1.1;
     App.game.victory = App.game.lost
@@ -15,8 +16,10 @@
           opponent: App.isR8(App.dummy) ? 'GOLDLINE' : App.dummy.name,
           health: Math.ceil(App.player.hp),
           maxHealth: App.player.maxHp,
-          bestCombo: App.game.bestCombo
+          bestCombo: App.game.bestCombo,
+          newUnlock
         };
+    App.resetPassive();
     App.resetInput();
     App.player.atk = null;
     App.player.teleport = null;
@@ -91,6 +94,7 @@
     App.game.shakeX = App.game.shakeY = 0;
     if (App.isGiant(App.dummy)) App.beginGiantIntro();
     App.updateChargeUI();
+    App.checkpointProgress();
   }
 
   function updateFlow(dt) {

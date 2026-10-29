@@ -479,6 +479,7 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
     const policyResults=['idle','punch spam','mixed attacks','Shadow kiting','jumping kicks','guard/counter','crouch/sweep'].map(policy=>({policy,trials:0,dummyWins:0,playerWins:0}));
     try{
       for(let trial=0;trial<100;trial++){
+        t.progress.unlocks.colossusBurst=false; // Pre-unlock balance baseline.
         INJ.rnd=INJ.mulberry32(1993+trial);
         roundTwo();t.game.paused=false;t.game.roundTime=99;
         const policy=trial%7;
@@ -632,6 +633,8 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await pc.evaluate(()=>{__test.game.elapsed=15.2;});
   await pc.waitForTimeout(100);
   await pc.screenshot({path:path.join(root,'artifacts/background-duel-victory.png')});
+  await require('./passive.cjs')(page,check,root,{artifacts:true});
+  await require('./progression.cjs')(page,check,root,{artifacts:true});
   check(errors.length===0, `No browser runtime errors (${errors.join('; ')})`);
   check(resourceErrors.length===0, `All local split-script and stylesheet requests complete (${resourceErrors.join('; ')})`);
   const report={checks,awakenedBenchmark:difficulty.benchmark,r8Benchmarks,teddyBenchmark,giantBenchmark,engine:'Chrome / Chromium',viewports:9,audio:{peak:audio.peak,rms:audio.rms,clippedSamples:audio.clipped},limitations:['No physical phone or mobile Safari test','No subjective speaker or headphone listening review','Scripted benchmarks do not measure human win rates. Dummy/R8 use seven basic policies without Nitro, Blink or aerial Shadow; Teddy uses four full-encounter policies including Nitro and Blink, plus twenty isolated tiny-phase repeated-kick trials. Colossus uses thirty full fights across idle, reckless and prepared guard/Blink policies.']};

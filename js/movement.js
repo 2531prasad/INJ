@@ -55,6 +55,10 @@
       if (f.comboTimer <= 0) f.comboStep = 0;
     }
     const canAct = App.game.state === 'fight';
+    if (f.burst) {
+      advancePlayerInput(dt);
+      return;
+    }
     // Engine calls stop during hit-stop/pause/cutscenes, so input windows use
     // simulation time and cannot expire merely because rendering stalled.
     if (f.teleport) {

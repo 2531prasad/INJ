@@ -7,6 +7,7 @@
       f !== App.player ||
       App.game.state !== 'fight' ||
       f.teleport ||
+      f.burst ||
       f.atk ||
       f.teleportCooldown > 0 ||
       f.hitstun > 0 ||

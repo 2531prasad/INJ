@@ -1,6 +1,6 @@
 # INJ — Phone-First Arcade Fighter
 
-## Current build · v0.27 · 23 October 2026
+## Current build · v0.28 · 29 October 2026
 
 A personal fighting game made for a friend. Phones are the primary platform; PC keyboard play remains available. Keep INJ cool, movement intuitive, and attacks responsive. INJ has escalating hit combos, a meter-powered Nitro Kick and aerial Shadow tosses. Level three introduces Goldline: a cute turquoise Audi R8 with gold rims and a second, humanoid machine form. Round four adds Blue Velvet, a theatrical blue plush opponent with a surprise Doraemon shrink-ray assist. INJ can teleport behind opponents with Blink. Round five adds the Velvet Colossus, Teddy’s standalone giant boss battle. Five generated stages now match the opponents; existing fighter sprites are preserved.
 
@@ -21,6 +21,8 @@ On iPhone, Safari Share → Add to Home Screen → enable Open as Web App if sho
 ## Current behavior
 
 - **Phone controls:** independent captured pointers for each thumb. The left joystick moves/crouches; its upward 90° wedge from 10:30 to 1:30 jumps, including diagonal jumps. Shallow upward tilts outside that wedge stay grounded. Touch-down starts eligible attacks immediately; busy fighters retain a 220 ms buffer measured in active game time. Larger round Punch/Kick buttons sit below a smaller icon-and-label row for Shadow, Upper and Guard, with Blink below at a fixed position. Nitro uses a fixed slot that appears only at full meter and hides immediately when spent; other buttons never move. Every touch target remains at least 44 px.
+- **Local memory:** this browser saves stage progress, completed encounters, wins/losses, best combo and earned abilities. Reopening resumes a fresh saved encounter behind the profile; no mid-fight health or input is restored. Wins checkpoint the next stage, losses retry the same encounter. Restart returns to level one while keeping earned unlocks. Corrupt/blocked storage does not prevent play. [Save format and rules](docs/progression.md).
+- **Colossus Burst / earned passive:** defeating the real Velvet Colossus permanently unlocks an automatic three-hit escape. Three consecutive unblocked hits, each within two active seconds of the previous hit, expand INJ to **1.6× size in 0.1 s**, then shrink her over **0.3 s**. At peak, nearby enemies are knocked away and stunned for **1 s**, including the Colossus as an exception to its ordinary poise. Blocking or landing a counter-hit resets the count. The 0.4 s burst protects INJ and cancels her reaction; it adds no damage, healing, meter or combo credit, and cannot rescue a lethal third hit. Existing recoil/knockout art is reused without a cameo. Unlocks survive restart/reload and appear in victory and pause; transient counters reset on a new encounter/phase.
 - **Input / attack coordination:** held directions remain live during attacks. Grounded moves finish their authored recovery, then walking/guard/jump starts immediately; recent jump taps are buffered and held Space/W/Up keeps requesting jump. Jump plus attack resolves as an aerial move. Ordinary aerial attacks retain horizontal steering; Slide/Nitro keep committed burst travel. Queued down/forward modifiers survive release. A newer button press replaces the prior queued action, while jump is separate. Opposite directions resolve to neutral. Pause/focus loss clears inputs; hit-stop freezes command age. [Input rules and examples](docs/input.md).
 - **Display:** dynamic aspect ratio with an 18:9 desktop/portrait default and landscape fit. World height stays 225; width changes without stretching fighters or changing combat scale. Fighters occupy about half the arena height. Resize preserves health, attacks and spacing.
 - **Quiet menu:** one borderless three-dot trigger at the arena's bottom edge. The two-row panel contains Resume, Full screen, Restart game, Profile, Sound and Music. Restart immediately returns to round one with full health and cleared combat state, preserving fullscreen and audio settings. No hand/focus halos or pulsing utility buttons.
@@ -57,6 +59,8 @@ On iPhone, Safari Share → Add to Home Screen → enable Open as Web App if sho
 | Restart / fullscreen | Three-dot menu | Same menu actions |
 
 ## Verification
+
+The v0.28 save/passive update passed structure and **258 focused Chromium checks in 41.13 seconds**, including real HTTP/file persistence, corrupt/unavailable storage, all enemy forms, a 10% burst replay, phone unlock geometry and existing input/combat/victory/boss/menu regressions. [Progression and passive review](artifacts/progression-review.md). No long fight simulation, offline score render or exhaustive suite was run.
 
 The v0.27 input update passed structure plus **138 focused Chromium checks in 18.09 seconds**, including actual keyboard/two-thumb input, active-time buffering, recovery boundaries, combat, victory and Blink targeting. [Input review](artifacts/input-review.md). Long fight simulations and the exhaustive suite were skipped.
 

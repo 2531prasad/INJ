@@ -1,5 +1,5 @@
 /* fighters.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: core.js, encounters.js, r8-renderer.js, teddy-renderer.js, teleport.js.
+ * Cross-module dependencies: passive.js, core.js, encounters.js, r8-renderer.js, teddy-renderer.js, teleport.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -92,6 +92,7 @@
   function sampleFighterAnimation(f) {
     if (App.isR8(f)) return App.sampleR8Animation(f);
     if (App.isTeddy(f)) return App.sampleTeddyAnimation(f);
+    if (f.burst) return { frame: 10, offset: 0 };
     if (f.atk) return sampleAttackAnimation(f);
     const frames = {
       idle: 0,
@@ -206,6 +207,8 @@
     if (f.teleport && !ghost && !f.reflection) App.drawTeleportEffect(f);
     App.ctx.save();
     App.ctx.translate(f.x, f.y);
+    const burstScale = App.passiveScale(f);
+    App.ctx.scale(burstScale, burstScale);
     if (f.teleport) {
       const visible = App.teleportVisibility(f);
       App.ctx.beginPath();

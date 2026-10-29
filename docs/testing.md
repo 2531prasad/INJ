@@ -13,6 +13,7 @@ Choose the relevant group instead of rerunning every subsystem:
 | Change | Command after `node tests/browser.cjs` |
 | --- | --- |
 | Pause, cheat field, level selection, keyboard focus | `--suite menus` |
+| Local save/reload, checkpoints, earned passive and defensive burst | `--suite progression` |
 | Held directions, jump/attack arbitration and input buffering | `--suite input` |
 | Combo, attacks, Nitro, touch abilities, victory and retries | `--suite combat` |
 | Boss AI, enlargement, attacks, summons or Blink targeting | `--suite giant` |
@@ -24,7 +25,7 @@ Choose the relevant group instead of rerunning every subsystem:
 
 Example: `node tests/browser.cjs --suite menus,giant`. Structure and production smoke always run, duplicate modules run once, and unknown suite names fail before opening a browser. `--list` lists available commands; `--verbose` prints each assertion. The old `node tests/giant-targeting.cjs` command delegates to the same runner.
 
-Functional runs reuse existing assertions. Goldline, Teddy and Colossus stop after their core deterministic behavior checks; `combat` retains real Chromium multi-touch and ability interactions. Screenshot calls in supported functional groups run only with `--artifacts`. This avoids regenerating unrelated tracked previews. No synthetic shortcuts decide fight winners.
+Functional runs reuse existing assertions. Goldline, Teddy and Colossus stop after their core deterministic behavior checks; `combat` retains real Chromium multi-touch and ability interactions. Screenshot calls in supported functional groups run only with `--artifacts`. This avoids regenerating unrelated tracked previews. No synthetic shortcuts decide fight winners. The progression suite additionally exercises real reloads and a four-second 10% replay of the 0.4-second passive. Legacy balance trials explicitly keep the post-Colossus passive locked to retain their baseline.
 
 For exhaustive work, opt in explicitly:
 

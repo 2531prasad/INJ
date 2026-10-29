@@ -317,6 +317,7 @@ module.exports = async function verifyR8(page, check, root, options = {}) {
           'crouch/sweep'
         ].map((policy) => ({ policy, trials: 0, bossWins: 0, playerWins: 0 }));
         for (let trial = 0; trial < 100; trial++) {
+          a.progress.unlocks.colossusBurst = false; // Pre-unlock balance baseline.
           a.rnd = a.mulberry32(8000 + trial + (form === 'robot' ? 1000 : 0));
           a.game.round = 2;
           a.resetRound();

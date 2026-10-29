@@ -1,47 +1,67 @@
 {
   "mode": "functional",
-  "recordedAt": "2026-10-22T21:49:16.649Z",
+  "recordedAt": "2026-10-29T01:25:33.413Z",
   "selected": [
-    "input",
+    "progression",
     "combat",
-    "targeting"
+    "giant",
+    "menus"
   ],
-  "checks": 138,
-  "seconds": 18.09,
+  "checks": 258,
+  "seconds": 41.13,
   "suites": [
     {
       "suite": "smoke.cjs",
       "checks": 19,
-      "seconds": 7.71
+      "seconds": 8.88
+    },
+    {
+      "suite": "progression.cjs",
+      "checks": 20,
+      "seconds": 7.14
+    },
+    {
+      "suite": "passive.cjs",
+      "checks": 35,
+      "seconds": 5.9
     },
     {
       "suite": "input.cjs",
       "checks": 29,
-      "seconds": 3.01
+      "seconds": 2.4
     },
     {
       "suite": "abilities.cjs",
       "checks": 41,
-      "seconds": 1.89
+      "seconds": 1.71
     },
     {
       "suite": "victory.cjs",
       "checks": 28,
-      "seconds": 1.46
+      "seconds": 4
+    },
+    {
+      "suite": "giant.cjs",
+      "checks": 44,
+      "seconds": 2.3
     },
     {
       "suite": "giant-targeting.cjs",
       "checks": 21,
-      "seconds": 1.21
+      "seconds": 1.17
+    },
+    {
+      "suite": "menus.cjs",
+      "checks": 21,
+      "seconds": 2.52
     }
   ],
-  "artifacts": false,
+  "artifacts": true,
   "skipped": [
     "balance simulations",
     "offline audio renders",
     "slow reveal replay",
-    "legacy full suite",
-    "preview screenshots"
+    "legacy full suite"
   ],
   "limitations": [
     "Chromium emulation; no physical iPhone/Safari validation",

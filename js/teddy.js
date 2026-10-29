@@ -416,6 +416,7 @@
     App.game.hitStop = App.game.shake = App.game.shakeX = App.game.shakeY = 0;
     App.projectiles.length = App.afterimages.length = App.particles.length = 0;
     App.resetCombo();
+    App.resetPassive();
     App.resetInput();
     App.game.msg = { text: 'DORAEMON · SHRINK RAY', sub: '', big: 8 };
     App.Sfx.play('shrink');

@@ -1,5 +1,5 @@
 /* menus.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: content.js, controls.js, core.js, display.js, renderer.js, rounds.js, state.js.
+ * Cross-module dependencies: progression.js, content.js, controls.js, core.js, display.js, renderer.js, rounds.js, state.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -213,6 +213,9 @@
     document.getElementById('victoryOpponent').textContent = result.opponent + ' DEFEATED';
     document.getElementById('victoryHealth').textContent = result.health + ' / ' + result.maxHealth;
     document.getElementById('victoryCombo').textContent = result.bestCombo + ' HITS';
+    const unlock = document.getElementById('victoryUnlock');
+    unlock.hidden = !result.newUnlock;
+    unlock.textContent = result.newUnlock ? 'UNLOCKED · COLOSSUS BURST' : '';
     document.getElementById('victoryPanel').hidden = false;
     document.getElementById('screen').classList.add('is-victory');
     App.Sfx.setMode('menu');
@@ -226,6 +229,7 @@
     if (returnFocus) btnArenaMenu.focus({ preventScroll: true });
   }
   function initMenus() {
+    App.loadProgress();
     btnNextRoast.addEventListener('click', advanceRoast);
     document.getElementById('btnNextRound').addEventListener('click', App.finishVictory);
     document.getElementById('btnSkipRoast').addEventListener('click', finishRoast);

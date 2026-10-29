@@ -321,6 +321,7 @@ module.exports = async function verifyGiant(page, check, root, options = {}) {
     a.Sfx.play = () => {};
     try {
       for (let trial = 0; trial < 30; trial++) {
+        a.progress.unlocks.colossusBurst = false; // Pre-unlock balance baseline.
         a.rnd = a.mulberry32(17000 + trial);
         a.game.round = 4;
         a.resetRound();

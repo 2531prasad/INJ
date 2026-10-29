@@ -195,6 +195,15 @@
 .cheat-controls button:active {
   background: #f2ddb4;
 }
+.passive-status {
+  display: block;
+  margin-top: 6px;
+  color: #d9c397;
+  font: 500 11px/1.4 'Chakra Petch', sans-serif;
+}
+.passive-status[hidden] {
+  display: none;
+}
 .intro-card {
   margin: auto;
   flex-shrink: 0;

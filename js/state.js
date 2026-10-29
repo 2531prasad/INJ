@@ -59,7 +59,11 @@
       lowMemoryT: 0,
       reactionT: 0,
       lastMissile: null,
-      evadeTextT: 0
+      evadeTextT: 0,
+      burstHits: 0,
+      burstWindow: 0,
+      burst: null,
+      burstStun: 0
     };
   }
 
@@ -117,6 +121,16 @@
     hpTrail: 0,
     revealPlayed: false
   };
+  const progress = {
+    version: 1,
+    checkpointLevel: 1,
+    highestLevel: 1,
+    clearedLevels: [],
+    wins: 0,
+    losses: 0,
+    bestCombo: 0,
+    unlocks: { colossusBurst: false }
+  };
   const isAwakened = (f) => f.kind === 'dummy' && ((f === dummy && game.round >= 2) || f.summoned);
 
   Object.assign(App, {
@@ -129,6 +143,7 @@
     reducedMotion,
     game,
     giantEncounter,
+    progress,
     isAwakened
   });
 })(window.INJ);

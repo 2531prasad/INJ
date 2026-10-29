@@ -1,5 +1,5 @@
 /* Encounter ladder, dynamic combat bounds and the R8's two independent lives.
- * Runtime dependencies: state.js, r8-content.js, teddy.js, giant.js. */
+ * Runtime dependencies: passive.js, state.js, r8-content.js, teddy.js, giant.js. */
 (function (App) {
   'use strict';
   const isR8 = (f) => f.kind === 'r8';
@@ -54,6 +54,7 @@
     App.player.hitstun = 0;
     App.player.crouching = false;
     App.player.flash = 0;
+    App.resetPassive();
     App.resetCombo();
     App.game.state = 'transform';
     App.game.t = 0;

@@ -1,5 +1,5 @@
 /* combat.js — see docs/architecture.md for ownership and startup order.
- * Cross-module dependencies: content.js, controls.js, core.js, effects.js, encounters.js, r8.js, teddy.js, giant.js, rounds.js, state.js.
+ * Cross-module dependencies: passive.js, content.js, controls.js, core.js, effects.js, encounters.js, r8.js, teddy.js, giant.js, rounds.js, state.js.
  * App is the shared INJ namespace; the exported API is listed at the end. */
 (function (App) {
   'use strict';
@@ -26,15 +26,16 @@
       f.state === 'crouch' ||
       (f.state === 'block' && f.crouching) ||
       (f.atk && (['sweep', 'cpunch', 'slide'].includes(f.atk.key) || f.atk.low));
+    const scale = App.FIGHTER_SCALE * App.passiveScale(f);
     return {
-      x: f.x - 13 * App.FIGHTER_SCALE,
-      y: f.y - (low ? 42 : 66) * App.FIGHTER_SCALE,
-      w: 26 * App.FIGHTER_SCALE,
-      h: (low ? 42 : 66) * App.FIGHTER_SCALE
+      x: f.x - 13 * scale,
+      y: f.y - (low ? 42 : 66) * scale,
+      w: 26 * scale,
+      h: (low ? 42 : 66) * scale
     };
   }
   function startAttack(f, key, command) {
-    if (f.atk || f.teleport) return;
+    if (f.atk || f.teleport || f.burst || f.burstStun > 0) return;
     if (App.isGiant(f)) {
       App.startGiantAttack(f, key);
       return;
@@ -167,7 +168,7 @@
           return bx < b.x + b.w && bx + bw > b.x && by < b.y + b.h && by + bh > b.y;
         }) || def;
     }
-    if (def.invuln > 0 || def.teleport || ['knockdown', 'ko'].includes(def.state)) return;
+    if (def.invuln > 0 || def.teleport || def.burst || ['knockdown', 'ko'].includes(def.state)) return;
     const ub = hurtbox(def);
     if (bx < ub.x + ub.w && bx + bw > ub.x && by < ub.y + ub.h && by + bh > ub.y) {
       a.hasHit = true;
@@ -180,6 +181,7 @@
     if (
       def.invuln > 0 ||
       def.teleport ||
+      def.burst ||
       def.state === 'knockdown' ||
       def.state === 'ko' ||
       App.game.state !== 'fight'
@@ -189,6 +191,7 @@
       def.state === 'block' ||
       (App.isR8(def) && def.atk?.guardStartup && def.atk.t < def.atk.def.startup);
     const blocked = guarding && Math.sign(att.x - def.x) === def.facing;
+    if ((def === App.player && blocked) || (att === App.player && !blocked)) App.resetBurstChain();
     if (def === App.player || (att === App.player && blocked)) resetCombo();
     if (att === App.player && !blocked) {
       if (App.game.hitTimer <= 0 || App.game.comboTarget !== def) resetCombo();
@@ -290,6 +293,10 @@
       def.state = giantState;
       def.vx = 0;
       def.hitstun = 0;
+    } else if (def.burstStun > 0) {
+      def.atk = null;
+      def.state = 'hurt';
+      def.hitstun = 0;
     } else if (mechanicalAttack) {
       def.atk = mechanicalAttack;
       def.state = 'attack';
@@ -331,6 +338,7 @@
         );
       }
     }
+    if (def === App.player) App.registerBurstHit();
   }
 
   Object.assign(App, {

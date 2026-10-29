@@ -540,6 +540,7 @@ module.exports = async function verifyTeddyTeleport(page, check, root, options =
     a.Sfx.play = () => {};
     try {
       for (let trial = 0; trial < 40; trial++) {
+        a.progress.unlocks.colossusBurst = false; // Pre-unlock balance baseline.
         a.rnd = a.mulberry32(12000 + trial);
         a.game.round = 3;
         a.resetRound();
@@ -653,6 +654,7 @@ module.exports = async function verifyTeddyTeleport(page, check, root, options =
     a.Sfx.play = () => {};
     try {
       for (let trial = 0; trial < result.trials; trial++) {
+        a.progress.unlocks.colossusBurst = false; // Pre-unlock balance baseline.
         a.rnd = a.mulberry32(7200 + trial);
         a.game.round = 3;
         a.resetRound();
