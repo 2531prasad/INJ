@@ -76,8 +76,9 @@
     const node = document.getElementById('passiveStatus');
     if (node) {
       node.hidden = !App.progress.unlocks.colossusBurst;
-      node.textContent = 'COLOSSUS BURST · UNLOCKED';
+      node.textContent = 'COLOSSUS SHIELD · 25% HP · PERMANENT';
     }
+    App.updatePassiveUI();
   }
   Object.assign(App, { SAVE_KEY, loadProgress, saveProgress, checkpointProgress, recordRoundResult, syncProgressUI });
 })(window.INJ);

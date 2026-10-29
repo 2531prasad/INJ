@@ -84,6 +84,26 @@ module.exports = async function verifyProgression(page, check, root, { artifacts
   await page.reload();
   check(await page.evaluate(() => INJ.game.round === 1 && INJ.progress.unlocks.colossusBurst),
     'Save: restart returns to level one without deleting earned unlocks');
+  // The earned character passive must really activate on old stages, not only retain a save bit.
+  await page.locator('#btnStartFight').tap();
+  for (const level of [1, 2, 3, 4]) {
+    await page.locator('#btnArenaMenu').tap();
+    await page.locator('#cheatCode').fill('INJ0');
+    await page.locator('#cheatLevel').selectOption(String(level));
+    await page.locator('#btnCheatLevel').tap();
+    check(await page.evaluate(() => {
+      INJ.game.state = 'fight'; INJ.game.paused = true; INJ.game.msg = null;
+      INJ.player.x = 120; INJ.dummy.x = 190; INJ.player.invuln = 0;
+      INJ.applyHit(INJ.player, INJ.dummy, { ...INJ.MOVES.jab, dmg: 30 }, 120, 150);
+      const ready = document.querySelector('#passiveHud').dataset.state === 'ready';
+      INJ.stepPassive(0.1);
+      return INJ.progress.unlocks.colossusBurst && ready && INJ.dummy.burstStun === 1;
+    }), `Save: earned shield actually charges and stuns after real menu travel to level ${level}`);
+  }
+  await page.reload();
+  check(await page.evaluate(() => INJ.game.round === 4 && INJ.progress.unlocks.colossusBurst &&
+    !document.querySelector('#passiveHud').hidden && INJ.player.burstDamage === 0),
+    'Save: reloading an earlier saved level restores the permanent shield with fresh charge');
   await page.evaluate(() => localStorage.setItem(INJ.SAVE_KEY, '{broken'));
   await page.reload();
   check(await page.evaluate(() => INJ.game.round === 1 && !INJ.progress.unlocks.colossusBurst &&

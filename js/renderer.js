@@ -26,6 +26,28 @@
     App.ctx.fillStyle = 'rgba(255,255,255,0.16)';
     App.ctx.fillRect(x, y, w, 2);
   }
+  function drawBurstStun(f) {
+    if (f.burstStun <= 0 || f.hp <= 0 || App.game.state !== 'fight') return;
+    const box = App.hurtbox(f), y = Math.max(16, box.y - 10);
+    const t = App.BURST.stun - f.burstStun;
+    App.ctx.save();
+    App.text('STUN', f.x, y - 8, 5, '#f0d794', 'center');
+    App.ctx.fillStyle = '#f0d794';
+    for (let i = 0; i < 3; i++) {
+      const angle = i * Math.PI * 2 / 3 + (App.reducedMotion ? 0 : t * 5);
+      const x = f.x + Math.cos(angle) * 12;
+      const sy = y + Math.sin(angle) * 3;
+      App.ctx.beginPath();
+      for (let j = 0; j < 8; j++) {
+        const r = j % 2 ? 1 : 3, a = j * Math.PI / 4;
+        const px = x + Math.cos(a) * r, py = sy + Math.sin(a) * r;
+        if (j) App.ctx.lineTo(px, py); else App.ctx.moveTo(px, py);
+      }
+      App.ctx.closePath();
+      App.ctx.fill();
+    }
+    App.ctx.restore();
+  }
   function drawVictory() {
     const { ctx, game } = App;
     ctx.save();
@@ -104,6 +126,7 @@
 
     App.drawFighter(App.dummy);
     App.drawFighter(App.player);
+    drawBurstStun(App.dummy);
     App.drawTeddyCameo();
 
     for (const p of App.projectiles) {
@@ -259,5 +282,5 @@
     }
   }
 
-  Object.assign(App, { text, drawBar, render });
+  Object.assign(App, { text, drawBar, drawBurstStun, render });
 })(window.INJ);

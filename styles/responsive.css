@@ -257,3 +257,78 @@
     --control-shadow: 0 2px 2px #000b;
   }
 }
+
+/* Permanent passive status, separate from all touch actions. */
+.passive-hud {
+  position: absolute;
+  z-index: 3;
+  left: 5%;
+  top: 35%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  border: 1px solid #c3bda42e;
+  border-radius: 5px;
+  background: #15151e85;
+  color: #d5d0bd;
+  font: 600 9px/1.2 'Chakra Petch', sans-serif;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+.passive-hud[hidden] {
+  display: none;
+}
+.passive-hud svg {
+  width: 19px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.passive-shield-core {
+  fill: currentColor;
+  opacity: calc(0.15 + var(--shield-charge, 0) * 0.85);
+}
+.passive-label {
+  display: block;
+  white-space: nowrap;
+}
+.passive-meter {
+  display: block;
+  width: 68px;
+  height: 3px;
+  margin-top: 3px;
+  background: #ffffff18;
+}
+.passive-meter > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: currentColor;
+  transform: scaleX(var(--shield-charge, 0));
+  transform-origin: left;
+}
+.passive-hud[data-state='ready'],
+.passive-hud[data-state='active'] {
+  color: #f0d794;
+  border-color: #dcc58d80;
+}
+@media (max-width: 680px) and (orientation: portrait) {
+  .passive-hud {
+    left: 2%;
+    flex-direction: column;
+    gap: 1px;
+    padding: 3px;
+    font-size: 7px;
+  }
+  .passive-hud svg {
+    width: 12px;
+    height: 13px;
+  }
+  .passive-meter {
+    width: 44px;
+    margin-top: 2px;
+    height: 2px;
+  }
+}

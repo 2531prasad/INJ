@@ -125,6 +125,15 @@
 
       <div class="screen" id="screen">
         <canvas id="game" width="900" height="450" aria-label="INJ arcade fighting arena"></canvas>
+        <div id="passiveHud" class="passive-hud" role="progressbar"
+          aria-label="Permanent Colossus shield charge" aria-valuemin="0" aria-valuemax="100"
+          aria-valuenow="0" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="m12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6l8-3Z" />
+            <path class="passive-shield-core" d="m12 7 4 2v3c0 2-2 4-4 5-2-1-4-3-4-5V9l4-2Z" />
+          </svg>
+          <span><span class="passive-label">SHIELD 0%</span><span class="passive-meter"><span></span></span></span>
+        </div>
         <button
           id="btnArenaMenu"
           class="arena-menu"

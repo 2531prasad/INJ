@@ -54,7 +54,7 @@
     App.player.hitstun = 0;
     App.player.crouching = false;
     App.player.flash = 0;
-    App.resetPassive();
+    App.resetPassive({ preserveCharge: true });
     App.resetCombo();
     App.game.state = 'transform';
     App.game.t = 0;

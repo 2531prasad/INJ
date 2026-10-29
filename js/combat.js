@@ -191,7 +191,6 @@
       def.state === 'block' ||
       (App.isR8(def) && def.atk?.guardStartup && def.atk.t < def.atk.def.startup);
     const blocked = guarding && Math.sign(att.x - def.x) === def.facing;
-    if ((def === App.player && blocked) || (att === App.player && !blocked)) App.resetBurstChain();
     if (def === App.player || (att === App.player && blocked)) resetCombo();
     if (att === App.player && !blocked) {
       if (App.game.hitTimer <= 0 || App.game.comboTarget !== def) resetCombo();
@@ -206,6 +205,7 @@
         dmg: Math.max(1, Math.round(d.dmg * App.R8_TUNING[def.form].armor)),
         kb: d.kb * 0.55
       };
+    const hpBefore = def.hp;
     if (blocked) {
       def.hp = Math.max(0, def.hp - Math.max(1, Math.round(d.dmg * 0.2)));
       def.vx = att.facing * d.kb * 0.45;
@@ -225,6 +225,7 @@
         def.vy = -170;
         App.endRound(att);
       }
+      if (def === App.player) App.registerBurstDamage(hpBefore - def.hp, att);
       return;
     }
     // Engine commitment: light hits still damage a winding-up machine, but
@@ -338,7 +339,7 @@
         );
       }
     }
-    if (def === App.player) App.registerBurstHit();
+    if (def === App.player) App.registerBurstDamage(hpBefore - def.hp, att);
   }
 
   Object.assign(App, {

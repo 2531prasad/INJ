@@ -1,26 +1,59 @@
 {
   "mode": "functional",
-  "recordedAt": "2026-10-29T03:35:02.789Z",
+  "recordedAt": "2026-10-29T15:48:08.395Z",
   "selected": [
-    "controls"
+    "progression",
+    "combat",
+    "giant",
+    "menus"
   ],
-  "checks": 87,
-  "seconds": 19.44,
+  "checks": 287,
+  "seconds": 33.66,
   "suites": [
     {
       "suite": "smoke.cjs",
       "checks": 19,
-      "seconds": 6.86
+      "seconds": 6.43
     },
     {
-      "suite": "controls.cjs",
-      "checks": 39,
-      "seconds": 8.72
+      "suite": "progression.cjs",
+      "checks": 25,
+      "seconds": 8.19
+    },
+    {
+      "suite": "passive.cjs",
+      "checks": 59,
+      "seconds": 6.25
     },
     {
       "suite": "input.cjs",
       "checks": 29,
-      "seconds": 1.85
+      "seconds": 2.09
+    },
+    {
+      "suite": "abilities.cjs",
+      "checks": 41,
+      "seconds": 1.61
+    },
+    {
+      "suite": "victory.cjs",
+      "checks": 28,
+      "seconds": 1.42
+    },
+    {
+      "suite": "giant.cjs",
+      "checks": 44,
+      "seconds": 1.07
+    },
+    {
+      "suite": "giant-targeting.cjs",
+      "checks": 21,
+      "seconds": 1.06
+    },
+    {
+      "suite": "menus.cjs",
+      "checks": 21,
+      "seconds": 2.41
     }
   ],
   "artifacts": true,

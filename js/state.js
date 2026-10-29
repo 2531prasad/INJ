@@ -60,8 +60,8 @@
       reactionT: 0,
       lastMissile: null,
       evadeTextT: 0,
-      burstHits: 0,
-      burstWindow: 0,
+      burstDamage: 0,
+      burstNotice: 0,
       burst: null,
       burstStun: 0
     };

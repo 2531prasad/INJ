@@ -340,6 +340,8 @@
       ctx.restore();
     }
     App.drawFighter(App.player);
+    App.drawBurstStun(App.dummy);
+    if (echo) App.drawBurstStun(echo);
     drawGiantCameo();
     for (const p of App.projectiles) {
       ctx.fillStyle = p.charged ? '#ffe6a1' : '#c3a9e8';

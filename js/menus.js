@@ -215,7 +215,7 @@
     document.getElementById('victoryCombo').textContent = result.bestCombo + ' HITS';
     const unlock = document.getElementById('victoryUnlock');
     unlock.hidden = !result.newUnlock;
-    unlock.textContent = result.newUnlock ? 'UNLOCKED · COLOSSUS BURST' : '';
+    unlock.textContent = result.newUnlock ? 'UNLOCKED · COLOSSUS SHIELD' : '';
     document.getElementById('victoryPanel').hidden = false;
     document.getElementById('screen').classList.add('is-victory');
     App.Sfx.setMode('menu');

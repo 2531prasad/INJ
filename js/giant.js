@@ -294,6 +294,7 @@
         // Area hazards have a real point of origin for directional guarding.
         const source = {
           ...App.dummy,
+          sourceActor: App.dummy,
           x: h.type === 'wave' ? h.x - Math.sign(h.vx) * 30 : h.x,
           facing: h.x > App.player.x ? -1 : 1
         };
