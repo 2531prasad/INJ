@@ -1,8 +1,8 @@
 .arena-menu {
   position: absolute;
   z-index: 4;
-  left: calc(50% - 22px);
-  bottom: 0;
+  left: var(--menu-left);
+  bottom: var(--deck-bottom);
   width: 44px;
   height: 44px;
   padding: 0;
@@ -30,15 +30,6 @@
 }
 .arena-menu:active {
   color: #fff;
-}
-@media (max-width: 680px) and (orientation: portrait) {
-  .arena-menu {
-    left: calc(100% - var(--deck-right) - var(--main-size) * 2 - var(--deck-gap) - 46px);
-    bottom: 7px;
-  }
-  #stickZone {
-    width: 33%;
-  }
 }
 #fullscreenStatus {
   display: block;
@@ -125,37 +116,9 @@ body.immersive-view {
 .immersive-view .screen:has(.pause-overlay:not([hidden])) {
   touch-action: pan-y;
 }
-.standalone-view .arena-menu {
-  bottom: env(safe-area-inset-bottom);
-}
-.standalone-view #pad {
-  right: max(10px, env(safe-area-inset-right));
-  bottom: max(12px, env(safe-area-inset-bottom));
-}
-.standalone-view .screen {
-  --deck-right: max(10px, env(safe-area-inset-right));
-}
-.standalone-view #stickZone::before,
-.standalone-view #stickZone .stick-directions {
-  left: max(20px, env(safe-area-inset-left));
-  bottom: max(22px, env(safe-area-inset-bottom));
-}
-.standalone-view #stickZone::after {
-  left: max(20px, env(safe-area-inset-left));
-  bottom: max(8px, calc(env(safe-area-inset-bottom) - 14px));
-}
 .pause-grid button:disabled {
   color: #a79d8b;
   cursor: default;
-}
-@media (max-width: 680px) and (orientation: portrait) {
-  .stick-directions {
-    left: 10px;
-    bottom: 22px;
-    width: 76px;
-    height: 76px;
-    font-size: 16px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -163,5 +126,11 @@ body.immersive-view {
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+@media (pointer: fine) and (min-width: 681px) and (min-height: 551px) {
+  .arena-menu {
+    left: calc(50% - 22px);
   }
 }

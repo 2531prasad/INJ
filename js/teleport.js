@@ -68,7 +68,9 @@
   function updateTeleportUI() {
     const seconds = Math.ceil(App.player.teleportCooldown);
     const btn = document.querySelector('[data-act="teleport"]');
-    if (!btn || btn.dataset.seconds === String(seconds)) return;
+    if (!btn) return;
+    btn.style.setProperty('--cooldown', (App.player.teleportCooldown / TELEPORT.cooldown * 360) + 'deg');
+    if (btn.dataset.seconds === String(seconds)) return;
     btn.dataset.seconds = seconds;
     btn.classList.toggle('cooling', seconds > 0);
     btn.setAttribute('aria-disabled', String(seconds > 0));
@@ -78,7 +80,8 @@
         ? `Teleport cooling down: ${seconds} seconds`
         : 'Teleport behind opponent, ready (E)'
     );
-    btn.querySelector('.button-label').textContent = seconds > 0 ? `BLINK · ${seconds}s` : 'BLINK';
+    btn.querySelector('.button-label').textContent = 'BLINK';
+    btn.querySelector('.cooldown-value').textContent = seconds > 0 ? seconds : '';
   }
   function tickTeleport(dt) {
     if (App.game.state !== 'fight') return;

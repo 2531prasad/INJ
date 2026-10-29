@@ -1,67 +1,58 @@
 {
   "mode": "functional",
-  "recordedAt": "2026-10-29T01:25:33.413Z",
+  "recordedAt": "2026-10-29T01:54:05.653Z",
   "selected": [
-    "progression",
+    "controls",
     "combat",
-    "giant",
-    "menus"
+    "menus",
+    "teddy"
   ],
-  "checks": 258,
-  "seconds": 41.13,
+  "checks": 238,
+  "seconds": 22.5,
   "suites": [
     {
       "suite": "smoke.cjs",
       "checks": 19,
-      "seconds": 8.88
+      "seconds": 5.19
     },
     {
-      "suite": "progression.cjs",
-      "checks": 20,
-      "seconds": 7.14
-    },
-    {
-      "suite": "passive.cjs",
-      "checks": 35,
-      "seconds": 5.9
+      "suite": "controls.cjs",
+      "checks": 30,
+      "seconds": 7.58
     },
     {
       "suite": "input.cjs",
       "checks": 29,
-      "seconds": 2.4
+      "seconds": 2.12
     },
     {
       "suite": "abilities.cjs",
       "checks": 41,
-      "seconds": 1.71
+      "seconds": 1.47
     },
     {
       "suite": "victory.cjs",
       "checks": 28,
-      "seconds": 4
-    },
-    {
-      "suite": "giant.cjs",
-      "checks": 44,
-      "seconds": 2.3
-    },
-    {
-      "suite": "giant-targeting.cjs",
-      "checks": 21,
-      "seconds": 1.17
+      "seconds": 1.23
     },
     {
       "suite": "menus.cjs",
       "checks": 21,
-      "seconds": 2.52
+      "seconds": 2.27
+    },
+    {
+      "suite": "teddy-teleport.cjs",
+      "checks": 70,
+      "seconds": 0.99
     }
   ],
-  "artifacts": true,
+  "artifacts": false,
   "skipped": [
     "balance simulations",
     "offline audio renders",
     "slow reveal replay",
-    "legacy full suite"
+    "legacy full suite",
+    "preview screenshots"
   ],
   "limitations": [
     "Chromium emulation; no physical iPhone/Safari validation",

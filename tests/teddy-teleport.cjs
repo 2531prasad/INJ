@@ -739,7 +739,7 @@ module.exports = async function verifyTeddyTeleport(page, check, root, options =
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   check(
     (await page.locator('[data-act="teleport"]').getAttribute('aria-disabled')) === 'true' &&
-      (await page.locator('[data-act="teleport"] .button-label').textContent()).includes('10s'),
+      (await page.locator('[data-act="teleport"] .cooldown-value').textContent()) === '10',
     'Blink cooldown is visibly numbered and announced'
   );
   await page.evaluate(() => {

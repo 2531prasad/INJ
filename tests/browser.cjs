@@ -11,6 +11,7 @@ const suites = {
   targeting: ['giant-targeting.cjs'],
   progression: ['progression.cjs', 'passive.cjs'],
   input: ['input.cjs'],
+  controls: ['controls.cjs', 'input.cjs'],
   combat: ['input.cjs', 'abilities.cjs', 'victory.cjs'],
   giant: ['giant.cjs', 'giant-targeting.cjs'],
   teddy: ['teddy-teleport.cjs'],

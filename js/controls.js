@@ -179,7 +179,7 @@
       const dx = e.clientX - cx,
         dy = e.clientY - cy,
         d = Math.hypot(dx, dy) || 1;
-      const k = Math.min(d, isFixed ? 48 : 38) / d;
+      const k = Math.min(d, isFixed ? radius : 38) / d;
       if (isFixed) {
         knob.style.left = cx + dx * k + 'px';
         knob.style.top = cy + dy * k + 'px';
@@ -208,7 +208,102 @@
       zone.addEventListener(event, up);
   }
 
+  const CONTROL_SETTINGS_KEY = 'inj-controls';
+  let controlScale = 100;
+  let settingsWritable = true;
+
+  function layoutControls() {
+    const arena = document.getElementById('screen');
+    const width = arena.clientWidth,
+      height = arena.clientHeight;
+    const style = getComputedStyle(arena);
+    // Resolve safe-area values through CSS, including Home Screen / fullscreen mode.
+    const right = parseFloat(style.getPropertyValue('--safe-right')) || 0;
+    const bottom = parseFloat(style.getPropertyValue('--safe-bottom')) || 0;
+    const left = parseFloat(style.getPropertyValue('--safe-left')) || 0;
+    const edge = Math.max(width < 500 ? 6 : 14, right);
+    const floor = Math.max(width < 500 ? 7 : 12, bottom);
+    const stickRoom = Math.max(74, left + 74);
+    const dimensions = (unit) => {
+      const aux = Math.max(44, 52 * unit),
+        main = Math.max(56, 80 * unit);
+      const kick = Math.max(52, 68 * unit),
+        gap = Math.max(4, 8 * unit);
+      const rise = (width < 500 ? 16 : 44) * unit;
+      const deck = Math.max(aux * 4 + gap * 3, main + kick + aux + 44 + gap * 3);
+      return { aux, main, kick, gap, rise, deck, tall: main + gap + rise + aux };
+    };
+    let low = 0,
+      high = ((width < 500 ? 0.9 : 1) * controlScale) / 100;
+    // The requested size is a ceiling; cramped screens keep every target ≥44px.
+    for (let i = 0; i < 16; i++) {
+      const mid = (low + high) / 2,
+        d = dimensions(mid);
+      if (d.deck + edge + stickRoom + 4 <= width && d.tall + floor + 32 <= height) low = mid;
+      else high = mid;
+    }
+    const d = dimensions(low),
+      padLeft = width - edge - d.deck;
+    const stickZoneWidth = Math.max(44, Math.min(width * 0.33, padLeft - 4));
+    const stickBottom = Math.max(22, bottom + 15);
+    const stickSize = Math.min(
+      Math.max(68, 110 * low),
+      stickZoneWidth - left - 8,
+      height * 0.72 - stickBottom - 4
+    );
+    const values = {
+      'aux-size': d.aux,
+      'main-size': d.main,
+      'kick-size': d.kick,
+      'deck-gap': d.gap,
+      'deck-width': d.deck,
+      'deck-right': edge,
+      'deck-bottom': floor,
+      'arc-rise': d.rise,
+      'guard-lift': Math.max(d.aux + d.gap, d.main + d.gap - 24 * low),
+      'stick-zone': stickZoneWidth,
+      'stick-size': stickSize,
+      'stick-bottom': stickBottom,
+      'stick-label-bottom': Math.max(7, bottom),
+      'stick-left': Math.max(left + 4, (stickZoneWidth - stickSize) / 2),
+      'menu-left': padLeft + d.aux + d.gap
+    };
+    for (const [key, value] of Object.entries(values))
+      arena.style.setProperty('--' + key, value + 'px');
+  }
+
+  function setControlScale(value, save = true) {
+    controlScale = Number.isFinite(value) ? Math.round(App.clamp(value, 85, 125) / 5) * 5 : 100;
+    const field = document.getElementById('controlScale');
+    field.value = controlScale;
+    field.setAttribute('aria-valuetext', controlScale + ' percent');
+    document.getElementById('controlScaleValue').textContent = controlScale + '%';
+    layoutControls();
+    if (save && settingsWritable) {
+      try {
+        localStorage.setItem(
+          CONTROL_SETTINGS_KEY,
+          JSON.stringify({ version: 1, scale: controlScale })
+        );
+      } catch (_) {}
+    }
+  }
+
+  function loadControlSettings() {
+    let value = 100;
+    try {
+      const saved = JSON.parse(localStorage.getItem(CONTROL_SETTINGS_KEY) || 'null');
+      if (saved?.version > 1) settingsWritable = false;
+      else if (saved?.version === 1 && typeof saved.scale === 'number') value = saved.scale;
+    } catch (_) {}
+    setControlScale(value, false);
+  }
+
   function initControls() {
+    loadControlSettings();
+    document.getElementById('controlScale').addEventListener('input', (event) =>
+      setControlScale(Number(event.target.value))
+    );
     setupStick(stickZone, stickKnob, true);
     document.querySelectorAll('.abtn').forEach((btn) => {
       const act = btn.dataset.act;
@@ -369,6 +464,9 @@
     stickBase,
     stickKnob,
     setupStick,
+    CONTROL_SETTINGS_KEY,
+    layoutControls,
+    setControlScale,
     initControls
   });
 })(window.INJ);

@@ -324,3 +324,39 @@ button:focus-visible {
     font-size: 11px;
   }
 }
+
+.control-setting {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #ffffff12;
+  color: #d9d2c7;
+  font: 500 13px/1.3 'Chakra Petch', sans-serif;
+}
+.control-setting label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.control-setting output {
+  color: #e2cba2;
+  font-variant-numeric: tabular-nums;
+}
+.control-setting input {
+  display: block;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  accent-color: #d9c397;
+  touch-action: pan-x;
+}
+.control-setting input:focus-visible {
+  outline: 2px solid #d9c397;
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+.control-setting small {
+  display: block;
+  color: #a8a3a0;
+  font-size: 11px;
+  text-wrap: pretty;
+}

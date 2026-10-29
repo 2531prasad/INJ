@@ -123,6 +123,7 @@
     const nextWidth = Math.round(App.H * aspect * App.RENDER_SCALE) / App.RENDER_SCALE;
     arena.style.width = availableWidth + 'px';
     arena.style.height = contentWidth / (nextWidth / App.H) + borderY + 'px';
+    App.layoutControls();
     if (nextWidth === App.world.width) return;
     const previousWidth = App.world.width,
       shift =
@@ -202,6 +203,13 @@
       'touchmove',
       (e) => {
         if (!isImmersive()) return;
+        // Let the paused native range own a one-finger drag, including app mode.
+        if (
+          e.touches.length === 1 &&
+          !App.pauseOverlay.hidden &&
+          e.target.closest?.('input[type="range"]')
+        )
+          return;
         // Keep the profile, cat exchange and long fullscreen instructions readable.
         const scroller = e.target.closest?.('.modal-overlay,.roast-overlay,.pause-panel');
         if (e.touches.length === 1 && scroller && scroller.scrollHeight > scroller.clientHeight)
