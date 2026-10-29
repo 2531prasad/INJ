@@ -69,7 +69,7 @@
     const seconds = Math.ceil(App.player.teleportCooldown);
     const btn = document.querySelector('[data-act="teleport"]');
     if (!btn) return;
-    btn.style.setProperty('--cooldown', (App.player.teleportCooldown / TELEPORT.cooldown * 360) + 'deg');
+    btn.style.setProperty('--cooldown-progress', App.player.teleportCooldown / TELEPORT.cooldown);
     if (btn.dataset.seconds === String(seconds)) return;
     btn.dataset.seconds = seconds;
     btn.classList.toggle('cooling', seconds > 0);

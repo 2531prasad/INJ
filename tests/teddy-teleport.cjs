@@ -1,5 +1,6 @@
 /* Real-browser encounter, animation and timed-ability integration. */
 const path = require('node:path');
+const controlsFit = require('./control-geometry.cjs');
 module.exports = async function verifyTeddyTeleport(page, check, root, options = {}) {
   await page.waitForFunction(() => Object.values(INJ.teddySheets).every((s) => s.ready));
   const results = await page.evaluate(() => {
@@ -725,12 +726,14 @@ module.exports = async function verifyTeddyTeleport(page, check, root, options =
     INJ.dummy.x = 280;
   });
   const cdp = await page.context().newCDPSession(page);
-  const ring = await page.locator('.stick-directions').boundingBox();
+  const ring = await page.locator('#stickZone').boundingBox();
   const button = await page.locator('[data-act="teleport"]').boundingBox();
   const point = (id, x, y) => ({ id, x, y, radiusX: 5, radiusY: 5, force: 1 });
-  const move = point(71, ring.x + ring.width - 9, ring.y + ring.height / 2);
+  let move = point(71, ring.x + ring.width / 2, ring.y + ring.height / 2);
   const blink = point(72, button.x + button.width / 2, button.y + button.height / 2);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [move] });
+  move = { ...move, x: move.x + 30 };
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [move] });
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [move, blink] });
   check(
     await page.evaluate(() => !!INJ.player.teleport && INJ.input.right === 1),
@@ -777,30 +780,7 @@ module.exports = async function verifyTeddyTeleport(page, check, root, options =
       INJ.dummy.x = INJ.world.width * 0.7;
       INJ.render(0);
     });
-    const geometry = await page.evaluate(() => {
-      const boxes = [
-        ...document.querySelectorAll('.abtn:not([hidden]),#btnArenaMenu,#stickZone')
-      ].map((el) => el.getBoundingClientRect());
-      return (
-        boxes.length === 9 &&
-        boxes.every(
-          (b, i) =>
-            b.width >= 44 &&
-            b.height >= 44 &&
-            boxes
-              .slice(i + 1)
-              .every(
-                (c) =>
-                  !(
-                    b.left < c.right - 0.1 &&
-                    b.right > c.left + 0.1 &&
-                    b.top < c.bottom - 0.1 &&
-                    b.bottom > c.top + 0.1
-                  )
-              )
-        )
-      );
-    });
+    const geometry = await page.evaluate(controlsFit);
     check(
       geometry,
       `Seven actions / menu / joystick separate at ${width}×${height}, including ready Nitro`

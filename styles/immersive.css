@@ -2,7 +2,7 @@
   position: absolute;
   z-index: 4;
   left: var(--menu-left);
-  bottom: var(--deck-bottom);
+  bottom: var(--menu-bottom, 0px);
   width: 44px;
   height: 44px;
   padding: 0;

@@ -171,10 +171,12 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   for(const [width,height] of [[390,844],[844,390]]){
     await viewport({width,height});
     await page.evaluate(()=>{__test.settle();__test.game.paused=false;});
-    const arrows=await page.locator('.stick-directions').boundingBox();
-    const up=point(8,arrows.x+arrows.width/2,arrows.y+9);
-    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[up]});
-    check(await page.evaluate(()=>!__test.player.grounded&&__test.player.vy<0&&__test.input.up===1),`Phone ${width}×${height}: pressing joystick up jumps immediately`);
+    const arrows=await page.locator('#stickZone').boundingBox();
+    const jumpOrigin=point(8,arrows.x+arrows.width/2,arrows.y+arrows.height/2);
+    const up={...jumpOrigin,y:jumpOrigin.y-32};
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[jumpOrigin]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[up]});
+    check(await page.evaluate(()=>!__test.player.grounded&&__test.player.vy<0&&__test.input.up===1),`Phone ${width}×${height}: dragging the floating joystick up jumps immediately`);
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     check(await page.evaluate(()=>__test.input.up===0),`Phone ${width}×${height}: releasing joystick clears jump`);
     await page.evaluate(()=>{__test.settle();__test.game.paused=false;});
@@ -231,9 +233,12 @@ function check(condition, message) { assert.ok(condition, message); checks++; co
   await zoomGestures(page,cdp,'Native fullscreen');
   await page.locator('#btnResume').tap();
   await page.evaluate(()=>{__test.settle();__test.game.paused=false;});
-  const immersiveStick=await page.locator('.stick-directions').boundingBox(),immersiveGuard=await page.locator('#pad [data-act="block"]').boundingBox();
-  const finger1=point(21,immersiveStick.x+immersiveStick.width-5,immersiveStick.y+immersiveStick.height/2),finger2=point(22,immersiveGuard.x+immersiveGuard.width/2,immersiveGuard.y+immersiveGuard.height/2);
+  const immersiveStick=await page.locator('#stickZone').boundingBox(),immersiveGuard=await page.locator('#pad [data-act="block"]').boundingBox();
+  let finger1=point(21,immersiveStick.x+immersiveStick.width/2,immersiveStick.y+immersiveStick.height/2);
+  const finger2=point(22,immersiveGuard.x+immersiveGuard.width/2,immersiveGuard.y+immersiveGuard.height/2);
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[finger1]});
+  finger1={...finger1,x:finger1.x+30};
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[finger1]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[finger1,finger2]});
   check(await page.evaluate(()=>__test.input.right===1&&__test.input.block===1),'Gesture lock preserves genuine simultaneous movement and guard in fullscreen');
   await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});

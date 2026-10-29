@@ -199,51 +199,58 @@
           id="stickZone"
           aria-label="Joystick: left and right to move, up to jump, down to crouch"
         >
-          <div class="stick-directions" aria-hidden="true">
-            <span>↑</span><span>←</span><span>→</span><span>↓</span>
-          </div>
           <div id="stickBase"></div>
           <div id="stickKnob"></div>
         </div>
         <div id="pad" role="group" aria-label="Combat controls">
           <button class="abtn" data-act="teleport" aria-label="Teleport behind opponent, ready (E)">
+            <svg class="action-face" aria-hidden="true" focusable="false"><path /></svg>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M8 3H4v18h4m8-18h4v18h-4M8 12h8m-3-3 3 3-3 3"/>
+            </svg>
+            <svg class="cooldown-track" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+              <path pathLength="100" />
             </svg>
             <span class="cooldown-value" aria-hidden="true"></span>
             <span class="button-label">BLINK</span>
           </button>
           <button class="abtn sp" data-act="nitro" aria-label="Nitro kick ready" hidden aria-disabled="true">
+            <svg class="action-face" aria-hidden="true" focusable="false"><path /></svg>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M13 3 6 13h6l-1 8 7-11h-6l1-7Z"/>
             </svg>
             <span class="button-label">NITRO</span>
           </button>
           <button class="abtn sp" data-act="special" aria-label="Shadow toss">
+            <svg class="action-face" aria-hidden="true" focusable="false"><path /></svg>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <circle cx="15" cy="12" r="5"/><path d="M2 7h6M1 12h6M3 17h5"/>
             </svg>
             <span class="button-label">SHADOW</span>
           </button>
           <button class="abtn" data-act="upper" aria-label="Uppercut">
+            <svg class="action-face" aria-hidden="true" focusable="false"><path /></svg>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M12 20V4m-6 6 6-6 6 6M5 20h14"/>
             </svg>
             <span class="button-label">UPPER</span>
           </button>
           <button class="abtn" data-act="block" aria-label="Hold to block">
+            <svg class="action-face" aria-hidden="true" focusable="false"><path /></svg>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="m12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6l8-3Z"/>
             </svg>
             <span class="button-label">GUARD</span>
           </button>
           <button class="abtn big" data-act="punch" aria-label="Punch">
+            <svg class="action-face" aria-hidden="true" focusable="false"><path /></svg>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M5 12V8a2 2 0 0 1 4 0V6a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v2a2 2 0 0 1 4 0v6l-5 6H8l-5-7a2 2 0 0 1 2-2Z"/>
             </svg>
             <span class="button-label">PUNCH</span>
           </button>
           <button class="abtn big" data-act="kick" aria-label="Kick">
+            <svg class="action-face" aria-hidden="true" focusable="false"><path /></svg>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="m5 3 6 5-2 5 6 4h5v4h-8l-8-7 2-5-4-3"/>
             </svg>

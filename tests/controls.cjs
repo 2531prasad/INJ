@@ -1,33 +1,46 @@
 /* Thumb-cluster geometry, real scale editing/persistence and cooldown feedback. */
 const path = require('node:path');
+const controlsFit = require('./control-geometry.cjs');
 module.exports = async function verifyControls(page, check, root, { artifacts, harness }) {
   for (const [width, height] of [[320, 568], [360, 740], [390, 844], [430, 932], [568, 320], [667, 375], [844, 390], [932, 430]]) {
     await page.setViewportSize({ width, height });
     await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
-    const result = await page.evaluate(() => {
-      const nitro = document.querySelector('[data-act="nitro"]');
-      for (const scale of [85, 100, 125]) {
+    let result = true;
+    for (const scale of [85, 100, 125]) {
+      const stable = await page.evaluate(scale => {
         INJ.setControlScale(scale, false);
+        const positions = () => [...document.querySelectorAll('#pad button:not([data-act="nitro"])')]
+          .map(el => el.getBoundingClientRect().toJSON());
         INJ.player.meter = 0; INJ.updateChargeUI();
-        const positions = () => [...document.querySelectorAll('#pad button:not([hidden])')].map(el => el.getBoundingClientRect().toJSON());
         const before = JSON.stringify(positions());
         INJ.player.meter = 100; INJ.updateChargeUI();
-        const buttons = [...document.querySelectorAll('#pad button,#stickZone,#btnArenaMenu')];
-        const arena = document.querySelector('#screen').getBoundingClientRect();
-        const boxes = buttons.map(el => el.getBoundingClientRect());
-        if (nitro.hidden || boxes.some((b, i) => b.width < 44 || b.height < 44 ||
-          b.left < arena.left || b.right > arena.right || b.top < arena.top || b.bottom > arena.bottom ||
-          boxes.slice(i + 1).some(c => b.left < c.right && b.right > c.left && b.top < c.bottom && b.bottom > c.top))) return false;
-        if (buttons.some((el, i) => !el.contains(document.elementFromPoint(boxes[i].x + boxes[i].width / 2, boxes[i].y + boxes[i].height / 2)))) return false;
-        INJ.player.meter = 0; INJ.updateChargeUI();
-        if (!nitro.hidden || before !== JSON.stringify(positions())) return false;
-      }
-      INJ.setControlScale(100, false);
-      return true;
-    });
-    check(result, `Controls: ${width}×${height}, all scales keep seven targets/menu/stick separated, reachable and fixed across Nitro readiness`);
+        return before === JSON.stringify(positions()) && !document.querySelector('[data-act="nitro"]').hidden;
+      }, scale);
+      result = result && stable && await page.evaluate(controlsFit);
+    }
+    await page.evaluate(() => { INJ.player.meter = 0; INJ.updateChargeUI(); INJ.setControlScale(100, false); });
+    check(result, `Controls: ${width}×${height}, all scales keep seven arc hit regions/menu/stick separated and reachable`);
   }
+  check(await page.evaluate(() => !document.querySelector('.stick-directions') &&
+    ['::before', '::after'].every(p => ['none', 'normal'].includes(getComputedStyle(INJ.stickZone, p).content)) &&
+    getComputedStyle(INJ.stickBase).display === 'none' && getComputedStyle(INJ.stickKnob).display === 'none'),
+    'Controls: idle movement area has no permanent pad, arrows or labels');
+  check(await page.evaluate(() => {
+    const buttons = [...document.querySelectorAll('#pad .abtn:not([hidden])')];
+    const arena = document.querySelector('#screen'), box = arena.getBoundingClientRect();
+    const style = getComputedStyle(arena), punch = document.querySelector('[data-act="punch"]').getBoundingClientRect();
+    const right = box.right - parseFloat(style.borderRightWidth) - (parseFloat(style.getPropertyValue('--safe-right')) || 0);
+    const bottom = box.bottom - parseFloat(style.borderBottomWidth) - (parseFloat(style.getPropertyValue('--safe-bottom')) || 0);
+    return Math.abs(punch.right - right) < 1 && Math.abs(punch.bottom - bottom) < 1 && buttons.every(b => {
+      const path = b.querySelector('.action-face path');
+      const channels = getComputedStyle(path).fill.match(/[\d.]+/g).slice(0, 3).map(Number);
+      return path.getAttribute('d').includes(' A') &&
+        Math.max(...channels) - Math.min(...channels) <= 18;
+    }) && document.querySelector('[data-act="punch"]').getBoundingClientRect().width >
+      document.querySelector('[data-act="kick"]').getBoundingClientRect().width;
+  }), 'Controls: corner arc has a larger middle strike and muted translucent controls');
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
   await page.evaluate(() => { INJ.resumeGame(); INJ.pauseGame(); });
   await page.locator('#controlScale').focus();
   const small = await page.locator('[data-act="punch"]').boundingBox();
@@ -79,8 +92,9 @@ module.exports = async function verifyControls(page, check, root, { artifacts, h
     const b = document.querySelector('[data-act="teleport"]');
     return b.getAttribute('aria-disabled') === 'true' && b.getAttribute('aria-label').includes('8 seconds') &&
       b.querySelector('.cooldown-value').textContent === '8' && b.querySelector('.button-label').textContent === 'BLINK' &&
-      parseFloat(b.style.getPropertyValue('--cooldown')) > 260;
-  }), 'Controls: Blink keeps a short label, accessible seconds and proportional cooldown ring');
+      parseFloat(b.style.getPropertyValue('--cooldown-progress')) > 0.72 &&
+      getComputedStyle(b.querySelector('.cooldown-track')).display !== 'none';
+  }), 'Controls: Blink keeps a short label, accessible seconds and face-following cooldown outline');
   await page.waitForTimeout(100);
   check(await page.evaluate(() => INJ.player.teleportCooldown === 7.25), 'Controls: paused cooldown display cannot run ahead of combat');
   for (const [width, height] of [[320, 568], [390, 844], [844, 390]]) {
@@ -103,8 +117,15 @@ module.exports = async function verifyControls(page, check, root, { artifacts, h
   check(await page.evaluate(() => {
     const arena = document.querySelector('#screen').getBoundingClientRect();
     const pad = document.querySelector('#pad').getBoundingClientRect();
-    const stick = getComputedStyle(document.querySelector('#stickZone'), '::before');
-    return arena.right - pad.right >= 44 && arena.bottom - pad.bottom >= 20 && parseFloat(stick.left) >= 44;
+    INJ.game.paused = false;
+    const zone = INJ.stickZone.getBoundingClientRect();
+    INJ.stickZone.dispatchEvent(new PointerEvent('pointerdown', {
+      pointerId: 77, clientX: zone.left + 1, clientY: zone.bottom - 1
+    }));
+    const stick = INJ.stickBase.getBoundingClientRect();
+    const fits = stick.left >= arena.left + 43.9 && stick.bottom <= arena.bottom - 19.9;
+    INJ.resetInput(); INJ.game.paused = true;
+    return arena.right - pad.right >= 44 && arena.bottom - pad.bottom >= 20 && fits;
   }), 'Controls: simulated Home Screen safe areas protect both thumb regions');
   await page.evaluate(() => {
     const arena = document.querySelector('#screen');
@@ -121,6 +142,12 @@ module.exports = async function verifyControls(page, check, root, { artifacts, h
   let left = point(21, zone.x + zone.width / 2, zone.y + zone.height / 2);
   const right = point(22, guard.x + guard.width / 2, guard.y + guard.height / 2);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [left] });
+  check(await page.evaluate(({ x, y }) => {
+    const b = INJ.stickBase.getBoundingClientRect();
+    return getComputedStyle(INJ.stickBase).display !== 'none' &&
+      Math.abs(b.x + b.width / 2 - x) < 1 && Math.abs(b.y + b.height / 2 - y) < 1;
+  }, left), 'Controls: floating joystick appears at the touch origin');
+  if (artifacts) await page.screenshot({ path: path.join(root, 'artifacts/controls-stick-active.png') });
   left = { ...left, x: left.x - 28 };
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [left] });
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [left, right] });
@@ -131,8 +158,27 @@ module.exports = async function verifyControls(page, check, root, { artifacts, h
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
   check(await page.evaluate(() => !Object.values(INJ.input).some(Boolean) && !document.querySelector('.abtn.down')),
     'Controls: touch cancellation releases movement and pressed feedback');
+  check(await page.evaluate(() => getComputedStyle(INJ.stickBase).display === 'none' &&
+    getComputedStyle(INJ.stickKnob).display === 'none'), 'Controls: joystick disappears on touch cancellation');
+  // A second gesture must establish a new origin, even near the old idle-ring location.
+  const next = point(23, zone.x + zone.width / 2 + 4, zone.y + zone.height / 2);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [next] });
+  check(await page.evaluate(({ x, y }) => {
+    const b = INJ.stickBase.getBoundingClientRect();
+    return Math.abs(b.x + b.width / 2 - x) < 1 && Math.abs(b.y + b.height / 2 - y) < 1 &&
+      !Object.values(INJ.stickInput).some(Boolean);
+  }, next), 'Controls: repeated gestures recenter without a ghost direction');
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  check(await page.evaluate(() => getComputedStyle(INJ.stickBase).display === 'none' &&
+    getComputedStyle(INJ.stickKnob).display === 'none'), 'Controls: joystick disappears on normal release');
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [next] });
+  await page.evaluate(() => INJ.pauseGame());
+  check(await page.evaluate(() => getComputedStyle(INJ.stickBase).display === 'none' &&
+    getComputedStyle(INJ.stickKnob).display === 'none' && !Object.values(INJ.input).some(Boolean)),
+    'Controls: pause immediately hides the held joystick and clears movement');
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await cdp.detach();
-  await page.evaluate(() => { INJ.game.paused = true; INJ.game.hitStop = 0; });
+  await page.evaluate(() => { INJ.resumeGame(); INJ.game.paused = true; INJ.game.hitStop = 0; });
   // Press feedback is an interruptible CSS transition; replay at 10% speed.
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));

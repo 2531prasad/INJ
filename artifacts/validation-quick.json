@@ -1,49 +1,43 @@
 {
   "mode": "functional",
-  "recordedAt": "2026-10-29T01:54:05.653Z",
+  "recordedAt": "2026-10-29T02:32:44.314Z",
   "selected": [
     "controls",
     "combat",
-    "menus",
-    "teddy"
+    "menus"
   ],
-  "checks": 238,
-  "seconds": 22.5,
+  "checks": 175,
+  "seconds": 21.67,
   "suites": [
     {
       "suite": "smoke.cjs",
       "checks": 19,
-      "seconds": 5.19
+      "seconds": 6.06
     },
     {
       "suite": "controls.cjs",
-      "checks": 30,
-      "seconds": 7.58
+      "checks": 37,
+      "seconds": 6.33
     },
     {
       "suite": "input.cjs",
       "checks": 29,
-      "seconds": 2.12
+      "seconds": 1.9
     },
     {
       "suite": "abilities.cjs",
       "checks": 41,
-      "seconds": 1.47
+      "seconds": 1.6
     },
     {
       "suite": "victory.cjs",
       "checks": 28,
-      "seconds": 1.23
+      "seconds": 1.28
     },
     {
       "suite": "menus.cjs",
       "checks": 21,
-      "seconds": 2.27
-    },
-    {
-      "suite": "teddy-teleport.cjs",
-      "checks": 70,
-      "seconds": 0.99
+      "seconds": 2.21
     }
   ],
   "artifacts": false,

@@ -138,23 +138,18 @@
       App.Sfx.init();
       if (isFixed) {
         const bounds = zone.getBoundingClientRect();
+        const style = getComputedStyle(zone);
+        const safeLeft = parseFloat(style.getPropertyValue('--safe-left')) || 0;
+        // The movement region already excludes the safe-area footer and menu.
+        const safeBottom = 0;
         radius = Math.min(
           parseFloat(getComputedStyle(stickBase).width) / 2,
-          bounds.width / 2,
-          bounds.height / 2
+          (bounds.width - safeLeft) / 2,
+          (bounds.height - safeBottom) / 2
         );
-        const hint = getComputedStyle(zone, '::before');
-        const hx = bounds.left + parseFloat(hint.left) + parseFloat(hint.width) / 2;
-        const hy = bounds.bottom - parseFloat(hint.bottom) - parseFloat(hint.height) / 2;
-        // Pressing an arrow on the visible ring samples that direction immediately.
-        // Touches elsewhere retain the floating joystick behaviour.
-        if (Math.hypot(e.clientX - hx, e.clientY - hy) <= radius + 12) {
-          cx = hx;
-          cy = hy;
-        } else {
-          cx = App.clamp(e.clientX, bounds.left + radius, bounds.right - radius);
-          cy = App.clamp(e.clientY, bounds.top + radius, bounds.bottom - radius);
-        }
+        // A fresh floating origin for each gesture; there is no invisible fixed pad.
+        cx = App.clamp(e.clientX, bounds.left + safeLeft + radius, bounds.right - radius);
+        cy = App.clamp(e.clientY, bounds.top + radius, bounds.bottom - safeBottom - radius);
         stickBase.style.display = 'block';
         knob.style.display = 'block';
         stickBase.style.left = cx + 'px';
@@ -212,64 +207,110 @@
   let controlScale = 100;
   let settingsWritable = true;
 
+  function layoutControlArc(act, start, end, outer, inner, originX, originY) {
+    const button = document.querySelector('[data-act="' + act + '"]');
+    // Zero points left, ninety points up: every large arc is rooted at the corner.
+    const point = (r, degrees) => {
+      const angle = degrees * Math.PI / 180;
+      return { x: originX - r * Math.cos(angle), y: originY - r * Math.sin(angle) };
+    };
+    const points = [];
+    const first = Math.max(0, start - 0.4), last = Math.min(90, end + 0.4);
+    for (let i = 0; i <= 32; i++) points.push(point(outer + 1.25, first + (last - first) * i / 32));
+    for (let i = 32; i >= 0; i--) points.push(point(Math.max(0, inner - 1.25), first + (last - first) * i / 32));
+    const minX = Math.min(...points.map(p => p.x)), maxX = Math.max(...points.map(p => p.x));
+    const minY = Math.min(...points.map(p => p.y)), maxY = Math.max(...points.map(p => p.y));
+    const width = Math.max(44, maxX - minX), height = Math.max(44, maxY - minY);
+    const x = Math.max(0, Math.min(originX - width, (minX + maxX - width) / 2));
+    const y = Math.max(0, Math.min(originY - height, (minY + maxY - height) / 2));
+    button.style.left = x + 'px'; button.style.top = y + 'px';
+    button.style.width = width + 'px'; button.style.height = height + 'px';
+    button.style.setProperty('--hit-shape', 'polygon(' + points.map(p =>
+      (p.x - x) / width * 100 + '% ' + (p.y - y) / height * 100 + '%').join(',') + ')');
+    const center = point(inner === 0 ? outer * 0.52 : (inner + outer) / 2, (start + end) / 2);
+    button.style.setProperty('--label-x', center.x - x + 'px');
+    button.style.setProperty('--label-y', center.y - y + 'px');
+    button.style.transformOrigin = (center.x - x) + 'px ' + (center.y - y) + 'px';
+    const [a, b, c, d] = [point(outer, start), point(outer, end), point(inner, end), point(inner, start)];
+    const xy = p => (p.x - x) + ' ' + (p.y - y);
+    const path = 'M' + xy(a) + ' A' + outer + ' ' + outer + ' 0 0 1 ' + xy(b) +
+      ' L' + xy(c) + (inner > 0 ? ' A' + inner + ' ' + inner + ' 0 0 0 ' + xy(d) : '') + ' Z';
+    for (const svg of button.querySelectorAll('.action-face,.cooldown-track')) {
+      svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+      svg.querySelector('path').setAttribute('d', path);
+      svg.querySelector('path').setAttribute('vector-effect', 'non-scaling-stroke');
+    }
+  }
+
+  function layoutAbilityButton(act, x, y, size) {
+    const button = document.querySelector('[data-act="' + act + '"]');
+    const center = size / 2, radius = center - 1;
+    button.style.left = x + 'px'; button.style.top = y + 'px';
+    button.style.width = size + 'px'; button.style.height = size + 'px';
+    button.style.setProperty('--label-x', center + 'px');
+    button.style.setProperty('--label-y', center + 'px');
+    button.style.transformOrigin = '50% 50%';
+    const points = Array.from({ length: 64 }, (_, i) => {
+      const angle = i / 64 * Math.PI * 2;
+      return (center + radius * Math.cos(angle)) / size * 100 + '% ' +
+        (center + radius * Math.sin(angle)) / size * 100 + '%';
+    });
+    button.style.setProperty('--hit-shape', 'polygon(' + points.join(',') + ')');
+    const path = 'M1 ' + center + ' A' + radius + ' ' + radius + ' 0 1 1 ' + (size - 1) + ' ' + center +
+      ' A' + radius + ' ' + radius + ' 0 1 1 1 ' + center + ' Z';
+    for (const svg of button.querySelectorAll('.action-face,.cooldown-track')) {
+      svg.setAttribute('viewBox', '0 0 ' + size + ' ' + size);
+      svg.querySelector('path').setAttribute('d', path);
+      svg.querySelector('path').setAttribute('vector-effect', 'non-scaling-stroke');
+    }
+  }
+
   function layoutControls() {
     const arena = document.getElementById('screen');
-    const width = arena.clientWidth,
-      height = arena.clientHeight;
+    const width = arena.clientWidth, height = arena.clientHeight;
     const style = getComputedStyle(arena);
-    // Resolve safe-area values through CSS, including Home Screen / fullscreen mode.
-    const right = parseFloat(style.getPropertyValue('--safe-right')) || 0;
-    const bottom = parseFloat(style.getPropertyValue('--safe-bottom')) || 0;
-    const left = parseFloat(style.getPropertyValue('--safe-left')) || 0;
-    const edge = Math.max(width < 500 ? 6 : 14, right);
-    const floor = Math.max(width < 500 ? 7 : 12, bottom);
-    const stickRoom = Math.max(74, left + 74);
-    const dimensions = (unit) => {
-      const aux = Math.max(44, 52 * unit),
-        main = Math.max(56, 80 * unit);
-      const kick = Math.max(52, 68 * unit),
-        gap = Math.max(4, 8 * unit);
-      const rise = (width < 500 ? 16 : 44) * unit;
-      const deck = Math.max(aux * 4 + gap * 3, main + kick + aux + 44 + gap * 3);
-      return { aux, main, kick, gap, rise, deck, tall: main + gap + rise + aux };
-    };
-    let low = 0,
-      high = ((width < 500 ? 0.9 : 1) * controlScale) / 100;
-    // The requested size is a ceiling; cramped screens keep every target ≥44px.
-    for (let i = 0; i < 16; i++) {
-      const mid = (low + high) / 2,
-        d = dimensions(mid);
-      if (d.deck + edge + stickRoom + 4 <= width && d.tall + floor + 32 <= height) low = mid;
-      else high = mid;
-    }
-    const d = dimensions(low),
-      padLeft = width - edge - d.deck;
+    const safeRight = parseFloat(style.getPropertyValue('--safe-right')) || 0;
+    const safeBottom = parseFloat(style.getPropertyValue('--safe-bottom')) || 0;
+    const safeLeft = parseFloat(style.getPropertyValue('--safe-left')) || 0;
+    const compact = height < 240;
+    const aux = Math.max(44, 50 * controlScale / 100);
+    const cell = aux + 5;
+    const edge = safeRight, floor = safeBottom;
+    const requested = (compact ? 96 : 126) * controlScale / 100;
+    const radius = compact
+      ? Math.max(88, Math.min(requested, height - floor - 28,
+        width - edge - safeLeft - 66 - cell * 2 - 6))
+      : Math.max(96, Math.min(requested, height - floor - aux - 36));
+    const deck = compact ? radius + cell * 2 + 6 : radius + aux + 14;
+    const tall = compact ? Math.max(radius, cell * 2 + 4) : deck;
+    const padLeft = width - edge - deck;
     const stickZoneWidth = Math.max(44, Math.min(width * 0.33, padLeft - 4));
-    const stickBottom = Math.max(22, bottom + 15);
-    const stickSize = Math.min(
-      Math.max(68, 110 * low),
-      stickZoneWidth - left - 8,
-      height * 0.72 - stickBottom - 4
-    );
+    const stickSize = Math.min(110 * controlScale / 100,
+      stickZoneWidth - safeLeft - 8, height * 0.72 - 52 - safeBottom);
     const values = {
-      'aux-size': d.aux,
-      'main-size': d.main,
-      'kick-size': d.kick,
-      'deck-gap': d.gap,
-      'deck-width': d.deck,
-      'deck-right': edge,
-      'deck-bottom': floor,
-      'arc-rise': d.rise,
-      'guard-lift': Math.max(d.aux + d.gap, d.main + d.gap - 24 * low),
-      'stick-zone': stickZoneWidth,
-      'stick-size': stickSize,
-      'stick-bottom': stickBottom,
-      'stick-label-bottom': Math.max(7, bottom),
-      'stick-left': Math.max(left + 4, (stickZoneWidth - stickSize) / 2),
-      'menu-left': padLeft + d.aux + d.gap
+      'deck-width': deck, 'deck-height': tall, 'deck-right': edge, 'deck-bottom': floor,
+      'stick-zone': stickZoneWidth, 'stick-size': stickSize,
+      'menu-left': Math.max(safeLeft, (stickZoneWidth - 44) / 2), 'menu-bottom': safeBottom
     };
-    for (const [key, value] of Object.entries(values))
-      arena.style.setProperty('--' + key, value + 'px');
+    for (const [key, value] of Object.entries(values)) arena.style.setProperty('--' + key, value + 'px');
+    layoutControlArc('punch', 24, 66, radius, 0, deck, tall);
+    layoutControlArc('kick', 0, 20, radius, radius * 0.6, deck, tall);
+    layoutControlArc('block', 70, 90, radius, radius * 0.6, deck, tall);
+    const abilities = ['teleport', 'upper', 'special', 'nitro'];
+    if (compact) {
+      const slots = [[0, tall - cell], [cell, tall - cell * 2 - 4], [0, tall - cell * 2 - 4], [cell, tall - cell]];
+      for (let i = 0; i < abilities.length; i++) {
+        const act = abilities[i];
+        layoutAbilityButton(act, slots[i][0], slots[i][1], aux);
+      }
+    } else {
+      const orbit = radius + aux / 2 + 12;
+      for (let i = 0; i < abilities.length; i++) {
+        const angle = (10 + i * 70 / 3) * Math.PI / 180;
+        layoutAbilityButton(abilities[i], deck - orbit * Math.cos(angle) - aux / 2,
+          tall - orbit * Math.sin(angle) - aux / 2, aux);
+      }
+    }
   }
 
   function setControlScale(value, save = true) {

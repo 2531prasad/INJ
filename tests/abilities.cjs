@@ -1,4 +1,5 @@
 /* Combo damage, meter abilities and aerial input integration. */
+const controlsFit = require('./control-geometry.cjs');
 module.exports = async function verifyAbilities(page, check, root, options = { artifacts: true }) {
   const results = await page.evaluate(() => {
     const a = INJ, out = {};
@@ -212,20 +213,12 @@ module.exports = async function verifyAbilities(page, check, root, options = { a
       a.player.meter = 0; a.updateChargeUI();
       const before = positions();
       a.player.meter = 100; a.updateChargeUI();
-      const buttons = [...document.querySelectorAll('#pad .abtn'),
-        document.querySelector('#stickZone'), document.querySelector('#btnArenaMenu')];
-      const rects = buttons.filter(el => el.getClientRects().length).map(el => el.getBoundingClientRect());
-      const collides = rects.some((r, i) => rects.slice(i + 1).some(s =>
-        r.left < s.right && r.right > s.left && r.top < s.bottom && r.bottom > s.top));
-      const arena = document.querySelector('#screen').getBoundingClientRect();
-      const fits = rects.every(r => r.width >= 44 && r.height >= 44 &&
-        r.left >= arena.left && r.right <= arena.right && r.top >= arena.top && r.bottom <= arena.bottom);
       const stable = JSON.stringify(before) === JSON.stringify(positions());
       const ready = !nitro.hidden && nitro.getClientRects().length > 0;
       a.player.meter = 0; a.updateChargeUI();
-      return stable && ready && nitro.hidden && !collides && fits;
+      return stable && ready && nitro.hidden;
     });
-    check(layout, `Abilities: ${width}×${height} ready/hidden controls stay fixed, separated and ≥44px`);
+    check(layout && await page.evaluate(controlsFit), `Abilities: ${width}×${height} ready/hidden controls stay fixed, separated and ≥44px`);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
